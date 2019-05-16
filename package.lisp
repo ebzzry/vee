@@ -1,4 +1,5 @@
 ;;;; package.lisp
 
 (defpackage #:muso
-  (:use #:cl))
+  (:use #:cl
+        #:trivia))

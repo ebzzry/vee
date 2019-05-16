@@ -10,7 +10,8 @@
                #:cl-ppcre
                #:trivia
                #:fare-csv
-               #:mof)
+               #:mof
+               #:trivia)
   :components ((:file "package")
                (:file "maps")
                (:file "muso")))

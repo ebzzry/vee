@@ -17,19 +17,16 @@
       (read-sequence data stream)
       data)))
 
-(defun read-entry (entry)
-  "Read a single line stripping unnecessary information."
-  nil)
-
 (defun normalize (entry)
   "Return a normalized version of an entry."
   (string-downcase entry))
 
-(defun read-csv (entry &key (separator #\Tab))
+(defun read-csv (source &optional (separator #\tab))
   "Read a CSV from string."
-  (fare-csv:with-rfc4180-csv-syntax ()
-    (let ((fare-csv:*separator* separator))
-      (fare-csv:read-csv-file source))))
+  (with-input-from-string (stream source)
+    (fare-csv:with-rfc4180-csv-syntax ()
+      (let ((fare-csv:*separator* separator))
+        (fare-csv:read-csv-stream stream)))))
 
 (defun stack-top (source)
   "Return the current entry being processed."
@@ -98,18 +95,6 @@
 ;;;
 ;;; - If text matches, create new entry to TSV list, then pop both sources.
 
-;;; Notes
-;;;
-;;; - Create fallback row creation
-;;; - It seems that rules have to be encoded, at least with the case of spaCy,
-;;;   because it breaks down hyphenated works into multiple entries.
-;;; - Determine the main source that comparisons will be made against.
-;;; - Is the longer file going to be used the the ’wall’?
-;;; - Should the longer source be set already, then the entries from the shorter
-;;;   file will just be inserted into the location based on the longer source?
-;;; - If this is the case, then as entries from the shorter source are inserted
-;;;   to the longer source, the longer source gets popped.
-
 (defun delimit (list)
   "Returns items in LIST as tab-separated values."
   (format nil "~{~a~^	~}" list))
@@ -162,6 +147,16 @@
   (with-open-file (in file)
     (peek in limit)))
 
+(defun head (file)
+  "Return the first element of source from FILE."
+  (multiple-value-bind (value result)
+      (with-open-file (in file)
+        (read-line in nil))
+    (declare (ignore result))
+    (let ((val (read-tsv value)))
+      (when (consp val)
+        (first val)))))
+
 (defun clean-spacy-source (data)
   "Remove extraneous entries in a spaCy source."
   (remove-if #'(lambda (entry) (mof:empty-string-p (first entry))) data))
@@ -182,6 +177,18 @@
 ;;; - If a partial match is found, peek.
 ;;; - File processing should be done only once, and the rest will be done on
 ;;;   streams.
+
+;;; Notes
+;;;
+;;; - Create fallback row creation
+;;; - It seems that rules have to be encoded, at least with the case of spaCy,
+;;;   because it breaks down hyphenated works into multiple entries.
+;;; - Determine the main source that comparisons will be made against.
+;;; - Is the longer file going to be used the the ’wall’?
+;;; - Should the longer source be set already, then the entries from the shorter
+;;;   file will just be inserted into the location based on the longer source?
+;;; - If this is the case, then as entries from the shorter source are inserted
+;;;   to the longer source, the longer source gets popped.
 
 ;;; Caveats
 ;;;
@@ -214,28 +221,12 @@
 ;;; Unless, it can be clearly stated that one source is generally longer than
 ;;; the other.
 
-(defun strict-substring-p (x y)
-  "Return true if X is part of Y, and that X is found from the start of Y."
-  (and (not (= (length x) (length y)))
-       (zerop (search x y))))
-
-;;; Should this perform peeking?
-(defun partial-match-p (x y)
-  "Return true if X is a partial match against Y."
-  nil)
-
-(defun complete-match-p (x y)
-  "Return true if x y match completely."
-  (and (= (length x) (length y))
-       (string-equal x y)))
-
 ;;; Notes
 ;;;
-;;; - Break down word components into words. For example, "notre-dame" ->
-;;;   "notre" "-" "dame"
+;;; - Break down word components into words.
 ;;; - The amount of lookahead can be determined by the number of components that
 ;;;   an entry from the shorter source resulted to.
-;;; - "Victor Hugo" -> 2
+;;; - "Victor Hugo" -> 2; "Notre-Dame" -> 3
 
 (defun separators (string)
   "Return the separator used in STRING."
@@ -249,3 +240,27 @@
 ;;;   breakdown.
 ;;; - When a space-separated text is broken down, the space is not part of the
 ;;;   breakdown.
+
+;;; Notes
+;;;
+;;; - If X strictly substrings Y, X will expand to match Y.
+;;; - For X to quality as a strict subset of Y, they must be partially matching
+;;; - If a partial match is found, adding to the final output is suspended.
+;;; - NEXT is called to return the next item.
+
+(defun strict-substring-p (x y)
+  "Return true if X is part of Y, and that X is found from the start of Y."
+  (and (not (= (length x) (length y)))
+       (zerop (search x y))))
+
+;;; Should this perform peeking?
+(defun partial-match-p (x y)
+  "Return true if X is a partial match against Y."
+  (destructuring-bind (a b)
+      (list (first x) (first y))
+    (list a b)))
+
+(defun complete-match-p (x y)
+  "Return true if x y match completely."
+  (and (= (length x) (length y))
+       (string-equal x y)))
