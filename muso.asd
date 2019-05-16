@@ -9,7 +9,7 @@
   :depends-on (#:uiop
                #:cl-ppcre
                #:trivia
-               #:cl-csv
+               #:fare-csv
                #:mof)
   :components ((:file "package")
                (:file "maps")
