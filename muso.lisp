@@ -237,9 +237,11 @@
 ;;;   an entry from the shorter source resulted to.
 ;;; - "Victor Hugo" -> 2
 
-(defun separator (string)
+(defun separators (string)
   "Return the separator used in STRING."
-  nil)
+  (loop :for char :across (remove-if #'alphanumericp string)
+        :collecting char :into chars
+        :finally (return (remove-duplicates chars))))
 
 ;;; Notes
 ;;;
