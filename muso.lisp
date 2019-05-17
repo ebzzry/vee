@@ -282,8 +282,4 @@ with the longer source, which is usually Y."
          ;; source-2 will not move
          nil)
         (t nil)))
-
-;;; - Should a class be defined that can point to the previous, current, and next
-;;;   entries?
-;;; - Should source be defined as instantiations of that class?
 ;;; - Build a new source where the first two items are joined

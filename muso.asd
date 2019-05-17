@@ -12,7 +12,8 @@
                #:fare-csv
                #:mof
                #:trivia)
-  :components ((:file "package")
+  :components ((:file "packages")
                (:file "maps")
-               (:file "test")
+               (:file "init")
+               (:file "classes")
                (:file "muso")))
