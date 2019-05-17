@@ -14,4 +14,5 @@
                #:trivia)
   :components ((:file "package")
                (:file "maps")
+               (:file "test")
                (:file "muso")))
