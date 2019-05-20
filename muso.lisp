@@ -136,15 +136,23 @@
   "Return the top-most entry in source."
   (first source))
 
-(defun current (source)
+(defun current-entry (source)
   "Return the current item text in SOURCE."
-  (first (first source)))
+  (first source))
+
+(defun next-entry (source)
+  "Return the next item text in SOURCE."
+  (second source))
+
+(defun current (source)
+  "Return the head of the curent item in SOURCE."
+  (first (current-entry source)))
 
 (defun next (source)
-  "Return the next item text in SOURCE."
-  (first (second source)))
+  "Return the head of the next item in SOURCE."
+  (first (next-entry source)))
 
-(defun join-ahead (source)
+(defun join-forward (source)
   "Return the current and next items from SOURCE."
   (join (current source) (next source)))
 
@@ -156,10 +164,6 @@
   "Return true if X is a partial match against Y. String compaction will happen
 with the longer source, which is usually Y."
   (strict-substring-p (compact-string text-1) (compact-string text-2)))
-
-(defun reverse-partial-match-p (text-1 text-2)
-  "Like PARTIAL-MATCH-P but the second arg will be compared against the first."
-  (partial-match-p text-2 text-1))
 
 (defun complete-match-p (text-1 entry-2 &key (case-sensitive nil))
   "Return true if X and Y match completely."
@@ -187,18 +191,54 @@ with the longer source, which is usually Y."
 ;;;   ("-" "HYPH" "" "")
 ;;;   ("DAME" "NN" "" "")
 
-(defun walk (source-1 source-2 acc)
+(defun add (left right acc)
+  "Add LEFT and RIGHT to ACC."
+  (cons (append left right) acc))
+
+(defun add-top (left right acc)
+  "Add the top of LEFT and RIGHT to ACC."
+  (add (top left) (top right)))
+
+(defun walk (ldata rdata lhead rhead acc)
   "Walk through the sources and build value."
-  (cond ((and (null source-1)
-              (null source-2))
+  (cond ((and (null ldata) (null rdata))
          (nreverse acc))
-        ((complete-match-p (current source-1) (current source-2))
-         (walk (rest source-1)
-               (rest source-2)
-               (cons (append (top source-1) (top source-2)) acc)))
-        ((partial-match-p (current source-1) (current source-2))
-         ;; source-2 will not move
+        ((complete-match-p (current ldata) (current rdata))
+         (walk (rest ldata) (rest rdata)
+               (rest lhead) (rest rhead)
+               (add-top ldata rdata acc)))
+        ((partial-match-p (current ldata) (current rdata))
+         ;; rdata will not move
+         (walk (rest ldata) rdata
+               (join-ahead ldata) nil
+               (add-top ldata rdata acc )))
+        ((partial-match-p (current rdata) (current ldata))
+         ;; ldata will not move
          nil)
         (t nil)))
 
+;;; Notes
+;;;
+;;; - A column will only move when it is done processing
+;;; - Insert the previous head into the next head?
+
+;;; Notes
+;;;
+;;; - Whenever a join is made on one side, an empty pair is created on the other
+;;;   side
+;;; - So, it’s viable that they both move, but an empty entry will be created
+;;; - When a ‘move’ is made, no destructive modifications are made to any of the
+;;;   sources
+;;; - Should a partially matching text be carried and built forward until it either
+;;;   matches or longer matches?
+
+;;; Notes
+;;;
 ;;; - Build a new source where the first two items are joined
+;;; - At the moment, the walker will only work with two simultaneous sources
+
+;;; Notes
+;;;
+;;; - Design a scheme for properly instantiating the classes
+;;; - Handle the case wherein there are no matches at all
+;;; - Handle garbage

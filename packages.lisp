@@ -3,10 +3,7 @@
 (in-package #:cl-user)
 
 (defpackage #:muso
-  (:use
-   #:cl
-   #:trivia))
+  (:use #:cl #:trivia))
 
 (defpackage #:muso-test
-  (:use
-   #:muso))
+  (:use #:muso))

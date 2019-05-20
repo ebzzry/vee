@@ -14,6 +14,6 @@
                #:trivia)
   :components ((:file "packages")
                (:file "maps")
-               (:file "init")
                (:file "classes")
-               (:file "muso")))
+               (:file "muso")
+               (:file "init")))
