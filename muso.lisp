@@ -6,6 +6,9 @@
   "The amount of lines to consider when trying to perform resoultion, backwards
   and forwards.")
 
+(defvar *join-limit* 2
+  "The amount of lines forward to join.")
+
 (defun slurp-file (path)
   "Read entiore file as lines."
   (uiop:read-file-lines path))
@@ -51,9 +54,17 @@
   "Returns items in LIST as tab-separated values."
   (format nil "~{~a~^	~}" list))
 
-(defun join (&rest items)
+(defun join (items)
   "Return a string from items in LIST."
   (reduce #'mof:cat items))
+
+(defun join-n (items n)
+  "Join strings from items with N count."
+  (join (take-if #'first items n)))
+
+(defun join-next (items)
+  "Join with the next item."
+  (join-n items 2))
 
 (defun count-entries (source)
   "Return the number of entries in SOURCE."
@@ -82,12 +93,19 @@
   "Like READ-TSV but from a disk file."
   (read-csv-file file #\tab))
 
-(defun take (source limit)
+(defun take (source &optional (limit 1))
   "Return LIMIT amount of items from SOURCE."
   (loop :for s :in source
         :for n = 0 :then (1+ n)
         :while (< n limit)
         :collect s))
+
+(defun take-if (fn source &optional (limit 1))
+  "Return LIMIT amount of items from SOURCE."
+  (loop :for s :in source
+        :for n = 0 :then (1+ n)
+        :while (< n limit)
+        :collect (funcall fn s)))
 
 (defun peek (source limit &key (selector #'first))
   "Return a string formed by looking ahead LIMIT number of entries in SOURCE."
@@ -132,10 +150,6 @@
          (when val
            (zerop val)))))
 
-(defun top (source)
-  "Return the top-most entry in source."
-  (first source))
-
 (defun current-entry (source)
   "Return the current item text in SOURCE."
   (first source))
@@ -152,9 +166,9 @@
   "Return the head of the next item in SOURCE."
   (first (next-entry source)))
 
-(defun join-forward (source)
-  "Return the current and next items from SOURCE."
-  (join (current source) (next source)))
+(defun top (&rest args)
+  "Return the top-most entry in source."
+  (apply #'current-entry args))
 
 (defun compact-string (string)
   "Return a new string without whitespaces."
@@ -197,30 +211,78 @@ with the longer source, which is usually Y."
 
 (defun add-top (left right acc)
   "Add the top of LEFT and RIGHT to ACC."
-  (add (top left) (top right)))
+  (add (top left) (top right) acc))
 
-(defun walk (ldata rdata lhead rhead acc)
+(defun advance (&rest items)
+  "Return the other items from ITEMS. A wrapper around REST. This function will
+be converted to a method."
+  (apply #'rest items))
+
+(defun walk (ldata rdata acc &key (lcarry nil) (rcarry nil))
   "Walk through the sources and build value."
-  (cond ((and (null ldata) (null rdata))
-         (nreverse acc))
-        ((complete-match-p (current ldata) (current rdata))
-         (walk (rest ldata) (rest rdata)
-               (rest lhead) (rest rhead)
-               (add-top ldata rdata acc)))
-        ((partial-match-p (current ldata) (current rdata))
-         ;; rdata will not move
-         (walk (rest ldata) rdata
-               (join-ahead ldata) nil
-               (add-top ldata rdata acc )))
-        ((partial-match-p (current rdata) (current ldata))
-         ;; ldata will not move
-         nil)
-        (t nil)))
+  (let ((lhead (or lcarry (current ldata)))
+        (rhead (or rcarry (current rdata))))
+    (cond ((and (null ldata) (null rdata))
+           (nreverse acc))
+
+          ;; NOTE: The amount of look ahead is the amount of pair combinations
+          ;;       that must be tested.
+
+          ;; NOTE: It also determines the amount of jump to the next subset of
+          ;;       source
+
+          ;; complete
+          ;; When both LHEAD and RHEAD match, they must be matching. Both LDATA
+          ;; and RDATA will move. LCARRY and RCARRY must be cleared out while
+          ;; advancing.
+          ((complete-match-p lhead rhead)
+           (walk (advance ldata)
+                 (advance rdata)
+                 (add (top ldata) (top rdata) acc)
+                 :lcarry nil
+                 :rcarry nil))
+
+          ;; and partial partial
+          ;; When the LHEAD and RHEAD partially match,
+          ;; and the join and RHEAD partially match,
+          ;; it means that there is a partial match but won’t complete.
+          ((and (partial-match-p lhead rhead)
+                (partial-match-p (join-next ldata) rhead))
+           (walk (advance (advance ldata))
+                 rdata
+                 acc
+                 :lcarry (join-next ldata)
+                 :rcarry nil))
+
+          ;; and partial complete
+          ;; When the LHEAD and RHEAD match,
+          ;; and the join and RHEAD completely match,
+          ;; it means that there will be a complete match. This complete
+          ;; matching will be handled in the next iteration.
+          ((and (partial-match-p lhead rhead)
+                (complete-match-p (join-next ldata) rhead))
+           ;; TODO: verify for correctness
+           (walk (advance (advance ldata))
+                 rdata
+                 acc
+                 :lcarry (join-next ldata)
+                 :rcarry nil))
+
+          ;; inverse and partial partial
+
+          ;; inverse and partial complete
+
+          ;; TODO: describe fallback
+          (t nil))))
 
 ;;; Notes
 ;;;
 ;;; - A column will only move when it is done processing
 ;;; - Insert the previous head into the next head?
+;;; - There is a partial match if and only if the current tips match and merging
+;;;   with the next entry is either a partial or complete match ***
+;;; - The entries themselves will be put to the accumulator, however, it is only
+;;;   the text that will be compared.
 
 ;;; Notes
 ;;;
@@ -242,3 +304,8 @@ with the longer source, which is usually Y."
 ;;; - Design a scheme for properly instantiating the classes
 ;;; - Handle the case wherein there are no matches at all
 ;;; - Handle garbage
+
+(defun stats ()
+  "Display information about similarities, differences, holes, inconsistencies,
+etc."
+  nil)
