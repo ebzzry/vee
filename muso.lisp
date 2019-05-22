@@ -9,8 +9,11 @@
 (defvar *join-limit* 2
   "The amount of lines forward to join.")
 
+(defvar *empty* '("" "")
+  "An empty data set.")
+
 (defun slurp-file (path)
-  "Read entiore file as lines."
+  "Read entire file as lines."
   (uiop:read-file-lines path))
 
 (defun file-string (path)
@@ -218,62 +221,117 @@ with the longer source, which is usually Y."
 be converted to a method."
   (apply #'rest items))
 
+(defun fill-blanks (data side)
+  "Create blanks from DATA on side SIDE."
+  (loop :for n :from 0 :to (length data)
+        :for (x y) :in data
+        :collect (ecase side
+                   (left (list "" "" x y))
+                   (right (list x y "" "")))))
+
+(defun merge-equal (ldata rdata)
+  "Merge equal sources."
+  (assert (= (length ldata) (length rdata)) (ldata rdata))
+  (loop :for n :from 0 :to (length ldata)
+        :for (l1 l2) :in ldata
+        :for (r1 r2) :in rdata
+        :collect (list l1 l2 r1 r2)))
+
+(defun merge-sources (ldata rdata)
+  "Make together the sources in LDATA and RDATA."
+  (let ((length-1 (length ldata))
+        (length-2 (length rdata)))
+    (cond ((= length-1 length-2) (merge-equal ldata rdata))
+          ((< length-1 length-2)
+           (append (merge-equal ldata (subseq rdata 0 length-1))
+                   (fill-blanks (subseq rdata (1- length-1)) 'left)))
+          (t
+           (append (merge-equal (subseq ldata 0 length-2) rdata)
+                   (fill-blanks (subseq ldata (1- length-2)) 'right))))))
+
+(defun remove-leading-garbare (source)
+  "Remove leading information that is not needed from source."
+  nil)
+
 (defun walk (ldata rdata acc &key (lcarry nil) (rcarry nil))
   "Walk through the sources and build value."
   (let ((lhead (or lcarry (current ldata)))
         (rhead (or rcarry (current rdata))))
-    (cond ((and (null ldata) (null rdata))
-           (nreverse acc))
+    ;; NOTE: the usual case is that LDATA is longer than RDATA, so that LDATA
+    ;;       will serve as the wall
+    (cond
+      ;; NOTE: handle cases wherein one of the data sources is already null
+      ;; NOTE: this means that one of the sources still has trailing data
 
-          ;; NOTE: The amount of look ahead is the amount of pair combinations
-          ;;       that must be tested.
+      ;; NOTE: complete the length of rdata. This will be the amount of empty
+      ;; entries that will be added on the left side, to acc, which will then be
+      ;; returned
+      ((null ldata)
+       (let ((rlength (length rdata)))
+         ))
 
-          ;; NOTE: It also determines the amount of jump to the next subset of
-          ;;       source
+      ((and (null ldata) (null rdata))
+       (nreverse acc))
 
-          ;; complete
-          ;; When both LHEAD and RHEAD match, they must be matching. Both LDATA
-          ;; and RDATA will move. LCARRY and RCARRY must be cleared out while
-          ;; advancing.
-          ((complete-match-p lhead rhead)
-           (walk (advance ldata)
-                 (advance rdata)
-                 (add (top ldata) (top rdata) acc)
-                 :lcarry nil
-                 :rcarry nil))
+      ;; NOTE: The amount of look ahead is the amount of pair combinations
+      ;;       that must be tested.
 
-          ;; and partial partial
-          ;; When the LHEAD and RHEAD partially match,
-          ;; and the join and RHEAD partially match,
-          ;; it means that there is a partial match but won’t complete.
-          ((and (partial-match-p lhead rhead)
-                (partial-match-p (join-next ldata) rhead))
-           (walk (advance (advance ldata))
-                 rdata
-                 acc
-                 :lcarry (join-next ldata)
-                 :rcarry nil))
+      ;; NOTE: It also determines the amount of jump to the next subset of
+      ;;       source
 
-          ;; and partial complete
-          ;; When the LHEAD and RHEAD match,
-          ;; and the join and RHEAD completely match,
-          ;; it means that there will be a complete match. This complete
-          ;; matching will be handled in the next iteration.
-          ((and (partial-match-p lhead rhead)
-                (complete-match-p (join-next ldata) rhead))
-           ;; TODO: verify for correctness
-           (walk (advance (advance ldata))
-                 rdata
-                 acc
-                 :lcarry (join-next ldata)
-                 :rcarry nil))
+      ;; complete
+      ;; When both LHEAD and RHEAD match, they must be matching. Both LDATA
+      ;; and RDATA will move. LCARRY and RCARRY must be cleared out while
+      ;; advancing.
+      ((complete-match-p lhead rhead)
+       (walk (advance ldata)
+             (advance rdata)
+             (add (top ldata) (top rdata) acc)
+             :lcarry nil
+             :rcarry nil))
 
-          ;; inverse and partial partial
+      ;; and partial partial
+      ;; When the LHEAD and RHEAD partially match,
+      ;; and the join and RHEAD partially match,
+      ;; it means that there is a partial match but won’t complete.
 
-          ;; inverse and partial complete
+      ;; NOTE: when a partial match is found, should both sources also move,
+      ;;       with the other side having empty entries?
+      ;; NOTE: should RCARRY should also be updated?
+      ;; NOTE: should RCARRY be updated with empty entries as long as they do
+      ;;       not match
 
-          ;; TODO: describe fallback
-          (t nil))))
+      ((and (partial-match-p lhead rhead)
+            (partial-match-p (join-next ldata) rhead))
+       (walk (advance (advance ldata))
+             rdata
+             acc
+             :lcarry (join-next ldata)
+             :rcarry nil))
+
+      ;; and partial complete
+      ;; When the LHEAD and RHEAD match,
+      ;; and the join and RHEAD completely match,
+      ;; it means that there will be a complete match. This complete
+      ;; matching will be handled in the next iteration.
+
+      ;; NOTE: how is this condition different from the one above?
+
+      ((and (partial-match-p lhead rhead)
+            (complete-match-p (join-next ldata) rhead))
+       ;; TODO: verify for correctness
+       (walk (advance (advance ldata))
+             rdata
+             acc
+             :lcarry (join-next ldata)
+             :rcarry nil))
+
+      ;; inverse and partial partial
+
+      ;; inverse and partial complete
+
+      ;; TODO: describe fallback
+      (t nil))))
 
 ;;; Notes
 ;;;
