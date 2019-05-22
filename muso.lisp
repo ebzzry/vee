@@ -9,7 +9,7 @@
 (defvar *join-limit* 2
   "The amount of lines forward to join.")
 
-(defvar *empty* '("" "")
+(defvar *empty-entry* '("" "")
   "An empty data set.")
 
 (defun slurp-file (path)
@@ -67,7 +67,7 @@
 
 (defun join-next (items)
   "Join with the next item."
-  (join-n items 2))
+  (join-n items *join-limit*))
 
 (defun count-entries (source)
   "Return the number of entries in SOURCE."
@@ -221,13 +221,21 @@ with the longer source, which is usually Y."
 be converted to a method."
   (apply #'rest items))
 
+(defun empty-left (datum)
+  "Return a grouping wherein the left side is empty."
+  (append *empty-entry* datum))
+
+(defun empty-right (datum)
+  "Return a grouping wherein the right side is empty."
+  (append datum *empty-entry*))
+
 (defun fill-blanks (data side)
   "Create blanks from DATA on side SIDE."
   (loop :for n :from 0 :to (length data)
-        :for (x y) :in data
+        :for datum :in data
         :collect (ecase side
-                   (left (list "" "" x y))
-                   (right (list x y "" "")))))
+                   (left (empty-left datum))
+                   (right (empty-right datum)))))
 
 (defun merge-equal (ldata rdata)
   "Merge equal sources."
@@ -238,7 +246,7 @@ be converted to a method."
         :collect (list l1 l2 r1 r2)))
 
 (defun merge-sources (ldata rdata)
-  "Make together the sources in LDATA and RDATA."
+  "Merge together the sources in LDATA and RDATA."
   (let ((length-1 (length ldata))
         (length-2 (length rdata)))
     (cond ((= length-1 length-2) (merge-equal ldata rdata))

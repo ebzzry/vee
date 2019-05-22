@@ -15,7 +15,7 @@
    (dep :initarg :dep
         :initform nil
         :accessor dep))
-  (:documentation "The class to contain information about entries."))
+  (:documentation "Information about entries."))
 
 (defclass connection (entry)
   ((prev :initarg :prev
@@ -27,7 +27,7 @@
    (next :initarg :next
          :initform nil
          :accessor next))
-  (:documentation "The class to contain links between entries."))
+  (:documentation "Links between entries."))
 
 (defclass column (entry)
   ((left :initarg left
@@ -39,4 +39,13 @@
    (right :initarg right
           :initform nil
           :accessor right))
-  (:documentation "The class to contain links between columns"))
+  (:documentation "Links between columns"))
+
+(defclass grouping (entry)
+  ((ldata :initarg ldata
+          :initform *empty-entry*
+          :accessor ldata)
+   (rdata :initarg rdata
+          :initform *empty-entry*
+          :initarg rdata))
+  (:documentation "Pair of entries"))
