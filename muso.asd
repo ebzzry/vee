@@ -1,19 +1,25 @@
 ;;;; muso.asd
 
-(asdf:defsystem #:muso
-  :description "Describe muso here"
-  :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
-  :license ""
+#-asdf3.1 (error "ASDF 3.1 or bust!")
+
+(defpackage :muso-system
+  (:use #:cl #:asdf))
+
+(in-package #:muso-system)
+
+(defsystem :muso
+  :name "muso"
   :version "0.0.1"
-  :serial t
+  :description ""
+  :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
+  :class :package-inferred-system
   :depends-on (#:uiop
                #:cl-ppcre
                #:trivia
                #:fare-csv
                #:mof
-               #:trivia)
-  :components ((:file "packages")
-               (:file "maps")
-               (:file "classes")
-               (:file "muso")
-               (:file "init")))
+               #:trivia
+               "muso/globals"
+               "muso/classes"
+               "muso/core"
+               "muso/init"))

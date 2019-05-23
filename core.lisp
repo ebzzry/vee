@@ -1,16 +1,13 @@
-;;;; muso.lisp
+;;;; core.lisp
 
-(in-package #:muso)
+(uiop:define-package #:muso/core
+    (:use #:cl
+          #:trivia
+          #:muso/globals)
+  (:export #:*empty-entry*
+           #:read-source-file))
 
-(defvar *threshold* 5
-  "The amount of lines to consider when trying to perform resoultion, backwards
-  and forwards.")
-
-(defvar *join-limit* 2
-  "The amount of lines forward to join.")
-
-(defvar *empty-entry* '("" "")
-  "An empty data set.")
+(in-package #:muso/core)
 
 (defun slurp-file (path)
   "Read entire file as lines."
@@ -27,9 +24,9 @@
   "Return a normalized version of an entry."
   (string-downcase entry))
 
-(defun read-csv-string (source &optional (separator #\tab))
+(defun read-csv-string (string &optional (separator #\tab))
   "Read a CSV from string."
-  (with-input-from-string (stream source)
+  (with-input-from-string (stream string)
     (fare-csv:with-rfc4180-csv-syntax ()
       (let ((fare-csv:*separator* separator))
         (fare-csv:read-csv-stream stream)))))
@@ -39,19 +36,6 @@
   (fare-csv:with-rfc4180-csv-syntax ()
     (let ((fare-csv:*separator* separator))
       (fare-csv:read-csv-file file))))
-
-(defun stack-top (source)
-  "Return the current entry being processed."
-  (first source))
-
-(defun stack-pop (source)
-  "Pop the next entry to be processed."
-  (pop source)
-  source)
-
-(defun *active-map*
-  nil
-  "The active map being used for translation.")
 
 (defun delimit (list)
   "Returns items in LIST as tab-separated values."
@@ -69,9 +53,9 @@
   "Join with the next item."
   (join-n items *join-limit*))
 
-(defun count-entries (source)
-  "Return the number of entries in SOURCE."
-  (with-open-file (in source)
+(defun count-entries (column)
+  "Return the number of entries in COLUMN."
+  (with-open-file (in column)
     (loop :for line = (read-line in nil)
           :while line
           :count line)))
@@ -80,13 +64,13 @@
   "Return the number of entries in FILE."
   (count-entries file))
 
-(defun max-source (source-1 source-2)
-  "Return the bigger source between SOURCE-1 and SOURCE-2."
-  (let ((size-1 (count-entries source-1))
-        (size-2 (count-entries source-2)))
-    (cond ((= size-1 size-2) source-1)
-          ((> size-1 size-2) source-1)
-          (t source-2))))
+(defun max-column (column-1 column-2)
+  "Return the bigger column between COLUMN-1 and COLUMN-2."
+  (let ((size-1 (count-entries column-1))
+        (size-2 (count-entries column-2)))
+    (cond ((= size-1 size-2) column-1)
+          ((> size-1 size-2) column-1)
+          (t column-2))))
 
 (defun read-tsv-string (string)
   "Read a TSV string and return lists from it."
@@ -96,23 +80,23 @@
   "Like READ-TSV but from a disk file."
   (read-csv-file file #\tab))
 
-(defun take (source &optional (limit 1))
-  "Return LIMIT amount of items from SOURCE."
-  (loop :for s :in source
+(defun take (column &optional (limit 1))
+  "Return LIMIT amount of items from COLUMN."
+  (loop :for s :in column
         :for n = 0 :then (1+ n)
         :while (< n limit)
         :collect s))
 
-(defun take-if (fn source &optional (limit 1))
-  "Return LIMIT amount of items from SOURCE."
-  (loop :for s :in source
+(defun take-if (fn column &optional (limit 1))
+  "Return LIMIT amount of items from COLUMN."
+  (loop :for s :in column
         :for n = 0 :then (1+ n)
         :while (< n limit)
         :collect (funcall fn s)))
 
-(defun peek (source limit &key (selector #'first))
-  "Return a string formed by looking ahead LIMIT number of entries in SOURCE."
-  (mof:join-strings (mapcar selector (take (read-tsv-string source) limit))))
+(defun peek (column limit &key (selector #'first))
+  "Return a string formed by looking ahead LIMIT number of entries in COLUMN."
+  (mof:join-strings (mapcar selector (take (read-tsv-string column) limit))))
 
 (defun peek-file (file limit)
   "Like PEEK but from a disk file."
@@ -120,7 +104,7 @@
     (peek in limit)))
 
 (defun head (file)
-  "Return the first element of source from FILE."
+  "Return the first element of from FILE."
   (multiple-value-bind (value result)
       (with-open-file (in file)
         (read-line in nil))
@@ -129,7 +113,7 @@
       (when (consp val)
         (first val)))))
 
-(defun clean-spacy-source (data)
+(defun clean-spacy-column (data)
   "Remove extraneous entries in a spaCy source."
   (remove-if #'(lambda (entry) (mof:empty-string-p (first entry))) data))
 
@@ -137,7 +121,7 @@
   "Read source from file and perform clean-ups as necessary."
   (let ((data (read-tsv-file file)))
     (if spacy
-        (clean-spacy-source data)
+        (clean-spacy-column data)
         data)))
 
 (defun separators (string)
@@ -153,24 +137,24 @@
          (when val
            (zerop val)))))
 
-(defun current-entry (source)
-  "Return the current item text in SOURCE."
-  (first source))
+(defun current-entry (column)
+  "Return the current item text in COLUMN."
+  (first column))
 
-(defun next-entry (source)
-  "Return the next item text in SOURCE."
-  (second source))
+(defun next-entry (column)
+  "Return the next item text in COLUMN."
+  (second column))
 
-(defun current (source)
-  "Return the head of the curent item in SOURCE."
-  (first (current-entry source)))
+(defun current (column)
+  "Return the head of the curent item in COLUMN."
+  (first (current-entry column)))
 
-(defun next (source)
-  "Return the head of the next item in SOURCE."
-  (first (next-entry source)))
+(defun next (column)
+  "Return the head of the next item in COLUMN."
+  (first (next-entry column)))
 
 (defun top (&rest args)
-  "Return the top-most entry in source."
+  "Return the top-most entry in column."
   (apply #'current-entry args))
 
 (defun compact-string (string)
@@ -179,7 +163,7 @@
 
 (defun partial-match-p (text-1 text-2)
   "Return true if X is a partial match against Y. String compaction will happen
-with the longer source, which is usually Y."
+with the longer column, which is usually Y."
   (strict-substring-p (compact-string text-1) (compact-string text-2)))
 
 (defun complete-match-p (text-1 entry-2 &key (case-sensitive nil))
@@ -201,7 +185,7 @@ with the longer source, which is usually Y."
 ;;; - Write the walker
 ;;; - When a complete match is found, add entries to destination.
 ;;; - When a partial match is found, check to see if the next item also matches.
-;;; - If text matches, create new entry to TSV list, then pop both sources.
+;;; - If text matches, create new entry to TSV list, then pop both columns.
 ;;; - Empty strings will be used for blanks:
 ;;;
 ;;;   ("﻿NOTRE" "NNP" "﻿NOTRE-DAME" "PROPER-MODIFIER")
@@ -238,15 +222,15 @@ be converted to a method."
                    (right (empty-right datum)))))
 
 (defun merge-equal (ldata rdata)
-  "Merge equal sources."
+  "Merge equal columns."
   (assert (= (length ldata) (length rdata)) (ldata rdata))
   (loop :for n :from 0 :to (length ldata)
         :for (l1 l2) :in ldata
         :for (r1 r2) :in rdata
         :collect (list l1 l2 r1 r2)))
 
-(defun merge-sources (ldata rdata)
-  "Merge together the sources in LDATA and RDATA."
+(defun merge-columns (ldata rdata)
+  "Merge together the columns in LDATA and RDATA."
   (let ((length-1 (length ldata))
         (length-2 (length rdata)))
     (cond ((= length-1 length-2) (merge-equal ldata rdata))
@@ -257,26 +241,27 @@ be converted to a method."
            (append (merge-equal (subseq ldata 0 length-2) rdata)
                    (fill-blanks (subseq ldata (1- length-2)) 'right))))))
 
-(defun remove-leading-garbare (source)
-  "Remove leading information that is not needed from source."
-  nil)
+(defun remove-leading-garbage (column)
+  "Remove leading information that is not needed from column."
+  column)
 
 (defun walk (ldata rdata acc &key (lcarry nil) (rcarry nil))
-  "Walk through the sources and build value."
+  "Walk through the columns and build value."
   (let ((lhead (or lcarry (current ldata)))
         (rhead (or rcarry (current rdata))))
     ;; NOTE: the usual case is that LDATA is longer than RDATA, so that LDATA
     ;;       will serve as the wall
     (cond
-      ;; NOTE: handle cases wherein one of the data sources is already null
-      ;; NOTE: this means that one of the sources still has trailing data
+      ;; NOTE: handle cases wherein one of the data columns is already null
+      ;; NOTE: this means that one of the coulmns still has trailing data
 
       ;; NOTE: complete the length of rdata. This will be the amount of empty
       ;; entries that will be added on the left side, to acc, which will then be
       ;; returned
       ((null ldata)
        (let ((rlength (length rdata)))
-         ))
+         ;; FIXME
+         rlength))
 
       ((and (null ldata) (null rdata))
        (nreverse acc))
@@ -285,7 +270,7 @@ be converted to a method."
       ;;       that must be tested.
 
       ;; NOTE: It also determines the amount of jump to the next subset of
-      ;;       source
+      ;;       column
 
       ;; complete
       ;; When both LHEAD and RHEAD match, they must be matching. Both LDATA
@@ -303,7 +288,7 @@ be converted to a method."
       ;; and the join and RHEAD partially match,
       ;; it means that there is a partial match but won’t complete.
 
-      ;; NOTE: when a partial match is found, should both sources also move,
+      ;; NOTE: when a partial match is found, should both coulmns also move,
       ;;       with the other side having empty entries?
       ;; NOTE: should RCARRY should also be updated?
       ;; NOTE: should RCARRY be updated with empty entries as long as they do
@@ -356,14 +341,14 @@ be converted to a method."
 ;;;   side
 ;;; - So, it’s viable that they both move, but an empty entry will be created
 ;;; - When a ‘move’ is made, no destructive modifications are made to any of the
-;;;   sources
+;;;   coulmns
 ;;; - Should a partially matching text be carried and built forward until it either
 ;;;   matches or longer matches?
 
 ;;; Notes
 ;;;
-;;; - Build a new source where the first two items are joined
-;;; - At the moment, the walker will only work with two simultaneous sources
+;;; - Build a new column where the first two items are joined
+;;; - At the moment, the walker will only work with two simultaneous columns
 
 ;;; Notes
 ;;;
@@ -375,3 +360,30 @@ be converted to a method."
   "Display information about similarities, differences, holes, inconsistencies,
 etc."
   nil)
+
+;;; Legend
+;;;
+;;; - Entry
+;;;   + The smallest unit of information
+;;;   + It contains information about a text, like POS, UD, etc
+;;;
+;;; - Column
+;;;   + A list of entries
+;;;   + It must have a uniform size
+;;;
+;;; - Connection
+;;;    + The linkage between columns
+;;;
+;;; - Grouping
+;;;   + A horizontal set of entries across columns
+
+;;; Notes
+;;;
+;;; - Find proper locations to instantiate
+;;; - Should all data transactions go through the methods and classes?
+;;; - Use a selector when specifying the key when specifying the TSVs
+;;; - By default it is the first item
+
+;;; Notes
+;;;
+;;; - Convert to a generic delimiter library

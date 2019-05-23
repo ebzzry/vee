@@ -1,6 +1,11 @@
 ;;;; classes.lisp
 
-(in-package #:muso)
+(uiop:define-package #:muso/classes
+    (:use #:cl
+          #:trivia
+          #:muso/globals))
+
+(in-package #:muso/classes)
 
 (defclass entry ()
   ((id :initarg :id
@@ -17,29 +22,29 @@
         :accessor dep))
   (:documentation "Information about entries."))
 
-(defclass connection (entry)
-  ((prev :initarg :prev
+(defclass column (entry)
+  ((prev :initarg prev
          :initform nil
          :accessor prev)
-   (curr :initarg :curr
-         :initform nil
-         :accessor curr)
-   (next :initarg :next
-         :initform nil
-         :accessor next))
-  (:documentation "Links between entries."))
+   (curr :initarg curr
+        :initform nil
+        :accessor curr)
+   (next :initarg next
+          :initform nil
+          :accessor next))
+  (:documentation "Linkage between entries."))
 
-(defclass column (entry)
-  ((left :initarg left
+(defclass connection (entry)
+  ((left :initarg :left
          :initform nil
          :accessor left)
-   (mid :initarg mid
-        :initform nil
-        :accessor mid)
-   (right :initarg right
-          :initform nil
-          :accessor right))
-  (:documentation "Links between columns"))
+   (mid :initarg :mid
+         :initform nil
+         :accessor mid)
+   (right :initarg :right
+         :initform nil
+         :accessor right))
+  (:documentation "Linkage between columns."))
 
 (defclass grouping (entry)
   ((ldata :initarg ldata
@@ -48,4 +53,4 @@
    (rdata :initarg rdata
           :initform *empty-entry*
           :initarg rdata))
-  (:documentation "Pair of entries"))
+  (:documentation "Horizontal set of entries."))

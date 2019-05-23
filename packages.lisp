@@ -2,8 +2,8 @@
 
 (in-package #:cl-user)
 
-(defpackage #:muso
-  (:use #:cl #:trivia))
-
-(defpackage #:muso-test
+(defpackage #:muso/test
   (:use #:muso))
+
+(defpackage #:muso/main
+  (:use #:cl))
