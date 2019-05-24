@@ -1,7 +1,5 @@
 ;;;; core.lisp
 
-(declaim (optimize (debug 3)))
-
 (uiop:define-package #:muso/core
     (:use #:cl
           #:trivia
@@ -247,8 +245,7 @@ be converted to a method."
 
 (defun uniques (column &key (selector #'first) (test #'string-equal))
   "Return the unique items from COLUMN."
-  (remove-duplicates (normalize-items (mapcar selector column))
-                     :test test))
+  (delete-duplicates (normalize-items (mapcar selector column)) :test test))
 
 (defun minimal-common-p (lcol rcol &key (selector #'first) (test #'string-equal))
   "Return true if there are common lines between LCOL and RCOL."
@@ -265,7 +262,7 @@ be converted to a method."
   (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
 (defun similarity (lcol rcol &key (selector #'first) (test #'string-equal))
-  "Return how simivlar are LCOL and RCOL."
+  "Return how similar are LCOL and RCOL."
   (let ((common (length (nintersection (mapcar selector lcol)
                                        (mapcar selector rcol)
                                        :test test)))
