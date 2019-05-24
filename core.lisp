@@ -260,12 +260,17 @@ be converted to a method."
   "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
   (append (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
+(defun map-nappend (fn sequence-1 sequence-2)
+  "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
+  (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
+
+;;; NOTE: optimize
 (defun similarity (lcol rcol &key (selector #'first) (test #'string-equal))
-  "Return how similar are LCOL and RCOL."
-  (let ((common (length (intersection (mapcar selector lcol)
-                                      (mapcar selector rcol)
-                                      :test test)))
-        (total (length (map-append selector lcol rcol))))
+  "Return how simivlar are LCOL and RCOL."
+  (let ((common (length (nintersection (mapcar selector lcol)
+                                       (mapcar selector rcol)
+                                       :test test)))
+        (total (length (map-nappend selector lcol rcol))))
     (* (/ common (/ total 1.0)) 100)))
 
 (defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil) (selector #'first))
