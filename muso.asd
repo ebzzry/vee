@@ -21,5 +21,4 @@
                #:trivia
                "muso/globals"
                "muso/classes"
-               "muso/core"
-               "muso/init"))
+               "muso/core"))

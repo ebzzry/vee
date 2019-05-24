@@ -1,11 +1,12 @@
 ;;;; core.lisp
 
+(declaim (optimize (debug 3)))
+
 (uiop:define-package #:muso/core
     (:use #:cl
           #:trivia
           #:muso/globals)
-  (:export #:*empty-entry*
-           #:read-source-file))
+  (:export #:read-file))
 
 (in-package #:muso/core)
 
@@ -21,8 +22,12 @@
       data)))
 
 (defun normalize (entry)
-  "Return a normalized version of an entry."
+  "Return a normalized version of ENTRY."
   (string-downcase entry))
+
+(defun normalize-items (column)
+  "Return normalized items from COLUMN."
+  (mapcar #'normalize column))
 
 (defun read-csv-string (string &optional (separator #\tab))
   "Read a CSV from string."
@@ -45,24 +50,24 @@
   "Return a string from items in LIST."
   (reduce #'mof:cat items))
 
-(defun join-n (items n)
+(defun join-n (items n &key (selector #'first))
   "Join strings from items with N count."
-  (join (take-if #'first items n)))
+  (join (take-if selector items n)))
 
 (defun join-next (items)
   "Join with the next item."
   (join-n items *join-limit*))
 
 (defun count-entries (column)
+  "Return the number of entries in column."
+  (length column))
+
+(defun count-entries-file (file)
   "Return the number of entries in COLUMN."
   (with-open-file (in column)
     (loop :for line = (read-line in nil)
           :while line
           :count line)))
-
-(defun count-entries-file (file)
-  "Return the number of entries in FILE."
-  (count-entries file))
 
 (defun max-column (column-1 column-2)
   "Return the bigger column between COLUMN-1 and COLUMN-2."
@@ -113,16 +118,38 @@
       (when (consp val)
         (first val)))))
 
-(defun clean-spacy-column (data)
-  "Remove extraneous entries in a spaCy source."
-  (remove-if #'(lambda (entry) (mof:empty-string-p (first entry))) data))
+(defun prefixedp (string prefixes)
+  "Return true if STRING is prefixed with PREFIX."
+  (member (elt string 0) prefixes))
 
-(defun read-source-file (file &optional (spacy nil))
+(defun underscoredp (string)
+  "Return true if STRING is prefixed with an underscore."
+  (prefixedp string '(#\ZERO_WIDTH_NO-BREAK_SPACE #\_)))
+
+(defun fix-column (column)
+  "Make corrections to entry due to the effects of file reading."
+  (destructuring-bind (head &rest body)
+      column
+    (destructuring-bind (h &rest b)
+        head
+      (if (underscoredp h)
+          (cons (cons (subseq h 1) b)
+                body)
+          column))))
+
+(defun clean-column (column)
+  "Remove extraneous entries in COLUMN."
+  (remove-if #'(lambda (entry)
+                 (some #'mof:empty-string-p entry))
+             column))
+
+(defun read-column-file (file)
   "Read source from file and perform clean-ups as necessary."
-  (let ((data (read-tsv-file file)))
-    (if spacy
-        (clean-spacy-column data)
-        data)))
+  (fix-column (clean-column (read-tsv-file file))))
+
+(defun read-file (&rest args)
+  "An alias to READ-COLUMN-FILE"
+  (apply #'read-column-file args))
 
 (defun separators (string)
   "Return the separator used in STRING."
@@ -145,13 +172,13 @@
   "Return the next item text in COLUMN."
   (second column))
 
-(defun current (column)
+(defun current (column &key (selector #'first))
   "Return the head of the curent item in COLUMN."
-  (first (current-entry column)))
+  (funcall selector (current-entry column)))
 
-(defun next (column)
+(defun next (column &key (selector #'first))
   "Return the head of the next item in COLUMN."
-  (first (next-entry column)))
+  (funcall selector (next-entry column)))
 
 (defun top (&rest args)
   "Return the top-most entry in column."
@@ -173,32 +200,9 @@ with the longer column, which is usually Y."
            (string= text-1 entry-2)
            (string-equal text-1 entry-2))))
 
-;;; Notes
-;;;
-;;; - When a hyphen-separated text is broken down, the hyphen is part of the
-;;;   breakdown.
-;;; - When a space-separated text is broken down, the space is not part of the
-;;;   breakdown.
-
-;;; Notes
-;;;
-;;; - Write the walker
-;;; - When a complete match is found, add entries to destination.
-;;; - When a partial match is found, check to see if the next item also matches.
-;;; - If text matches, create new entry to TSV list, then pop both columns.
-;;; - Empty strings will be used for blanks:
-;;;
-;;;   ("﻿NOTRE" "NNP" "﻿NOTRE-DAME" "PROPER-MODIFIER")
-;;;   ("-" "HYPH" "" "")
-;;;   ("DAME" "NN" "" "")
-
 (defun add (left right acc)
   "Add LEFT and RIGHT to ACC."
   (cons (append left right) acc))
-
-(defun add-top (left right acc)
-  "Add the top of LEFT and RIGHT to ACC."
-  (add (top left) (top right) acc))
 
 (defun advance (&rest items)
   "Return the other items from ITEMS. A wrapper around REST. This function will
@@ -221,49 +225,66 @@ be converted to a method."
                    (left (empty-left datum))
                    (right (empty-right datum)))))
 
-(defun merge-equal (ldata rdata)
+(defun merge-equal (lcol rcol)
   "Merge equal columns."
-  (assert (= (length ldata) (length rdata)) (ldata rdata))
-  (loop :for n :from 0 :to (length ldata)
-        :for (l1 l2) :in ldata
-        :for (r1 r2) :in rdata
+  (assert (= (length lcol) (length rcol)) (lcol rcol))
+  (loop :for n :from 0 :to (length lcol)
+        :for (l1 l2) :in lcol
+        :for (r1 r2) :in rcol
         :collect (list l1 l2 r1 r2)))
 
-(defun merge-columns (ldata rdata)
-  "Merge together the columns in LDATA and RDATA."
-  (let ((length-1 (length ldata))
-        (length-2 (length rdata)))
-    (cond ((= length-1 length-2) (merge-equal ldata rdata))
+(defun merge-columns (lcol rcol)
+  "Merge together the columns in LCOL and RCOL."
+  (let ((length-1 (length lcol))
+        (length-2 (length rcol)))
+    (cond ((= length-1 length-2) (merge-equal lcol rcol))
           ((< length-1 length-2)
-           (append (merge-equal ldata (subseq rdata 0 length-1))
-                   (fill-blanks (subseq rdata (1- length-1)) 'left)))
+           (append (merge-equal lcol (subseq rcol 0 length-1))
+                   (fill-blanks (subseq rcol (1- length-1)) 'left)))
           (t
-           (append (merge-equal (subseq ldata 0 length-2) rdata)
-                   (fill-blanks (subseq ldata (1- length-2)) 'right))))))
+           (append (merge-equal (subseq lcol 0 length-2) rcol)
+                   (fill-blanks (subseq lcol (1- length-2)) 'right))))))
 
-(defun remove-leading-garbage (column)
-  "Remove leading information that is not needed from column."
-  column)
+(defun uniques (column &key (selector #'first) (test #'string-equal))
+  "Return the unique items from COLUMN."
+  (remove-duplicates (normalize-items (mapcar selector column))
+                     :test test))
 
-(defun walk (ldata rdata acc &key (lcarry nil) (rcarry nil))
+(defun minimal-common-p (lcol rcol &key (selector #'first) (test #'string-equal))
+  "Return true if there are common lines between LCOL and RCOL."
+  (flet ((fn (data) (uniques data :test test)))
+    (when (intersection (fn lcol) (fn rcol) :test test)
+      t)))
+
+(defun map-append (fn sequence-1 sequence-2)
+  "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
+  (append (mapcar fn sequence-1) (mapcar fn sequence-2)))
+
+(defun similarity (lcol rcol &key (selector #'first) (test #'string-equal))
+  "Return how similar are LCOL and RCOL."
+  (let ((common (length (intersection (mapcar selector lcol)
+                                      (mapcar selector rcol)
+                                      :test test)))
+        (total (length (map-append selector lcol rcol))))
+    (* (/ common (/ total 1.0)) 100)))
+
+(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil) (selector #'first))
   "Walk through the columns and build value."
-  (let ((lhead (or lcarry (current ldata)))
-        (rhead (or rcarry (current rdata))))
-    ;; NOTE: the usual case is that LDATA is longer than RDATA, so that LDATA
-    ;;       will serve as the wall
+  (let ((lhead (or lcarry (current lcol)))
+        (rhead (or rcarry (current rcol))))
     (cond
       ;; NOTE: handle cases wherein one of the data columns is already null
       ;; NOTE: this means that one of the coulmns still has trailing data
 
-      ;; NOTE: complete the length of rdata. This will be the amount of empty
+      ;; NOTE: complete the length of rcol. This will be the amount of empty
       ;; entries that will be added on the left side, to acc, which will then be
       ;; returned
-      ((null ldata)
-       (let ((rlength (length rdata)))
+      ((null lcol)
+       (let ((rlength (length rcol)))
          ;; FIXME
          rlength))
 
-      ((and (null ldata) (null rdata))
+      ((and (null lcol) (null rcol))
        (nreverse acc))
 
       ;; NOTE: The amount of look ahead is the amount of pair combinations
@@ -273,13 +294,13 @@ be converted to a method."
       ;;       column
 
       ;; complete
-      ;; When both LHEAD and RHEAD match, they must be matching. Both LDATA
-      ;; and RDATA will move. LCARRY and RCARRY must be cleared out while
+      ;; When both LHEAD and RHEAD match, they must be matching. Both LCOL
+      ;; and RCOL will move. LCARRY and RCARRY must be cleared out while
       ;; advancing.
       ((complete-match-p lhead rhead)
-       (walk (advance ldata)
-             (advance rdata)
-             (add (top ldata) (top rdata) acc)
+       (walk (advance lcol)
+             (advance rcol)
+             (add (top lcol) (top rcol) acc)
              :lcarry nil
              :rcarry nil))
 
@@ -295,11 +316,11 @@ be converted to a method."
       ;;       not match
 
       ((and (partial-match-p lhead rhead)
-            (partial-match-p (join-next ldata) rhead))
-       (walk (advance (advance ldata))
-             rdata
+            (partial-match-p (join-next lcol) rhead))
+       (walk (advance (advance lcol))
+             rcol
              acc
-             :lcarry (join-next ldata)
+             :lcarry (join-next lcol)
              :rcarry nil))
 
       ;; and partial complete
@@ -311,12 +332,12 @@ be converted to a method."
       ;; NOTE: how is this condition different from the one above?
 
       ((and (partial-match-p lhead rhead)
-            (complete-match-p (join-next ldata) rhead))
+            (complete-match-p (join-next lcol) rhead))
        ;; TODO: verify for correctness
-       (walk (advance (advance ldata))
-             rdata
+       (walk (advance (advance lcol))
+             rcol
              acc
-             :lcarry (join-next ldata)
+             :lcarry (join-next lcol)
              :rcarry nil))
 
       ;; inverse and partial partial
@@ -384,6 +405,19 @@ etc."
 ;;; - Use a selector when specifying the key when specifying the TSVs
 ;;; - By default it is the first item
 
+(defun first-lines (lcol rcol)
+  "Return the first column sets that are common."
+  nil)
+
+(defun extract (column key)
+  "Extract data from COLUMN using KEY."
+  nil)
+
 ;;; Notes
 ;;;
-;;; - Convert to a generic delimiter library
+;;; - At what part should I start aligning, wherein no information will be lost
+
+
+;;; Notes
+;;;
+;;; - Write a function that computes the percentage of commonality.

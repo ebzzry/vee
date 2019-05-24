@@ -101,3 +101,26 @@ supersets the other set.
 
 Unless, it can be clearly stated that one source is generally longer than
 the other.
+
+
+Notes
+-----
+
+- When a hyphen-separated text is broken down, the hyphen is part of the
+  breakdown.
+- When a space-separated text is broken down, the space is not part of the
+  breakdown.
+
+
+Notes
+-----
+
+- Write the walker
+- When a complete match is found, add entries to destination.
+- When a partial match is found, check to see if the next item also matches.
+- If text matches, create new entry to TSV list, then pop both columns.
+- Empty strings will be used for blanks:
+
+    ("﻿NOTRE" "NNP" "﻿NOTRE-DAME" "PROPER-MODIFIER")
+    ("-" "HYPH" "" "")
+    ("DAME" "NN" "" "")
