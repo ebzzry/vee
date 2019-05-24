@@ -264,7 +264,6 @@ be converted to a method."
   "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
   (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
-;;; NOTE: optimize
 (defun similarity (lcol rcol &key (selector #'first) (test #'string-equal))
   "Return how simivlar are LCOL and RCOL."
   (let ((common (length (nintersection (mapcar selector lcol)
