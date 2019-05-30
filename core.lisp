@@ -39,11 +39,11 @@
   (format nil "~{~a~^	~}" list))
 
 (defmacro defselectors (limit)
-  "Define selectors."
-  `(progn
-     ,@(loop :for n :from 0 :to limit
-             :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
-             :collect `(defun ,name (list) (elt list ,n)))))
+    "Define selectors."
+    `(progn
+       ,@(loop :for n :from 0 :to limit
+               :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
+               :collect `(defun ,name (list) (elt list ,n)))))
 (defselectors 1000)
 
 (defun join (items)
@@ -64,7 +64,7 @@
 
 (defun count-entries-file (file)
   "Return the number of entries in COLUMN."
-  (with-open-file (in column)
+  (with-open-file (in file)
     (loop :for line = (read-line in nil)
           :while line
           :count line)))
@@ -189,8 +189,7 @@
   (cl-ppcre:regex-replace-all "\\s+" string ""))
 
 (defun partial-match-p (text-1 text-2)
-  "Return true if X is a partial match against Y. String compaction will happen
-with the longer column, which is usually Y."
+  "Return true if X is a partial match against Y. String compaction will happen with the longer column, which is usually Y."
   (strict-substring-p (compact-string text-1) (compact-string text-2)))
 
 (defun complete-match-p (text-1 entry-2 &key (case-sensitive nil))
@@ -205,8 +204,7 @@ with the longer column, which is usually Y."
   (cons (append left right) acc))
 
 (defun advance (&rest items)
-  "Return the other items from ITEMS. A wrapper around REST. This function will
-be converted to a method."
+  "Return the other items from ITEMS. A wrapper around REST. This function will be converted to a method."
   (apply #'rest items))
 
 (defun empty-left (datum)
@@ -271,7 +269,7 @@ be converted to a method."
         (total (length (map-nappend selector lcol rcol))))
     (* (/ common (/ total 1.0)) 100)))
 
-(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil) (selector #'elt0))
+(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil))
   "Walk through the columns and build value."
   (let ((lhead (or lcarry (current-head lcol)))
         (rhead (or rcarry (current-head rcol))))
@@ -351,16 +349,17 @@ be converted to a method."
       (t nil))))
 
 (defun stats ()
-  "Display information about similarities, differences, holes, inconsistencies,
-etc."
+  "Display information about similarities, differences, holes, inconsistencies,etc."
   nil)
 
 (defun first-lines (lcol rcol)
   "Return the first column sets that are common."
+  (declare (ignorable lcol rcol))
   nil)
 
 (defun extract (column key)
   "Extract data from COLUMN using KEY."
+  (declare (ignorable column key))
   nil)
 
 ;;; Notes
@@ -389,19 +388,61 @@ etc."
 
 ;;; Notes
 ;;;
-;;; - Design a scheme for properly instantiating the classes
-;;; - Handle the case wherein there are no matches at all
+;;; - At what part should I start aligning, wherein no information will be lost
 ;;; - Handle garbage
 
-;;; Notes
-;;;
-;;; - At what part should I start aligning, wherein no information will be lost
+(defun reset-id ()
+  "Reset the original value of *ID*"
+  (setf *id* *initial-id*)
+  (values))
 
-;;; Notes
-;;;
-;;; - Instantiate data
-;;; - Make connections
-;;; - Find proper locations to instantiate
-;;; - Should all data transactions go through the methods and classes?
-;;; - Use a selector when specifying the key when specifying the TSVs
-;;; - By default it is the first item
+(defun make-register ()
+  "Create an instance of the register class."
+  (make-instance 'register))
+
+(defun make-entry (val prev next)
+  "Create an instance of the entry class."
+  (make-instance 'entry :id (incf *id*) :val val :prev prev :next next))
+
+(defgeneric reset-counter (register)
+  (:documentation "Reset the counter found in register."))
+(defmethod reset-counter ((r register))
+  (setf (counter r) *initial-counter*))
+
+(defgeneric gen-counter (register)
+  (:documentation "Generate a new counter value from REGISTER."))
+(defmethod gen-counter ((r register))
+  (incf (counter r))
+  (counter r))
+
+(defgeneric add-entry (entry register)
+  (:documentation "Add entry to register"))
+(defmethod add-entry ((e entry) (r register))
+  (setf (gethash (counter r) (table r)) e))
+
+(defun pad-column (column &optional (pad ""))
+  "Add starting and ending padding for column based on the first element."
+  (let* ((initial (elt0 column))
+         (length (length initial))
+         (pad (make-list length :initial-element pad)))
+    (append (list pad) column (list pad))))
+
+(defparameter *register* (make-register)
+  "Initialize the global register.")
+
+(defun add-entries (column register)
+  "Add entries from COLUMN."
+  (let ((col (pad-column column)))
+    (loop :for prev :in col
+          :for curr :in (rest col)
+          :for next :in (rest (rest col))
+          :do (add-entry (make-instance 'entry :id (gen-counter register)
+                                               :prev prev :curr curr :next next)
+                         *register*))))
+
+(defgeneric dump-table (register)
+  (:documentation "Dump the contents of table from REGISTER."))
+(defmethod dump-table ((r register))
+  (maphash #'(lambda (k v)
+               (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (column v))))
+           (table r)))
