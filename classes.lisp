@@ -2,10 +2,10 @@
 
 (in-package #:muso/core)
 
-(defclass register ()
+(defclass registry ()
   ((counter :initarg :counter :initform *initial-counter* :accessor counter)
    (table :initarg :table :initform (make-hash-table :test #'equal) :accessor table))
-  (:documentation "The global register."))
+  (:documentation "The global registry."))
 
 (defclass entry ()
   ((id :initarg :id :initform -1 :reader id)

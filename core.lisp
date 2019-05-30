@@ -391,28 +391,28 @@
 ;;; - At what part should I start aligning, wherein no information will be lost
 ;;; - Handle garbage
 
-(defun make-register ()
-  "Create an instance of the register class."
-  (make-instance 'register))
+(defun make-registry ()
+  "Create an instance of the registry class."
+  (make-instance 'registry))
 
 (defun make-entry (val prev next)
   "Create an instance of the entry class."
   (make-instance 'entry :id (incf *id*) :val val :prev prev :next next))
 
-(defgeneric reset-counter (register)
-  (:documentation "Reset the counter found in register."))
-(defmethod reset-counter ((r register))
+(defgeneric reset-counter (registry)
+  (:documentation "Reset the counter found in registry."))
+(defmethod reset-counter ((r registry))
   (setf (counter r) *initial-counter*))
 
-(defgeneric gen-counter (register)
-  (:documentation "Generate a new counter value from REGISTER."))
-(defmethod gen-counter ((r register))
+(defgeneric gen-counter (registry)
+  (:documentation "Generate a new counter value from REGISTRY."))
+(defmethod gen-counter ((r registry))
   (incf (counter r))
   (counter r))
 
-(defgeneric add-entry (entry register)
-  (:documentation "Add entry to register"))
-(defmethod add-entry ((e entry) (r register))
+(defgeneric add-entry (entry registry)
+  (:documentation "Add entry to registry"))
+(defmethod add-entry ((e entry) (r registry))
   (setf (gethash (counter r) (table r)) e))
 
 (defun pad-column (column &optional (pad ""))
@@ -422,22 +422,22 @@
          (pad (make-list length :initial-element pad)))
     (append (list pad) column (list pad))))
 
-(defparameter *register* (make-register)
-  "Initialize the global register.")
+(defparameter *registry* (make-registry)
+  "Initialize the global registry.")
 
-(defun add-entries (column register)
+(defun add-entries (column registry)
   "Add entries from COLUMN."
   (let ((col (pad-column column)))
     (loop :for prev :in col
           :for curr :in (rest col)
           :for next :in (rest (rest col))
-          :do (add-entry (make-instance 'entry :id (gen-counter register)
+          :do (add-entry (make-instance 'entry :id (gen-counter registry)
                                                :prev prev :curr curr :next next)
-                         *register*))))
+                         *registry*))))
 
-(defgeneric dump-table (register)
-  (:documentation "Dump the contents of table from REGISTER."))
-(defmethod dump-table ((r register))
+(defgeneric dump-table (registry)
+  (:documentation "Dump the contents of table from REGISTRY."))
+(defmethod dump-table ((r registry))
   (maphash #'(lambda (k v)
                (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (column v))))
            (table r)))
