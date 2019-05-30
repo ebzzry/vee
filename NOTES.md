@@ -124,3 +124,22 @@ Notes
     ("﻿NOTRE" "NNP" "﻿NOTRE-DAME" "PROPER-MODIFIER")
     ("-" "HYPH" "" "")
     ("DAME" "NN" "" "")
+
+
+Legend
+------
+
+- Entry
+  + The smallest unit of information
+  + It contains information about a text, like POS, UD, etc
+
+- Column
+  + A list of entries
+  + It must have a uniform size
+
+- Connection
+   + The linkage between columns
+
+- Grouping
+  + A horizontal set of entries across columns
+

@@ -2,8 +2,12 @@
 
 (in-package #:cl-user)
 
-(defpackage #:muso/test
-  (:use #:muso))
+(uiop:define-package #:muso/core
+    (:use #:cl
+          #:trivia)
+  (:export #:read-file))
 
-(defpackage #:muso/main
-  (:use #:cl))
+(uiop:define-package #:muso/tests
+    (:use #:muso/core)
+  ;; (:export #:run-tests)
+  )

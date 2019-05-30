@@ -1,12 +1,6 @@
 ;;;; globals.lisp
 
-(uiop:define-package #:muso/globals
-    (:use #:cl #:trivia)
-  (:export #:*threshold*
-           #:*join-limit*
-           #:*empty-entry*))
-
-(in-package #:muso/globals)
+(in-package #:muso/core)
 
 (defvar *threshold* 5
   "The amount of lines to consider when trying to perform resoultion, backwards
@@ -20,3 +14,6 @@
 
 (defvar *similarity-threshold* 40.0
   "The minimum amount of similarity between sets so that they can be considered similar.")
+
+(defvar *initial-id* 1000
+  "The starting id for the entries.")

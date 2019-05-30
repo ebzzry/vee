@@ -1,11 +1,5 @@
 ;;;; core.lisp
 
-(uiop:define-package #:muso/core
-    (:use #:cl
-          #:trivia
-          #:muso/globals)
-  (:export #:read-file))
-
 (in-package #:muso/core)
 
 (defun slurp-file (path)
@@ -23,9 +17,9 @@
   "Return a normalized version of ENTRY."
   (string-downcase entry))
 
-(defun normalize-items (column)
+(defun normalize-items (subcol)
   "Return normalized items from COLUMN."
-  (mapcar #'normalize column))
+  (mapcar #'normalize subcol))
 
 (defun read-csv-string (string &optional (separator #\tab))
   "Read a CSV from string."
@@ -44,11 +38,19 @@
   "Returns items in LIST as tab-separated values."
   (format nil "~{~a~^	~}" list))
 
+(defmacro defselectors (limit)
+  "Define selectors."
+  `(progn
+     ,@(loop :for n :from 0 :to limit
+             :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
+             :collect `(defun ,name (list) (elt list ,n)))))
+(defselectors 1000)
+
 (defun join (items)
   "Return a string from items in LIST."
   (reduce #'mof:cat items))
 
-(defun join-n (items n &key (selector #'first))
+(defun join-n (items n &key (selector #'elt0))
   "Join strings from items with N count."
   (join (take-if selector items n)))
 
@@ -97,7 +99,7 @@
         :while (< n limit)
         :collect (funcall fn s)))
 
-(defun peek (column limit &key (selector #'first))
+(defun peek (column limit &key (selector #'elt0))
   "Return a string formed by looking ahead LIMIT number of entries in COLUMN."
   (mof:join-strings (mapcar selector (take (read-tsv-string column) limit))))
 
@@ -170,11 +172,11 @@
   "Return the next item text in COLUMN."
   (second column))
 
-(defun current (column &key (selector #'first))
+(defun current-head (column &key (selector #'elt0))
   "Return the head of the curent item in COLUMN."
   (funcall selector (current-entry column)))
 
-(defun next (column &key (selector #'first))
+(defun next-head (column &key (selector #'elt0))
   "Return the head of the next item in COLUMN."
   (funcall selector (next-entry column)))
 
@@ -243,13 +245,13 @@ be converted to a method."
            (append (merge-equal (subseq lcol 0 length-2) rcol)
                    (fill-blanks (subseq lcol (1- length-2)) 'right))))))
 
-(defun uniques (column &key (selector #'first) (test #'string-equal))
+(defun uniques (column &key (selector #'elt0) (test #'string-equal))
   "Return the unique items from COLUMN."
   (delete-duplicates (normalize-items (mapcar selector column)) :test test))
 
-(defun minimal-common-p (lcol rcol &key (selector #'first) (test #'string-equal))
+(defun minimal-common-p (lcol rcol &key (selector #'elt0) (test #'string-equal))
   "Return true if there are common lines between LCOL and RCOL."
-  (flet ((fn (data) (uniques data :test test)))
+  (flet ((fn (data) (uniques data :selector selector :test test)))
     (when (intersection (fn lcol) (fn rcol) :test test)
       t)))
 
@@ -261,18 +263,18 @@ be converted to a method."
   "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
   (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
-(defun similarity (lcol rcol &key (selector #'first) (test #'string-equal))
-  "Return how similar are LCOL and RCOL."
+(defun similarity (lcol rcol &key (selector #'elt0) (test #'string-equal))
+  "Return in % how similar are LCOL and RCOL."
   (let ((common (length (nintersection (mapcar selector lcol)
                                        (mapcar selector rcol)
                                        :test test)))
         (total (length (map-nappend selector lcol rcol))))
     (* (/ common (/ total 1.0)) 100)))
 
-(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil) (selector #'first))
+(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil) (selector #'elt0))
   "Walk through the columns and build value."
-  (let ((lhead (or lcarry (current lcol)))
-        (rhead (or rcarry (current rcol))))
+  (let ((lhead (or lcarry (current-head lcol)))
+        (rhead (or rcarry (current-head rcol))))
     (cond
       ;; NOTE: handle cases wherein one of the data columns is already null
       ;; NOTE: this means that one of the coulmns still has trailing data
@@ -348,6 +350,19 @@ be converted to a method."
       ;; TODO: describe fallback
       (t nil))))
 
+(defun stats ()
+  "Display information about similarities, differences, holes, inconsistencies,
+etc."
+  nil)
+
+(defun first-lines (lcol rcol)
+  "Return the first column sets that are common."
+  nil)
+
+(defun extract (column key)
+  "Extract data from COLUMN using KEY."
+  nil)
+
 ;;; Notes
 ;;;
 ;;; - A column will only move when it is done processing
@@ -378,47 +393,15 @@ be converted to a method."
 ;;; - Handle the case wherein there are no matches at all
 ;;; - Handle garbage
 
-(defun stats ()
-  "Display information about similarities, differences, holes, inconsistencies,
-etc."
-  nil)
-
-;;; Legend
-;;;
-;;; - Entry
-;;;   + The smallest unit of information
-;;;   + It contains information about a text, like POS, UD, etc
-;;;
-;;; - Column
-;;;   + A list of entries
-;;;   + It must have a uniform size
-;;;
-;;; - Connection
-;;;    + The linkage between columns
-;;;
-;;; - Grouping
-;;;   + A horizontal set of entries across columns
-
-;;; Notes
-;;;
-;;; - Find proper locations to instantiate
-;;; - Should all data transactions go through the methods and classes?
-;;; - Use a selector when specifying the key when specifying the TSVs
-;;; - By default it is the first item
-
-(defun first-lines (lcol rcol)
-  "Return the first column sets that are common."
-  nil)
-
-(defun extract (column key)
-  "Extract data from COLUMN using KEY."
-  nil)
-
 ;;; Notes
 ;;;
 ;;; - At what part should I start aligning, wherein no information will be lost
 
-
 ;;; Notes
 ;;;
-;;; - Write a function that computes the percentage of commonality.
+;;; - Instantiate data
+;;; - Make connections
+;;; - Find proper locations to instantiate
+;;; - Should all data transactions go through the methods and classes?
+;;; - Use a selector when specifying the key when specifying the TSVs
+;;; - By default it is the first item

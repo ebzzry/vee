@@ -1,56 +1,40 @@
 ;;;; classes.lisp
 
-(uiop:define-package #:muso/classes
-    (:use #:cl
-          #:trivia
-          #:muso/globals))
+(in-package #:muso/core)
 
-(in-package #:muso/classes)
+;;; hash table:
+;;; key: data id
+;;; val: data instance
 
-(defclass entry ()
+(defclass data ()
   ((id :initarg :id
        :initform -1
-       :accessor id)
-   (text :initarg :text
-         :initform nil
-         :accessor text)
-   (pos :initarg :pos
+       :reader id)
+   (val :initarg :val
         :initform nil
-        :accessor pos)
-   (dep :initarg :dep
-        :initform nil
-        :accessor dep))
-  (:documentation "Information about entries."))
+        :reader val))
+  (:documentation ""))
 
-(defclass column (entry)
+(defclass entry (data)
   ((prev :initarg prev
          :initform nil
-         :accessor prev)
+         :reader prev)
    (curr :initarg curr
-        :initform nil
-        :accessor curr)
+         :initform nil
+         :reader curr)
    (next :initarg next
+         :initform nil
+         :reader next))
+  (:documentation "Points to entries inside a column."))
+
+(defclass column ()
+  ((left :initarg left
+         :initform nil
+         :reader left)
+   (mid :initarg mid
+        :initform nil
+        :reader mid)
+   (right :initarg right
           :initform nil
-          :accessor next))
-  (:documentation "Linkage between entries."))
-
-(defclass connection (entry)
-  ((left :initarg :left
-         :initform nil
-         :accessor left)
-   (mid :initarg :mid
-         :initform nil
-         :accessor mid)
-   (right :initarg :right
-         :initform nil
-         :accessor right))
-  (:documentation "Linkage between columns."))
-
-(defclass grouping (entry)
-  ((ldata :initarg ldata
-          :initform *empty-entry*
-          :accessor ldata)
-   (rdata :initarg rdata
-          :initform *empty-entry*
-          :initarg rdata))
-  (:documentation "Horizontal set of entries."))
+          :reader right))
+  (:documentation ""))
