@@ -273,10 +273,6 @@
   "Create an instance of the registry class."
   (make-instance 'registry))
 
-(defun make-entry (val prev next)
-  "Create an instance of the entry class."
-  (make-instance 'entry :id (incf *id*) :val val :prev prev :next next))
-
 (defgeneric reset-counter (registry)
   (:documentation "Reset the counter found in registry."))
 (defmethod reset-counter ((r registry))
@@ -303,19 +299,30 @@
 (defparameter *registry* (make-registry)
   "Initialize the global registry.")
 
+(defgeneric reset-registry (registry)
+  (:documentation "Reset the contents of registry."))
+(defmethod reset-registry ((r registry))
+  (setf (counter r) *initial-counter*)
+  (setf (table r) (make-hash-table))
+  (values))
+
+(defgeneric dump-registry (registry)
+  (:documentation "Dump the contents of table from REGISTRY."))
+(defmethod dump-registry ((r registry))
+  (maphash #'(lambda (k v)
+               (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (column v))))
+           (table r)))
+
+(defun make-entry (id prev curr next)
+  "Create an instance of the entry class."
+  (make-instance 'entry :id id :prev prev :curr curr :next next))
+
 (defun add-entries (column registry)
   "Add entries from COLUMN."
   (let ((col (pad-column column)))
     (loop :for prev :in col
           :for curr :in (rest col)
           :for next :in (rest (rest col))
-          :do (add-entry (make-instance 'entry :id (gen-counter registry)
-                                               :prev prev :curr curr :next next)
-                         *registry*))))
-
-(defgeneric dump-table (registry)
-  (:documentation "Dump the contents of table from REGISTRY."))
-(defmethod dump-table ((r registry))
-  (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (column v))))
-           (table r)))
+          :do (add-entry (make-entry (gen-counter registry) prev curr next)
+                         registry))
+    (values)))

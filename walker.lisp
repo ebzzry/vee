@@ -2,6 +2,39 @@
 
 (in-package #:muso/core)
 
+;;; Notes
+;;;
+;;; - A column will only move when it is done processing
+;;; - Insert the previous head into the next head?
+;;; - There is a partial match if and only if the current tips match and merging
+;;;   with the next entry is either a partial or complete match ***
+;;; - The entries themselves will be put to the accumulator, however, it is only
+;;;   the text that will be compared.
+
+;;; Notes
+;;;
+;;; - Whenever a join is made on one side, an empty pair is created on the other
+;;;   side
+;;; - So, it’s viable that they both move, but an empty entry will be created
+;;; - When a ‘move’ is made, no destructive modifications are made to any of the
+;;;   coulmns
+;;; - Should a partially matching text be carried and built forward until it either
+;;;   matches or longer matches?
+
+;;; Notes
+;;;
+;;; - Build a new column where the first two items are joined
+;;; - At the moment, the walker will only work with two simultaneous columns
+
+;;; Notes
+;;;
+;;; - At what part should I start aligning, wherein no information will be lost
+;;; - Handle garbage
+
+;;; Notes
+;;;
+;;; - Inspect PREV and NEXT
+
 (defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil))
   "Walk through the columns and build value."
   (let ((lhead (or lcarry (current-head lcol)))
@@ -84,32 +117,3 @@
 (defun stats ()
   "Display information about similarities, differences, holes, inconsistencies,etc."
   nil)
-
-;;; Notes
-;;;
-;;; - A column will only move when it is done processing
-;;; - Insert the previous head into the next head?
-;;; - There is a partial match if and only if the current tips match and merging
-;;;   with the next entry is either a partial or complete match ***
-;;; - The entries themselves will be put to the accumulator, however, it is only
-;;;   the text that will be compared.
-
-;;; Notes
-;;;
-;;; - Whenever a join is made on one side, an empty pair is created on the other
-;;;   side
-;;; - So, it’s viable that they both move, but an empty entry will be created
-;;; - When a ‘move’ is made, no destructive modifications are made to any of the
-;;;   coulmns
-;;; - Should a partially matching text be carried and built forward until it either
-;;;   matches or longer matches?
-
-;;; Notes
-;;;
-;;; - Build a new column where the first two items are joined
-;;; - At the moment, the walker will only work with two simultaneous columns
-
-;;; Notes
-;;;
-;;; - At what part should I start aligning, wherein no information will be lost
-;;; - Handle garbage

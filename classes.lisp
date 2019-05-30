@@ -4,7 +4,7 @@
 
 (defclass registry ()
   ((counter :initarg :counter :initform *initial-counter* :accessor counter)
-   (table :initarg :table :initform (make-hash-table :test #'equal) :accessor table))
+   (table :initarg :table :initform (make-hash-table) :accessor table))
   (:documentation "The global registry."))
 
 (defclass entry ()
