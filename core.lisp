@@ -391,11 +391,6 @@
 ;;; - At what part should I start aligning, wherein no information will be lost
 ;;; - Handle garbage
 
-(defun reset-id ()
-  "Reset the original value of *ID*"
-  (setf *id* *initial-id*)
-  (values))
-
 (defun make-register ()
   "Create an instance of the register class."
   (make-instance 'register))

@@ -14,14 +14,8 @@
 (defvar *similarity-threshold* 40.0
   "The minimum amount of similarity between sets so that they can be considered similar.")
 
-(defvar *initial-id* 1000
-  "The initial value of *ID*")
-
 (defvar *initial-counter* 1000
   "The initial counter value")
-
-(defvar *id* *initial-id*
-  "The running id for the entries.")
 
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")
