@@ -60,10 +60,12 @@
                (format t "~S => ~S~%" k (list (cid v) (cstart v) (cend v) (cleft v) (cright v))))
            (ctable r)))
 
-;;; Note: loop over RCOUNTER and RTABLE
 (defun dump-world ()
   "Dump the contents of the world."
-  nil)
+  (let ((registries (loop :for v :being :the :hash-values :in (rtable *world*)
+                          :collect v)))
+    (loop :for registry :in registries
+          :do (dump-registry registry))))
 
 (defgeneric add-entry (entry registry)
   (:documentation "Add ENTRY to REGISTRY."))

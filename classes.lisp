@@ -42,6 +42,7 @@
            :documentation "The global column table."))
   (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different data dataset comparisons."))
 
+;;; Note: add RID slot?
 (defclass column ()
   ((cid :initarg :cid
         :initform nil
