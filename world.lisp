@@ -53,11 +53,13 @@
 (defmethod dump-registry ((r registry))
   (format t "** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k (list (cid v) (id v) (prev v) (curr v) (next v))))
+               (format t "~S => ~S~%" k
+                       (list (cid v) (id v) (prev v) (curr v) (next v))))
            (table r))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k (list (cid v) (cstart v) (cend v) (cleft v) (cright v))))
+               (format t "~S => ~S~%" k
+                       (list (cid v) (cstart v) (cend v) (cleft v) (cright v))))
            (ctable r)))
 
 (defun dump-world ()
@@ -95,9 +97,9 @@
   "Create an instance of the entry class."
   (make-instance 'entry :cid cid :id id :prev prev :curr curr :next next))
 
-(defun make-column (cid cstart cend &optional (cleft -1) (cright -1))
+(defun make-column (rid cid cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
-  (make-instance 'column :cid cid :cstart cstart :cend cend :cleft cleft :cright cright))
+  (make-instance 'column :rid rid :cid cid :cstart cstart :cend cend :cleft cleft :cright cright))
 
 (defun make-registry (rid rname)
   "Create an instance of the registry class."
@@ -124,7 +126,7 @@
          (length (length feed))
          (start (1+ (counter registry)))
          (end (1- (+ start length)))
-         (column (make-column (spawn-ccounter registry) start end)))
+         (column (make-column (rid registry) (spawn-ccounter registry) start end)))
     (add-column column registry)
     (loop :for prev :in pillar
           :for curr :in (rest pillar)
