@@ -22,7 +22,7 @@
   :components ((:file "packages")
                (:file "globals")
                (:file "classes")
-               (:file "core")
+               (:file "common")
                (:file "registry")
                (:file "walker")
                (:file "tests")))

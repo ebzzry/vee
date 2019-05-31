@@ -79,7 +79,7 @@
   (make-instance 'column :cid cid :cstart cstart :cend cend :cleft cleft :cright :cright))
 
 (defun add-entries (feed registry)
-  "Add items from FEED to REGISTRY, creating column and entry objects and updating the registry.r"
+  "Add items from FEED to REGISTRY, creating column and entry objects and updating the registry."
   (let* ((pillar (pad-feed feed))
          (length (length feed))
          (start (1+ (counter registry)))

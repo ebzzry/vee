@@ -1,4 +1,4 @@
-;;;; core.lisp
+;;;; common.lisp
 
 (in-package #:muso/core)
 
