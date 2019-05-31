@@ -19,7 +19,7 @@
            :initform (make-hash-table)
            :accessor ctable
            :documentation "The global column table."))
-  (:documentation "The global registry."))
+  (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries."))
 
 (defclass column ()
   ((cid :initarg :cid
@@ -42,7 +42,7 @@
            :initform -1
            :reader cright
            :documentation "The column to the cright of the current one."))
-  (:documentation "Links between columns. An instance of ‘feed’."))
+  (:documentation "Information about the range of entries that it contains. It may also contain links to other columns inside a registry."))
 
 (defclass entry ()
   ((cid :initarg :cid
@@ -65,4 +65,4 @@
          :initform nil
          :reader next
          :documentation "The next entry in a column."))
-  (:documentation "Entries relative to a column. An instance of ‘item’."))
+  (:documentation "Information about individual entries usually coming in from a delimited source."))
