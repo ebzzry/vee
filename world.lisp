@@ -59,7 +59,7 @@
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
                (format t "~S => ~S~%" k
-                       (list (cid v) (cstart v) (cend v) (cleft v) (cright v))))
+                       (list (rid v) (cid v) (cstart v) (cend v) (cleft v) (cright v))))
            (ctable r)))
 
 (defun dump-world ()
@@ -133,7 +133,6 @@
           :for next :in (rest (rest pillar))
           :do (add-entry (make-entry (cid column) (spawn-counter registry) prev curr next)
                          registry))
-    ;; Note: because a registry object is returned, chaining of calls is possible
     registry))
 
 (defgeneric find-registry (query)
