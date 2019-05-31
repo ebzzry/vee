@@ -170,10 +170,6 @@
   "Return the head of the next item in FEED."
   (funcall selector (next-item feed)))
 
-(defun top (&rest args)
-  "Return the top-most item in feed."
-  (apply #'current-item args))
-
 (defun compact-string (string)
   "Return a new string without whitespaces."
   (cl-ppcre:regex-replace-all "\\s+" string ""))
@@ -240,11 +236,11 @@
       t)))
 
 (defun map-append (fn sequence-1 sequence-2)
-  "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
+  "Apply APPEND to the result of applying FN to sequence-1 and sequence-2."
   (append (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
 (defun map-nappend (fn sequence-1 sequence-2)
-  "Apply APPEND to the resultr of applying FN to sequence-1 and sequence-2."
+  "Apply NCONC to the result of applying FN to sequence-1 and sequence-2."
   (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
 (defun similarity (lcol rcol &key (selector #'elt0) (test #'string-equal))

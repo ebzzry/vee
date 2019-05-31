@@ -28,18 +28,6 @@
   (incf (ccounter r))
   (ccounter r))
 
-(defgeneric add-entry (entry registry)
-  (:documentation "Add entry to registry"))
-(defmethod add-entry ((e entry) (r registry))
-  (setf (gethash (counter r) (table r)) e)
-  (values))
-
-(defgeneric add-column (column registry)
-  (:documentation "Add column to registry"))
-(defmethod add-column ((c column) (r registry))
-  (setf (gethash (ccounter r) (ctable r)) c)
-  (values))
-
 (defun pad-feed (feed &optional (pad ""))
   "Add starting and ending padding for column based on the first element."
   (let* ((initial (elt0 feed))
@@ -61,14 +49,28 @@
   (values))
 
 (defgeneric dump-registry (registry)
-  (:documentation "Dump the contents of table from REGISTRY."))
+  (:documentation "Dump the contents of the tables from REGISTRY."))
 (defmethod dump-registry ((r registry))
+  (format t "** ENTRIES~%")
   (maphash #'(lambda (k v)
                (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (cid v))))
            (table r))
+  (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k v))
+               (format t "~S => ~S~%" k (list (cid v) (cstart v) (cend v) (cleft v) (cright v))))
            (ctable r)))
+
+(defgeneric add-entry (entry registry)
+  (:documentation "Add entry to registry"))
+(defmethod add-entry ((e entry) (r registry))
+  (setf (gethash (counter r) (table r)) e)
+  (values))
+
+(defgeneric add-column (column registry)
+  (:documentation "Add column to registry"))
+(defmethod add-column ((c column) (r registry))
+  (setf (gethash (ccounter r) (ctable r)) c)
+  (values))
 
 (defun make-entry (id prev curr next &optional (cid nil))
   "Create an instance of the entry class."
@@ -76,14 +78,14 @@
 
 (defun make-column (cid cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
-  (make-instance 'column :cid cid :cstart cstart :cend cend :cleft cleft :cright :cright))
+  (make-instance 'column :cid cid :cstart cstart :cend cend :cleft cleft :cright cright))
 
-(defun add-entries (feed registry)
-  "Add items from FEED to REGISTRY, creating column and entry objects and updating the registry."
+(defun import-feed (feed registry)
+  "Import items from FEED to REGISTRY, creating column and entry objects and updating the registry."
   (let* ((pillar (pad-feed feed))
          (length (length feed))
          (start (1+ (counter registry)))
-         (end (+ start length))
+         (end (1- (+ start length)))
          (column (make-column (gen-ccounter registry) start end)))
     (add-column column registry)
     (loop :for prev :in pillar

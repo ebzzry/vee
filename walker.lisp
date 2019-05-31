@@ -68,7 +68,7 @@
       ((complete-match-p lhead rhead)
        (walk (advance lfeed)
              (advance rfeed)
-             (add (top lfeed) (top rfeed) acc)
+             (add (current-item lfeed) (current-item rfeed) acc)
              :lcarry nil
              :rcarry nil))
 
