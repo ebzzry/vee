@@ -23,6 +23,6 @@
                (:file "globals")
                (:file "classes")
                (:file "common")
-               (:file "registry")
+               (:file "world")
                (:file "walker")
                (:file "tests")))

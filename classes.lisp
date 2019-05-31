@@ -2,8 +2,29 @@
 
 (in-package #:muso/core)
 
+;;; TODO: design the inheritance
+
+(defclass world ()
+  ((rcounter :initarg :rcounter
+             :initform *initial-rcounter*
+             :accessor rcounter
+             :documentation "The top-level registry counter.")
+   (rtable :initarg :rtable
+           :initform (make-hash-table)
+           :accessor rtable
+           :documentation "The top-level collection of registries."))
+  (:documentation "The top-level structure for registries."))
+
 (defclass registry ()
-  ((counter :initarg :counter
+  ((rid :initarg :rid
+        :initform nil
+        :reader rid
+        :documentation "The numeric ID of a registry.")
+   (rname :initarg :rname
+          :initform (gensym "REGISTRY")
+          :reader rname
+          :documentation "The name of a registry.")
+   (counter :initarg :counter
             :initform *initial-counter*
             :accessor counter
             :documentation "The global entry counter.")
@@ -19,7 +40,7 @@
            :initform (make-hash-table)
            :accessor ctable
            :documentation "The global column table."))
-  (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries."))
+  (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different data dataset comparisons."))
 
 (defclass column ()
   ((cid :initarg :cid

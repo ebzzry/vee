@@ -250,3 +250,10 @@
                                        :test test)))
         (total (length (map-nappend selector lcol rcol))))
     (* (/ common (/ total 1.0)) 100)))
+
+(defun pad-feed (feed &optional (pad ""))
+  "Add starting and ending padding for column based on the first element."
+  (let* ((initial (elt0 feed))
+         (length (length initial))
+         (pad (make-list length :initial-element pad)))
+    (append (list pad) feed (list pad))))

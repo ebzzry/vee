@@ -5,7 +5,9 @@
 (uiop:define-package #:muso/core
     (:use #:cl
           #:trivia)
-  (:export #:read-file))
+  (:export #:boot
+           #:read-file
+           #:import-feed))
 
 (uiop:define-package #:muso/tests
     (:use #:muso/core)
