@@ -115,31 +115,25 @@ Notes
 Notes
 -----
 
-- Write the walker
 - When a complete match is found, add entries to destination.
 - When a partial match is found, check to see if the next item also matches.
 - If text matches, create new entry to TSV list, then pop both columns.
-- Empty strings will be used for blanks:
-
-    ("﻿NOTRE" "NNP" "﻿NOTRE-DAME" "PROPER-MODIFIER")
-    ("-" "HYPH" "" "")
-    ("DAME" "NN" "" "")
 
 
 Legend
 ------
 
+- Item
+  + The smallest unit of information, e.g., ("foo" "bar"). A raw ‘entry’
+
+- Feed
+  + Raw groups of items, e.g., (("foo" "bar") ("qux" "quux")). A raw ‘column’
+
 - Entry
-  + The smallest unit of information
-  + It contains information about a text, like POS, UD, etc
+  + Instantiated ‘item’
 
 - Column
-  + A list of entries
-  + It must have a uniform size
+  + Instantiated ‘feed’
 
-- Connection
-   + The linkage between columns
-
-- Grouping
-  + A horizontal set of entries across columns
-
+- Registry
+  + Contains hash tables for entries and columns

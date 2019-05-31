@@ -4,7 +4,7 @@
 
 ;;; Notes
 ;;;
-;;; - A column will only move when it is done processing
+;;; - A feed will only move when it is done processing
 ;;; - Insert the previous head into the next head?
 ;;; - There is a partial match if and only if the current tips match and merging
 ;;;   with the next entry is either a partial or complete match ***
@@ -23,8 +23,8 @@
 
 ;;; Notes
 ;;;
-;;; - Build a new column where the first two items are joined
-;;; - At the moment, the walker will only work with two simultaneous columns
+;;; - Build a new feed where the first two items are joined
+;;; - At the moment, the walker will only work with two simultaneous feeds
 
 ;;; Notes
 ;;;
@@ -34,40 +34,41 @@
 ;;; Notes
 ;;;
 ;;; - Inspect PREV and NEXT
+;;; - The walker should operate on entry or column instances
 
-(defun walk (lcol rcol acc &key (lcarry nil) (rcarry nil))
+(defun walk (lfeed rfeed acc &key (lcarry nil) (rcarry nil))
   "Walk through the columns and build value."
-  (let ((lhead (or lcarry (current-head lcol)))
-        (rhead (or rcarry (current-head rcol))))
+  (let ((lhead (or lcarry (current-head lfeed)))
+        (rhead (or rcarry (current-head rfeed))))
     (cond
-      ;; NOTE: handle cases wherein one of the data columns is already null
+      ;; NOTE: handle cases wherein one of the data feeds is already null
       ;; NOTE: this means that one of the coulmns still has trailing data
 
-      ;; NOTE: complete the length of rcol. This will be the amount of empty
+      ;; NOTE: complete the length of rfeed. This will be the amount of empty
       ;; entries that will be added on the left side, to acc, which will then be
       ;; returned
-      ((null lcol)
-       (let ((rlength (length rcol)))
+      ((null lfeed)
+       (let ((rlength (length rfeed)))
          ;; FIXME
          rlength))
 
-      ((and (null lcol) (null rcol))
+      ((and (null lfeed) (null rfeed))
        (nreverse acc))
 
       ;; NOTE: The amount of look ahead is the amount of pair combinations
       ;;       that must be tested.
 
       ;; NOTE: It also determines the amount of jump to the next subset of
-      ;;       column
+      ;;       feed
 
       ;; complete
-      ;; When both LHEAD and RHEAD match, they must be matching. Both LCOL
-      ;; and RCOL will move. LCARRY and RCARRY must be cleared out while
+      ;; When both LHEAD and RHEAD match, they must be matching. Both LFEED
+      ;; and RFEED will move. LCARRY and RCARRY must be cleared out while
       ;; advancing.
       ((complete-match-p lhead rhead)
-       (walk (advance lcol)
-             (advance rcol)
-             (add (top lcol) (top rcol) acc)
+       (walk (advance lfeed)
+             (advance rfeed)
+             (add (top lfeed) (top rfeed) acc)
              :lcarry nil
              :rcarry nil))
 
@@ -83,11 +84,11 @@
       ;;       not match
 
       ((and (partial-match-p lhead rhead)
-            (partial-match-p (join-next lcol) rhead))
-       (walk (advance (advance lcol))
-             rcol
+            (partial-match-p (join-next lfeed) rhead))
+       (walk (advance (advance lfeed))
+             rfeed
              acc
-             :lcarry (join-next lcol)
+             :lcarry (join-next lfeed)
              :rcarry nil))
 
       ;; and partial complete
@@ -99,12 +100,12 @@
       ;; NOTE: how is this condition different from the one above?
 
       ((and (partial-match-p lhead rhead)
-            (complete-match-p (join-next lcol) rhead))
+            (complete-match-p (join-next lfeed) rhead))
        ;; TODO: verify for correctness
-       (walk (advance (advance lcol))
-             rcol
+       (walk (advance (advance lfeed))
+             rfeed
              acc
-             :lcarry (join-next lcol)
+             :lcarry (join-next lfeed)
              :rcarry nil))
 
       ;; inverse and partial partial

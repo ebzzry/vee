@@ -6,12 +6,43 @@
   ((counter :initarg :counter
             :initform *initial-counter*
             :accessor counter
-            :documentation "The global registry counter.")
+            :documentation "The global entry counter.")
    (table :initarg :table
           :initform (make-hash-table)
           :accessor table
-          :documentation "The global table."))
+          :documentation "The global entry table.")
+   (ccounter :initarg :ccounter
+             :initform *initial-ccounter*
+             :accessor ccounter
+             :documentation "The global column counter")
+   (ctable :initarg :ctable
+           :initform (make-hash-table)
+           :accessor ctable
+           :documentation "The global column table."))
   (:documentation "The global registry."))
+
+(defclass column ()
+  ((cid :initarg :cid
+        :initform nil
+        :reader cid
+        :documentation "The numeric ID of a column.")
+   (cstart :initarg :cstart
+           :initform -1
+           :reader cstart
+           :documentation "The starting number for a column, which corresponds to an entry ID.")
+   (cend :initarg :cend
+         :initform -1
+         :reader cend
+         :documentation "The end number for a column, which corresponds to an entry ID.")
+   (cleft :initarg :cleft
+          :initform -1
+          :reader cleft
+          :documentation "The column to the cleft of the current one.")
+   (cright :initarg :cright
+           :initform -1
+           :reader cright
+           :documentation "The column to the cright of the current one."))
+  (:documentation "Links between columns. An instance of ‘feed’."))
 
 (defclass entry ()
   ((id :initarg :id
@@ -30,23 +61,8 @@
          :initform nil
          :reader next
          :documentation "The next entry in a column.")
-   (column :initarg :column
-           :initform -1
-           :reader column
-           :documentation "The ID of the column wherein an entry appears."))
-  (:documentation "Entries relative to a column."))
-
-(defclass column (entry)
-  ((cid :initarg :cid
+   (cid :initarg :cid
         :initform nil
         :reader cid
-        :documentation "The numeric ID of a column.")
-   (left :initarg :left
-         :initform nil
-         :reader left
-         :documentation "The column to the left of the current one.")
-   (right :initarg :right
-          :initform nil
-          :reader right
-          :documentation "The column to the right of the current one."))
-  (:documentation "Links between columns."))
+        :documentation "The column ID to which an entry belongs to."))
+  (:documentation "Entries relative to a column. An instance of ‘item’."))

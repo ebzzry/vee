@@ -9,16 +9,16 @@
 (defun file-string (path)
   "Read entire file as byte sequence."
   (with-open-file (stream path)
-    (let ((data (make-string (file-length stream))))
-      (read-sequence data stream)
-      data)))
+    (let ((val (make-string (file-length stream))))
+      (read-sequence val stream)
+      val)))
 
-(defun normalize (entry)
-  "Return a normalized version of ENTRY."
-  (string-downcase entry))
+(defun normalize (item)
+  "Return a normalized version of ITEM."
+  (string-downcase item))
 
 (defun normalize-items (subcol)
-  "Return normalized items from COLUMN."
+  "Return normalized items from SUBCOL."
   (mapcar #'normalize subcol))
 
 (defun read-csv-string (string &optional (separator #\tab))
@@ -58,24 +58,24 @@
   "Join with the next item."
   (join-n items *join-limit*))
 
-(defun count-entries (column)
-  "Return the number of entries in column."
-  (length column))
+(defun count-entries (feed)
+  "Return the number of entries in feed."
+  (length feed))
 
 (defun count-entries-file (file)
-  "Return the number of entries in COLUMN."
+  "Return the number of entries in FILE."
   (with-open-file (in file)
     (loop :for line = (read-line in nil)
           :while line
           :count line)))
 
-(defun max-column (column-1 column-2)
-  "Return the bigger column between COLUMN-1 and COLUMN-2."
-  (let ((size-1 (count-entries column-1))
-        (size-2 (count-entries column-2)))
-    (cond ((= size-1 size-2) column-1)
-          ((> size-1 size-2) column-1)
-          (t column-2))))
+(defun max-feed (feed-1 feed-2)
+  "Return the bigger feed between FEED-1 and FEED-2."
+  (let ((size-1 (count-entries feed-1))
+        (size-2 (count-entries feed-2)))
+    (cond ((= size-1 size-2) feed-1)
+          ((> size-1 size-2) feed-1)
+          (t feed-2))))
 
 (defun read-tsv-string (string)
   "Read a TSV string and return lists from it."
@@ -85,38 +85,28 @@
   "Like READ-TSV but from a disk file."
   (read-csv-file file #\tab))
 
-(defun take (column &optional (limit 1))
-  "Return LIMIT amount of items from COLUMN."
-  (loop :for s :in column
+(defun take (feed &optional (limit 1))
+  "Return LIMIT amount of items from FEED."
+  (loop :for s :in feed
         :for n = 0 :then (1+ n)
         :while (< n limit)
         :collect s))
 
-(defun take-if (fn column &optional (limit 1))
-  "Return LIMIT amount of items from COLUMN."
-  (loop :for s :in column
+(defun take-if (fn feed &optional (limit 1))
+  "Return LIMIT amount of items from FEED."
+  (loop :for s :in feed
         :for n = 0 :then (1+ n)
         :while (< n limit)
         :collect (funcall fn s)))
 
-(defun peek (column limit &key (selector #'elt0))
-  "Return a string formed by looking ahead LIMIT number of entries in COLUMN."
-  (mof:join-strings (mapcar selector (take (read-tsv-string column) limit))))
+(defun peek (feed limit &key (selector #'elt0))
+  "Return a string formed by looking ahead LIMIT number of entries in FEED."
+  (mof:join-strings (mapcar selector (take (read-tsv-string feed) limit))))
 
 (defun peek-file (file limit)
   "Like PEEK but from a disk file."
   (with-open-file (in file)
     (peek in limit)))
-
-(defun head (file)
-  "Return the first element of from FILE."
-  (multiple-value-bind (value result)
-      (with-open-file (in file)
-        (read-line in nil))
-    (declare (ignore result))
-    (let ((val (read-tsv-string value)))
-      (when (consp val)
-        (first val)))))
 
 (defun prefixedp (string prefixes)
   "Return true if STRING is prefixed with PREFIX."
@@ -126,30 +116,30 @@
   "Return true if STRING is prefixed with an underscore."
   (prefixedp string '(#\ZERO_WIDTH_NO-BREAK_SPACE #\_)))
 
-(defun fix-column (column)
-  "Make corrections to entry due to the effects of file reading."
+(defun fix-feed (feed)
+  "Make corrections to feed due to the effects of file reading."
   (destructuring-bind (head &rest body)
-      column
+      feed
     (destructuring-bind (h &rest b)
         head
       (if (underscoredp h)
           (cons (cons (subseq h 1) b)
                 body)
-          column))))
+          feed))))
 
-(defun clean-column (column)
-  "Remove extraneous entries in COLUMN."
-  (remove-if #'(lambda (entry)
-                 (some #'mof:empty-string-p entry))
-             column))
+(defun clean-feed (feed)
+  "Remove extraneous entries in FEED."
+  (remove-if #'(lambda (item)
+                 (some #'mof:empty-string-p item))
+             feed))
 
-(defun read-column-file (file)
-  "Read source from file and perform clean-ups as necessary."
-  (fix-column (clean-column (read-tsv-file file))))
+(defun read-feed-file (file)
+  "Read feed from file and perform clean-ups as necessary."
+  (fix-feed (clean-feed (read-tsv-file file))))
 
 (defun read-file (&rest args)
-  "An alias to READ-COLUMN-FILE"
-  (apply #'read-column-file args))
+  "An alias to READ-FEED-FILE"
+  (apply #'read-feed-file args))
 
 (defun separators (string)
   "Return the separator used in STRING."
@@ -164,44 +154,40 @@
          (when val
            (zerop val)))))
 
-(defun current-entry (column)
-  "Return the current item text in COLUMN."
-  (first column))
+(defun current-item (feed)
+  "Return the current item text in FEED."
+  (first feed))
 
-(defun next-entry (column)
-  "Return the next item text in COLUMN."
-  (second column))
+(defun next-item (feed)
+  "Return the next item text in FEED."
+  (second feed))
 
-(defun current-head (column &key (selector #'elt0))
-  "Return the head of the curent item in COLUMN."
-  (funcall selector (current-entry column)))
+(defun current-head (feed &key (selector #'elt0))
+  "Return the head of the curent item in FEED."
+  (funcall selector (current-item feed)))
 
-(defun next-head (column &key (selector #'elt0))
-  "Return the head of the next item in COLUMN."
-  (funcall selector (next-entry column)))
+(defun next-head (feed &key (selector #'elt0))
+  "Return the head of the next item in FEED."
+  (funcall selector (next-item feed)))
 
 (defun top (&rest args)
-  "Return the top-most entry in column."
-  (apply #'current-entry args))
+  "Return the top-most item in feed."
+  (apply #'current-item args))
 
 (defun compact-string (string)
   "Return a new string without whitespaces."
   (cl-ppcre:regex-replace-all "\\s+" string ""))
 
 (defun partial-match-p (text-1 text-2)
-  "Return true if X is a partial match against Y. String compaction will happen with the longer column, which is usually Y."
+  "Return true if X is a partial match against Y. String compaction will happen with the longer feed, which is usually Y."
   (strict-substring-p (compact-string text-1) (compact-string text-2)))
 
-(defun complete-match-p (text-1 entry-2 &key (case-sensitive nil))
+(defun complete-match-p (text-1 item-2 &key (case-sensitive nil))
   "Return true if X and Y match completely."
-  (and (= (length text-1) (length entry-2))
+  (and (= (length text-1) (length item-2))
        (if case-sensitive
-           (string= text-1 entry-2)
-           (string-equal text-1 entry-2))))
-
-(defun add (left right acc)
-  "Add LEFT and RIGHT to ACC."
-  (cons (append left right) acc))
+           (string= text-1 item-2)
+           (string-equal text-1 item-2))))
 
 (defun advance (&rest items)
   "Return the other items from ITEMS. A wrapper around REST. This function will be converted to a method."
@@ -209,11 +195,11 @@
 
 (defun empty-left (datum)
   "Return a grouping wherein the left side is empty."
-  (append *empty-entry* datum))
+  (append *empty-item* datum))
 
 (defun empty-right (datum)
   "Return a grouping wherein the right side is empty."
-  (append datum *empty-entry*))
+  (append datum *empty-item*))
 
 (defun fill-blanks (data side)
   "Create blanks from DATA on side SIDE."
@@ -223,33 +209,33 @@
                    (left (empty-left datum))
                    (right (empty-right datum)))))
 
-(defun merge-equal (lcol rcol)
-  "Merge equal columns."
-  (assert (= (length lcol) (length rcol)) (lcol rcol))
-  (loop :for n :from 0 :to (length lcol)
-        :for (l1 l2) :in lcol
-        :for (r1 r2) :in rcol
+(defun merge-equal (lfeed rfeed)
+  "Merge equal feeds."
+  (assert (= (length lfeed) (length rfeed)) (lfeed rfeed))
+  (loop :for n :from 0 :to (length lfeed)
+        :for (l1 l2) :in lfeed
+        :for (r1 r2) :in rfeed
         :collect (list l1 l2 r1 r2)))
 
-(defun merge-columns (lcol rcol)
-  "Merge together the columns in LCOL and RCOL."
-  (let ((length-1 (length lcol))
-        (length-2 (length rcol)))
-    (cond ((= length-1 length-2) (merge-equal lcol rcol))
+(defun merge-feeds (lfeed rfeed)
+  "Merge together the feedumns in LFEED and RFEED."
+  (let ((length-1 (length lfeed))
+        (length-2 (length rfeed)))
+    (cond ((= length-1 length-2) (merge-equal lfeed rfeed))
           ((< length-1 length-2)
-           (append (merge-equal lcol (subseq rcol 0 length-1))
-                   (fill-blanks (subseq rcol (1- length-1)) 'left)))
+           (append (merge-equal lfeed (subseq rfeed 0 length-1))
+                   (fill-blanks (subseq rfeed (1- length-1)) 'left)))
           (t
-           (append (merge-equal (subseq lcol 0 length-2) rcol)
-                   (fill-blanks (subseq lcol (1- length-2)) 'right))))))
+           (append (merge-equal (subseq lfeed 0 length-2) rfeed)
+                   (fill-blanks (subseq lfeed (1- length-2)) 'right))))))
 
-(defun uniques (column &key (selector #'elt0) (test #'string-equal))
-  "Return the unique items from COLUMN."
-  (delete-duplicates (normalize-items (mapcar selector column)) :test test))
+(defun uniques (feed &key (selector #'elt0) (test #'string-equal))
+  "Return the unique items from FEED."
+  (delete-duplicates (normalize-items (mapcar selector feed)) :test test))
 
 (defun minimal-common-p (lcol rcol &key (selector #'elt0) (test #'string-equal))
   "Return true if there are common lines between LCOL and RCOL."
-  (flet ((fn (data) (uniques data :selector selector :test test)))
+  (flet ((fn (arg) (uniques arg :selector selector :test test)))
     (when (intersection (fn lcol) (fn rcol) :test test)
       t)))
 
@@ -268,61 +254,3 @@
                                        :test test)))
         (total (length (map-nappend selector lcol rcol))))
     (* (/ common (/ total 1.0)) 100)))
-
-(defun make-registry ()
-  "Create an instance of the registry class."
-  (make-instance 'registry))
-
-(defgeneric reset-counter (registry)
-  (:documentation "Reset the counter found in registry."))
-(defmethod reset-counter ((r registry))
-  (setf (counter r) *initial-counter*))
-
-(defgeneric gen-counter (registry)
-  (:documentation "Generate a new counter value from REGISTRY."))
-(defmethod gen-counter ((r registry))
-  (incf (counter r))
-  (counter r))
-
-(defgeneric add-entry (entry registry)
-  (:documentation "Add entry to registry"))
-(defmethod add-entry ((e entry) (r registry))
-  (setf (gethash (counter r) (table r)) e))
-
-(defun pad-column (column &optional (pad ""))
-  "Add starting and ending padding for column based on the first element."
-  (let* ((initial (elt0 column))
-         (length (length initial))
-         (pad (make-list length :initial-element pad)))
-    (append (list pad) column (list pad))))
-
-(defparameter *registry* (make-registry)
-  "Initialize the global registry.")
-
-(defgeneric reset-registry (registry)
-  (:documentation "Reset the contents of registry."))
-(defmethod reset-registry ((r registry))
-  (setf (counter r) *initial-counter*)
-  (setf (table r) (make-hash-table))
-  (values))
-
-(defgeneric dump-registry (registry)
-  (:documentation "Dump the contents of table from REGISTRY."))
-(defmethod dump-registry ((r registry))
-  (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (column v))))
-           (table r)))
-
-(defun make-entry (id prev curr next)
-  "Create an instance of the entry class."
-  (make-instance 'entry :id id :prev prev :curr curr :next next))
-
-(defun add-entries (column registry)
-  "Add entries from COLUMN."
-  (let ((col (pad-column column)))
-    (loop :for prev :in col
-          :for curr :in (rest col)
-          :for next :in (rest (rest col))
-          :do (add-entry (make-entry (gen-counter registry) prev curr next)
-                         registry))
-    (values)))

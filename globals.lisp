@@ -8,7 +8,7 @@
 (defvar *join-limit* 2
   "The amount of lines forward to join.")
 
-(defvar *empty-entry* (make-list 2 :initial-element "")
+(defvar *empty-item* (make-list 2 :initial-element "")
   "An empty data set.")
 
 (defvar *similarity-threshold* 40.0
@@ -17,5 +17,11 @@
 (defvar *initial-counter* 1000
   "The initial counter value")
 
+(defvar *initial-ccounter* 1000
+  "The initial ccounter value")
+
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")
+
+(defparameter *registry* nil
+  "The global registry.")

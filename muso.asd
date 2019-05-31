@@ -23,5 +23,6 @@
                (:file "globals")
                (:file "classes")
                (:file "core")
+               (:file "registry")
                (:file "walker")
                (:file "tests")))
