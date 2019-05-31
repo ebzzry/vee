@@ -45,7 +45,11 @@
   (:documentation "Links between columns. An instance of ‘feed’."))
 
 (defclass entry ()
-  ((id :initarg :id
+  ((cid :initarg :cid
+        :initform nil
+        :reader cid
+        :documentation "The column ID to which an entry belongs to.")
+   (id :initarg :id
        :initform -1
        :reader id
        :documentation "The numeric ID of an entry.")
@@ -60,9 +64,5 @@
    (next :initarg :next
          :initform nil
          :reader next
-         :documentation "The next entry in a column.")
-   (cid :initarg :cid
-        :initform nil
-        :reader cid
-        :documentation "The column ID to which an entry belongs to."))
+         :documentation "The next entry in a column."))
   (:documentation "Entries relative to a column. An instance of ‘item’."))

@@ -53,7 +53,7 @@
 (defmethod dump-registry ((r registry))
   (format t "** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k (list (id v) (prev v) (curr v) (next v) (cid v))))
+               (format t "~S => ~S~%" k (list (cid v) (id v) (prev v) (curr v) (next v))))
            (table r))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
@@ -72,9 +72,9 @@
   (setf (gethash (ccounter r) (ctable r)) c)
   (values))
 
-(defun make-entry (id prev curr next &optional (cid nil))
+(defun make-entry (cid id prev curr next)
   "Create an instance of the entry class."
-  (make-instance 'entry :id id :prev prev :curr curr :next next :cid cid))
+  (make-instance 'entry :cid cid :id id :prev prev :curr curr :next next))
 
 (defun make-column (cid cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
@@ -91,6 +91,6 @@
     (loop :for prev :in pillar
           :for curr :in (rest pillar)
           :for next :in (rest (rest pillar))
-          :do (add-entry (make-entry (gen-counter registry) prev curr next (cid column))
+          :do (add-entry (make-entry (cid column) (gen-counter registry) prev curr next)
                          registry))
     (values)))
