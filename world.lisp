@@ -136,7 +136,7 @@
     registry))
 
 (defgeneric find-registry (query)
-  (:documentation "Return the registry which matches NAME in WORLD."))
+  (:documentation "Return the registry which matches QUERY in WORLD."))
 (defmethod find-registry ((query string))
   (loop :for rid :being :the :hash-keys :in (rtable *world*)
         :for registry = (gethash rid (rtable *world*))
@@ -147,3 +147,19 @@
         :for registry = (gethash rid (rtable *world*))
         :when (= query (rid registry))
         :return registry))
+
+(defgeneric find-column (query registry)
+  (:documentation "Return a column which matches QUERY in REGISTRY."))
+(defmethod find-column ((query integer) (r registry))
+  (loop :for cid :being :the :hash-keys :in (ctable r)
+        :for column = (gethash cid (ctable r))
+        :when (= query (cid column))
+        :return column))
+
+(defgeneric find-entry (query registry)
+  (:documentation "Return an entry which matches QUERY in COLUMN."))
+(defmethod find-entry ((query integer) (r registry))
+  (loop :for id :being :the :hash-keys :in (table r)
+        :for entry = (gethash id (table r))
+        :when (= query (id entry))
+        :return entry))

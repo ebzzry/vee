@@ -62,11 +62,11 @@
    (cleft :initarg :cleft
           :initform -1
           :reader cleft
-          :documentation "The column to the cleft of the current one.")
+          :documentation "The column to the left of the current one.")
    (cright :initarg :cright
            :initform -1
            :reader cright
-           :documentation "The column to the cright of the current one."))
+           :documentation "The column to the right of the current one."))
   (:documentation "Information about the range of entries that it contains. It may also contain links to other columns inside a registry."))
 
 (defclass entry ()

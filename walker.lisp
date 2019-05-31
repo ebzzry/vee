@@ -118,7 +118,7 @@
 
 ;;; Notes
 ;;;
-;;; - At what part should I start aligning, wherein no information will be lost
+;;; - At what part should aligning happen, wherein no information will be lost
 ;;; - Handle garbage
 
 ;;; Notes
