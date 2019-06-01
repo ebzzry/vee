@@ -53,13 +53,14 @@
 (defmethod dump-registry ((r registry))
   (format t "** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k
-                       (list (cid v) (id v) (prev v) (curr v) (next v))))
+               (with-slots (cid id prev curr next) v
+                 (format t "~S => ~S~%" k (list cid id prev curr next))))
            (table r))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
-               (format t "~S => ~S~%" k
-                       (list (rid v) (cid v) (cstart v) (cend v) (cleft v) (cright v))))
+               (with-slots (rid cid cstart cend cleft cright) v
+                 (format t "~S => ~S~%" k
+                         (list rid cid cstart cend cleft cright))))
            (ctable r)))
 
 (defun dump-world ()
@@ -87,10 +88,19 @@
   (setf (gethash (rcounter *world*) (rtable *world*)) r)
   r)
 
+(defmethod print-object ((e entry) stream)
+  (print-unreadable-object (e stream :type t)
+    (with-slots (cid id) e
+      (format stream "CID:~A ID:~A" cid id))))
+
+(defmethod print-object ((c column) stream)
+  (print-unreadable-object (c stream :type t)
+    (with-slots (rid cid) c
+      (format stream "RID:~A CID:~A" rid cid))))
+
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
-    (with-slots (rid rname)
-        r
+    (with-slots (rid rname) r
       (format stream "RID:~A RNAME:~A" rid rname))))
 
 (defun make-entry (cid id prev curr next)
@@ -148,6 +158,10 @@
         :when (= query (rid registry))
         :return registry))
 
+(defun find-registries ()
+  "Return all registries from the world."
+  (loop :for r :being :the :hash-values :in (rtable *world*) :collect r))
+
 (defgeneric find-column (query registry)
   (:documentation "Return a column which matches QUERY in REGISTRY."))
 (defmethod find-column ((query integer) (r registry))
@@ -156,6 +170,11 @@
         :when (= query (cid column))
         :return column))
 
+(defgeneric find-columns (registry)
+  (:documentation "Return all columns from REGISTRY."))
+(defmethod find-columns ((r registry))
+  (loop :for c :being :the :hash-values :in (ctable r) :collect c))
+
 (defgeneric find-entry (query registry)
   (:documentation "Return an entry which matches QUERY in COLUMN."))
 (defmethod find-entry ((query integer) (r registry))
@@ -163,3 +182,22 @@
         :for entry = (gethash id (table r))
         :when (= query (id entry))
         :return entry))
+
+(defgeneric find-entries (registry)
+  (:documentation "Return all entries from REGISTRY."))
+(defmethod find-entries ((r registry))
+  (loop :for e :being :the :hash-values :in (table r) :collect e))
+
+(defgeneric dump-column (column)
+  (:documentation "Print information about a column."))
+(defmethod dump-column ((c column))
+  (with-slots (rid cid cstart cend cleft cright) c
+    (format t "~&RID: ~A~%CID: ~A~%CSTART: ~A~%CEND: ~A~%CLEFT: ~A~%CRIGHT: ~A~%"
+            rid cid cstart cend cleft cright)))
+
+(defgeneric dump-entry (entry)
+  (:documentation "Print information about an entry."))
+(defmethod dump-entry ((e entry))
+  (with-slots (cid id prev curr next) e
+    (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
+            cid id prev curr next)))
