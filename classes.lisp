@@ -21,7 +21,7 @@
         :reader rid
         :documentation "The numeric ID of a registry.")
    (rname :initarg :rname
-          :initform (gensym "REGISTRY")
+          :initform (string (gensym "REGISTRY"))
           :reader rname
           :documentation "The name of a registry.")
    (counter :initarg :counter
@@ -51,6 +51,10 @@
         :initform nil
         :reader cid
         :documentation "The numeric ID of a column.")
+   (cname :initarg :cname
+          :initform ""
+          :reader cname
+          :documentation "The name of a column.")
    (cstart :initarg :cstart
            :initform -1
            :reader cstart

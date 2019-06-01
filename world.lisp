@@ -1,4 +1,4 @@
-;;;; registry.lisp
+;;; registry.lisp
 
 (in-package #:muso/core)
 
@@ -68,7 +68,10 @@
   (let ((registries (loop :for v :being :the :hash-values :in (rtable *world*)
                           :collect v)))
     (loop :for registry :in registries
-          :do (dump-registry registry))))
+          :do (dump-registry registry))
+    (format t "~%")
+    (dump-registries)
+    (values)))
 
 (defgeneric add-entry (entry registry)
   (:documentation "Add ENTRY to REGISTRY."))
@@ -90,13 +93,13 @@
 
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
-    (with-slots (cid id) e
-      (format stream "CID:~A ID:~A" cid id))))
+    (with-slots (cid id curr) e
+      (format stream "CID:~A ID:~A CURR:~S" cid id curr))))
 
 (defmethod print-object ((c column) stream)
   (print-unreadable-object (c stream :type t)
-    (with-slots (rid cid) c
-      (format stream "RID:~A CID:~A" rid cid))))
+    (with-slots (rid cid cname) c
+      (format stream "RID:~A CID:~A CNAME:~A" rid cid cname))))
 
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
@@ -107,9 +110,10 @@
   "Create an instance of the entry class."
   (make-instance 'entry :cid cid :id id :prev prev :curr curr :next next))
 
-(defun make-column (rid cid cstart cend &optional (cleft -1) (cright -1))
+(defun make-column (rid cid cname cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
-  (make-instance 'column :rid rid :cid cid :cstart cstart :cend cend :cleft cleft :cright cright))
+  (make-instance 'column :rid rid :cid cid :cname cname
+                         :cstart cstart :cend cend :cleft cleft :cright cright))
 
 (defun make-registry (rid rname)
   "Create an instance of the registry class."
@@ -130,13 +134,14 @@
   (setf *world* (make-world)))
 (mof:defalias boot initialize-world)
 
-(defun import-feed (feed registry)
+(defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY, creating column and entry objects and updating the registry."
   (let* ((pillar (pad-feed feed))
          (length (length feed))
          (start (1+ (counter registry)))
          (end (1- (+ start length)))
-         (column (make-column (rid registry) (spawn-ccounter registry) start end)))
+         (cname (if (mof:empty-string-p name) (string (gensym "COLUMN")) name))
+         (column (make-column (rid registry) (spawn-ccounter registry) cname start end)))
     (add-column column registry)
     (loop :for prev :in pillar
           :for curr :in (rest pillar)
@@ -162,12 +167,25 @@
   "Return all registries from the world."
   (loop :for r :being :the :hash-values :in (rtable *world*) :collect r))
 
+(defun dump-registries ()
+  "Display inforamtion about the registries."
+  (format t "~&** REGISTRIES~%")
+  (maphash #'(lambda (k v)
+               (with-slots (rid rname counter ccounter) v
+                 (format t "~S => ~S~%" k (list rid rname ccounter counter))))
+           (rtable *world*)))
+
 (defgeneric find-column (query registry)
   (:documentation "Return a column which matches QUERY in REGISTRY."))
 (defmethod find-column ((query integer) (r registry))
   (loop :for cid :being :the :hash-keys :in (ctable r)
         :for column = (gethash cid (ctable r))
         :when (= query (cid column))
+        :return column))
+(defmethod find-column ((query string) (r registry))
+  (loop :for cid :being :the :hash-keys :in (ctable r)
+        :for column = (gethash cid (ctable r))
+        :when (string-equal query (cname column))
         :return column))
 
 (defgeneric find-columns (registry)
@@ -188,16 +206,37 @@
 (defmethod find-entries ((r registry))
   (loop :for e :being :the :hash-values :in (table r) :collect e))
 
-(defgeneric dump-column (column)
+(defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about a column."))
-(defmethod dump-column ((c column))
+(defmethod dump-column ((c column) &key (complete nil))
   (with-slots (rid cid cstart cend cleft cright) c
-    (format t "~&RID: ~A~%CID: ~A~%CSTART: ~A~%CEND: ~A~%CLEFT: ~A~%CRIGHT: ~A~%"
-            rid cid cstart cend cleft cright)))
+    (when complete
+      (format t "~&RID:~A, CID:~A, CSTART:~A, CEND:~A, CLEFT:~A, CRIGHT:~A~%"
+              rid cid cstart cend cleft cright))
+    (loop :for e :from cstart :to cend
+          :for entry = (find-entry e (find-registry rid))
+          :do (with-slots (cid id prev curr next) entry
+                (if complete
+                    (format t "~&CID:~A, ID:~A, PREV:~S, CURR:~S, NEXT:~S~%"
+                            cid id prev curr next)
+                    (format t "~&~S~%" curr))))
+    (values)))
 
-(defgeneric dump-entry (entry)
+(defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
-(defmethod dump-entry ((e entry))
+(defmethod dump-entry ((e entry) &key (complete nil))
   (with-slots (cid id prev curr next) e
-    (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
-            cid id prev curr next)))
+    (if complete
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
+                cid id prev curr next)
+        (format t "~&PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
+                prev curr next))
+    (values)))
+
+(defun print-column (cname rname)
+  "Display the contents of column CNAME in registry RNAME."
+  (dump-column (find-column cname (find-registry rname))))
+
+(defun print-entry (id rname)
+  "Display the contents of entry ID in registry RNAME."
+  (dump-entry (find-entry id (find-registry rname))))

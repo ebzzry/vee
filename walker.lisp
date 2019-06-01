@@ -66,7 +66,7 @@
         :collect (list l1 l2 r1 r2)))
 
 (defun merge-feeds (lfeed rfeed)
-  "Merge together the feedumns in LFEED and RFEED."
+  "Merge together the feeds in LFEED and RFEED."
   (let ((length-1 (length lfeed))
         (length-2 (length rfeed)))
     (cond ((= length-1 length-2) (merge-equal lfeed rfeed))
@@ -208,3 +208,8 @@
 (defun stats ()
   "Display information about similarities, differences, holes, inconsistencies,etc."
   nil)
+
+;;; Notes
+;;;
+;;; - Convert COMPLETE-MATCH-P and PARTIAL-MATCH-P to generic functions
+;;; - Maybe reimplement WALK
