@@ -7,12 +7,6 @@
   (let ((length (length datum)))
     (make-list length :initial-element *pad*)))
 
-(defun pad-feed (feed)
-  "Add starting and ending padding for column based on the first element."
-  (let* ((initial (elt0 feed))
-         (pad (make-empty initial)))
-    (append (list pad) feed (list pad))))
-
 (defun current-item (feed)
   "Return the current item text in FEED."
   (first feed))

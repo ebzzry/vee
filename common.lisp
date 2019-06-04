@@ -165,3 +165,9 @@
 (defun genstring (string)
   "Return a GENSYM’d string."
   (string (gensym string)))
+
+(defun pad-feed (feed)
+  "Add starting and ending padding for column based on the first element."
+  (let* ((initial (elt0 feed))
+         (pad (make-empty initial)))
+    (append (list pad) feed (list pad))))

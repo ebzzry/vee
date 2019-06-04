@@ -35,29 +35,27 @@
   (setf (rtable *world*) (make-hash-table))
   (values))
 
-(defgeneric reset-registry (registry)
-  (:documentation "Reset the contents of REGISTRY."))
-(defmethod reset-registry ((r registry))
-  (setf (ecounter r) *initial-ecounter*)
-  (setf (etable r) (make-hash-table))
-  (setf (ccounter r) *initial-ccounter*)
-  (setf (ctable r) (make-hash-table))
+(defun reset-registry (registry)
+  "Reset the contents of REGISTRY."
+  (setf (ecounter registry) *initial-ecounter*)
+  (setf (etable registry) (make-hash-table))
+  (setf (ccounter registry) *initial-ccounter*)
+  (setf (ctable registry) (make-hash-table))
   (values))
 
-(defgeneric dump-registry (registry)
-  (:documentation "Dump the contents of the tables from REGISTRY."))
-(defmethod dump-registry ((r registry))
+(defun dump-registry (registry)
+  "Dump the contents of the tables from REGISTRY."
   (format t "** ENTRIES~%")
   (maphash #'(lambda (k v)
                (with-slots (cid id prev curr next) v
                  (format t "~S => ~S~%" k (list cid id prev curr next))))
-           (etable r))
+           (etable registry))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
                (with-slots (rid cid cname cstart cend clength cleft cright) v
                  (format t "~S => ~S~%" k
                          (list rid cid cname cstart cend clength cleft cright))))
-           (ctable r)))
+           (ctable registry)))
 
 (defun dump-world ()
   "Dump the contents of the world."
@@ -71,19 +69,18 @@
     (values)))
 
 (defgeneric add-record (record registry)
-  (:documentation "Add a record to REGISTRY."))
-(defmethod add-record ((entry record) (r registry))
+  (:documentation "Add RECORD to REGISTRY."))
+(defmethod add-record ((entry entry) (r registry))
   (setf (gethash (ecounter r) (etable r)) entry)
   entry)
-(defmethod add-record ((column record) (r registry))
+(defmethod add-record ((column column) (r registry))
   (setf (gethash (ccounter r) (ctable r)) column)
   column)
 
-(defgeneric add-registry (registry)
-  (:documentation "Add REGISTRY to WORLD."))
-(defmethod add-registry ((r registry))
-  (setf (gethash (rcounter *world*) (rtable *world*)) r)
-  r)
+(defun add-registry (registry)
+  "Add REGISTRY to WORLD."
+  (setf (gethash (rcounter *world*) (rtable *world*)) registry)
+  registry)
 
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
@@ -187,7 +184,7 @@
   "Display inforamtion about the registries."
   (format t "~&** REGISTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (rid rname ecounter ccounter) v
+               (with-slots (rid rname ccounter ecounter) v
                  (format t "~S => ~S~%" k (list rid rname ccounter ecounter))))
            (rtable *world*)))
 
