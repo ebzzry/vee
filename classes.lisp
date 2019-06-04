@@ -2,8 +2,6 @@
 
 (in-package #:muso/core)
 
-;;; TODO: design the inheritance
-
 (defclass world ()
   ((rcounter :initarg :rcounter
              :initform *initial-rcounter*
@@ -21,25 +19,25 @@
         :reader rid
         :documentation "The numeric ID of a registry.")
    (rname :initarg :rname
-          :initform (string (gensym "REGISTRY"))
+          :initform (error "Specify a registry name.")
           :reader rname
           :documentation "The name of a registry.")
-   (counter :initarg :counter
-            :initform *initial-counter*
-            :accessor counter
-            :documentation "The global entry counter.")
-   (table :initarg :table
+   (ecounter :initarg :ecounter
+            :initform *initial-ecounter*
+            :accessor ecounter
+            :documentation "The entry counter.")
+   (etable :initarg :etable
           :initform (make-hash-table)
-          :accessor table
-          :documentation "The global entry table.")
+          :accessor etable
+          :documentation "The entry table.")
    (ccounter :initarg :ccounter
              :initform *initial-ccounter*
              :accessor ccounter
-             :documentation "The global column counter")
+             :documentation "The column counter")
    (ctable :initarg :ctable
            :initform (make-hash-table)
            :accessor ctable
-           :documentation "The global column table."))
+           :documentation "The column table."))
   (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different data dataset comparisons."))
 
 (defclass column ()
@@ -63,6 +61,10 @@
          :initform -1
          :reader cend
          :documentation "The end number for a column, which corresponds to an entry ID.")
+   (clength :initarg :clength
+            :initform -1
+            :accessor clength
+            :documentation "The length of a column, determined by the number of items in it.")
    (cleft :initarg :cleft
           :initform -1
           :reader cleft

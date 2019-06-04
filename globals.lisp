@@ -8,9 +8,8 @@
 (defvar *join-limit* 2
   "The amount of lines forward to join.")
 
-;;; Note: fix or remove this abomination
-(defvar *empty-item* (make-list 2 :initial-element "")
-  "An empty data set.")
+(defvar *pad* nil
+  "Padding data for items.")
 
 (defvar *similarity-threshold* 40.0
   "The minimum amount of similarity between sets so that they can be considered similar.")
@@ -21,7 +20,7 @@
 (defvar *initial-ccounter* 1000
   "The initial ccounter value")
 
-(defvar *initial-counter* 10000
+(defvar *initial-ecounter* 10000
   "The initial counter value")
 
 (defvar *selector-limit* 1000

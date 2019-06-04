@@ -2,6 +2,17 @@
 
 (in-package #:muso/core)
 
+(defun make-empty (datum)
+  "Return an empty item based from DATUM."
+  (let ((length (length datum)))
+    (make-list length :initial-element *pad*)))
+
+(defun pad-feed (feed)
+  "Add starting and ending padding for column based on the first element."
+  (let* ((initial (elt0 feed))
+         (pad (make-empty initial)))
+    (append (list pad) feed (list pad))))
+
 (defun current-item (feed)
   "Return the current item text in FEED."
   (first feed))
@@ -43,11 +54,11 @@
 
 (defun empty-left (datum)
   "Return a grouping wherein the left side is empty."
-  (append *empty-item* datum))
+  (append (make-empty datum) datum))
 
 (defun empty-right (datum)
   "Return a grouping wherein the right side is empty."
-  (append datum *empty-item*))
+  (append datum (make-empty datum)))
 
 (defun fill-blanks (data side)
   "Create blanks from DATA on side SIDE."
@@ -213,3 +224,5 @@
 ;;;
 ;;; - Convert COMPLETE-MATCH-P and PARTIAL-MATCH-P to generic functions
 ;;; - Maybe reimplement WALK
+;;; - Loop over the IDs found in a column instance
+

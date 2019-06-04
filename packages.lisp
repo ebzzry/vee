@@ -5,7 +5,7 @@
 (uiop:define-package #:muso/core
     (:use #:cl
           #:trivia)
-  (:export #:boot
+  (:export #:boot-world
            #:read-file
            #:import-feed))
 

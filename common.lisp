@@ -162,9 +162,6 @@
   "Apply NCONC to the result of applying FN to sequence-1 and sequence-2."
   (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
 
-(defun pad-feed (feed &optional (pad ""))
-  "Add starting and ending padding for column based on the first element."
-  (let* ((initial (elt0 feed))
-         (length (length initial))
-         (pad (make-list length :initial-element pad)))
-    (append (list pad) feed (list pad))))
+(defun genstring (string)
+  "Return a GENSYM’d string."
+  (string (gensym string)))
