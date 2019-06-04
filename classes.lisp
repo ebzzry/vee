@@ -47,7 +47,7 @@
         :documentation "The registry ID to which a column belongs to..")
    (cid :initarg :cid
         :initform nil
-        :reader cid
+        :accessor cid
         :documentation "The numeric ID of a column.")
    (cname :initarg :cname
           :initform ""

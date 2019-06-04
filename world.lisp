@@ -111,9 +111,8 @@
 
 (defmethod initialize-instance :after ((c column) &key)
   "Set the CLENGTH slot for C after instantiating."
-  (let ((start (cstart c))
-        (end (cend c)))
-    (setf (clength c) (1+ (- end start)))))
+  (with-slots (cid cstart cend clength) c
+    (setf clength (1+ (- cend cstart)))))
 
 (defun make-column (rid cid cname cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
@@ -275,6 +274,7 @@
 
 (defun shallow-copy-registry (registry name)
   "Create a shallow copy of REGISTRY."
+  (declare (ignorable registry name))
   (when (find-registry name)
     (error "Target registry name already exists."))
   nil)
