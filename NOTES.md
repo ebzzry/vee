@@ -16,3 +16,24 @@ Glossary
 - wall (n): the longest/largest column in a registry
 - wall copy (v): to create a copy of a template to a new registry, wherein all
   columns in the new registry have the same lengths as the wall from template
+
+
+TODO
+----
+
+- [x] Design the registry system
+- [x] Implement light traversal
+- [x] Write feed imported
+- [x] Write displayer and locaters
+- [x] Implement registry wall copying
+- [x] Generalize spawners
+- [x] Factor out counter generators
+- [x] Define methods for INITIALIZE-INSTANCE on COLUMN and ENTRY classes
+- [ ] Reimplement the walker
+- [ ] Design the inheritence of the classes
+- [ ] Write a Python bridge
+- [ ] Write a Python API
+- [ ] Connect to Wordnet to be able to connect “dogs” and “puppies”
+- [ ] Handle arbitrary amount of columns
+- [ ] Handle arbitrary delimiters
+- [ ] Implement inter-registry traversal

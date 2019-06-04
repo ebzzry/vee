@@ -1,4 +1,4 @@
-;;; registry.lisp
+;;; world.lisp
 
 (in-package #:muso/core)
 
@@ -282,7 +282,7 @@
   nil)
 
 (defun wall-copy-registry (template registry)
-  "Create blank columns from TEMPLATE to REGISTRY with uniform lengths from the wall in TEMPLATE."
+  "Create a wall copy of TEMPLATE to REGISTRY."
   (unless (and template registry)
     (error "Either the template or the target registry does not exist."))
   (let* ((wall (wall template))
