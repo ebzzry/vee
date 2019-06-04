@@ -20,23 +20,23 @@
 (defun reset-ccounter (r) "See RESET-COUNTER." (reset-counter r ccounter))
 
 (defun spawn-rcounter ()
-  "Generate a new RCOUNTER in WORLD."
+  "Increment the world RCOUNTER."
   (incf (rcounter *world*))
   (rcounter *world*))
 
 (defun reset-rcounter ()
-  "Reset the RCOUNTER in WORLD."
+  "Reset the world RCOUNTER."
   (setf (rcounter *world*) *initial-rcounter*)
   (values))
 
 (defun reset-world ()
-  "Reset the world."
+  "Reset the whole world."
   (setf (rcounter *world*) *initial-rcounter*)
   (setf (rtable *world*) (make-hash-table))
   (values))
 
 (defgeneric reset-registry (registry)
-  (:documentation "Reset the contents of registry."))
+  (:documentation "Reset the contents of REGISTRY."))
 (defmethod reset-registry ((r registry))
   (setf (ecounter r) *initial-ecounter*)
   (setf (etable r) (make-hash-table))
@@ -99,7 +99,7 @@
       (format stream "RID:~A RNAME:~A" rid rname))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
-  "Update entry E in registry."
+  "Update entry E in REGISTRY."
   (let ((counter (spawn-ecounter registry)))
     (with-slots (id) e
       (setf id counter))))
@@ -225,7 +225,7 @@
   (loop :for e :being :the :hash-values :in (etable r) :collect e))
 
 (defgeneric dump-column (column &key &allow-other-keys)
-  (:documentation "Print information about a column."))
+  (:documentation "Print information about COLUMN."))
 (defmethod dump-column ((c column) &key (complete nil))
   (with-slots (rid cid cstart cend clength cleft cright) c
     (when complete
@@ -271,7 +271,7 @@
 (mof:defalias wall max-column)
 
 (defun mktemp-registry ()
-  "Return an empty registry."
+  "Return an empty REGISTRY."
   (make-registry (genstring "REGISTRY")))
 
 (defun shallow-copy-registry (template registry)
