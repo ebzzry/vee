@@ -6,8 +6,8 @@
   "Generate a new counter in REGISTRY with ACCESSOR."
   `(progn (incf (,accessor ,registry))
           (,accessor ,registry)))
-(defun spawn-ecounter (registry) (spawn-counter registry ecounter))
-(defun spawn-ccounter (registry) (spawn-counter registry ccounter))
+(defun spawn-ecounter (r) "See SPAWN-COUNTER." (spawn-counter r ecounter))
+(defun spawn-ccounter (r) "See SPAWN-COUNTER." (spawn-counter r ccounter))
 
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
@@ -16,8 +16,8 @@
       (progn
         (setf (,accessor ,registry) ,global)
         (values)))))
-(defun reset-ecounter (registry) (reset-counter registry ecounter))
-(defun reset-ccounter (registry) (reset-counter registry ccounter))
+(defun reset-ecounter (r) "See RESET-COUNTER." (reset-counter r ecounter))
+(defun reset-ccounter (r) "See RESET-COUNTER." (reset-counter r ccounter))
 
 (defun spawn-rcounter ()
   "Generate a new RCOUNTER in WORLD."
@@ -70,14 +70,14 @@
       (dump-registries))
     (values)))
 
-(defgeneric add-record (entry registry)
+(defgeneric add-record (record registry)
   (:documentation "Add a record to REGISTRY."))
-(defmethod add-record ((e entry) (r registry))
-  (setf (gethash (ecounter r) (etable r)) e)
-  e)
-(defmethod add-record ((c column) (r registry))
-  (setf (gethash (ccounter r) (ctable r)) c)
-  c)
+(defmethod add-record ((entry record) (r registry))
+  (setf (gethash (ecounter r) (etable r)) entry)
+  entry)
+(defmethod add-record ((column record) (r registry))
+  (setf (gethash (ccounter r) (ctable r)) column)
+  column)
 
 (defgeneric add-registry (registry)
   (:documentation "Add REGISTRY to WORLD."))
