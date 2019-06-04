@@ -2,39 +2,32 @@
 
 (in-package #:muso/core)
 
-(defgeneric reset-ecounter (registry)
-  (:documentation "Reset the COUNTER in REGISTRY."))
-(defmethod reset-ecounter ((r registry))
-  (setf (ecounter r) *initial-ecounter*)
-  (values))
+(defmacro spawn-counter (registry accessor)
+  "Generate a new counter in REGISTRY with ACCESSOR."
+  `(progn (incf (,accessor ,registry))
+          (,accessor ,registry)))
+(defun spawn-ecounter (registry) (spawn-counter registry ecounter))
+(defun spawn-ccounter (registry) (spawn-counter registry ccounter))
 
-(defgeneric spawn-ecounter (registry)
-  (:documentation "Generate a new COUNTER in REGISTRY."))
-(defmethod spawn-ecounter ((r registry))
-  (incf (ecounter r))
-  (ecounter r))
-
-(defgeneric reset-ccounter (registry)
-  (:documentation "Reset the CCOUNTER in REGISTRY."))
-(defmethod reset-ccounter ((r registry))
-  (setf (ccounter r) *initial-ccounter*)
-  (values))
-
-(defgeneric spawn-ccounter (registry)
-  (:documentation "Generate a new CCOUNTER in REGISTRY."))
-(defmethod spawn-ccounter ((r registry))
-  (incf (ccounter r))
-  (ccounter r))
-
-(defun reset-rcounter ()
-  "Reset the RCOUNTER in WORLD."
-  (setf (rcounter *world*) *initial-rcounter*)
-  (values))
+(defmacro reset-counter (registry accessor)
+  "Reset counter in REGISTRY with ACCESSOR."
+  (mof:with-gensyms (global)
+    `(let ((,global ,(intern (mof:cat "*INITIAL-" (string accessor) "*"))))
+      (progn
+        (setf (,accessor ,registry) ,global)
+        (values)))))
+(defun reset-ecounter (registry) (reset-counter registry ecounter))
+(defun reset-ccounter (registry) (reset-counter registry ccounter))
 
 (defun spawn-rcounter ()
   "Generate a new RCOUNTER in WORLD."
   (incf (rcounter *world*))
   (rcounter *world*))
+
+(defun reset-rcounter ()
+  "Reset the RCOUNTER in WORLD."
+  (setf (rcounter *world*) *initial-rcounter*)
+  (values))
 
 (defun reset-world ()
   "Reset the world."
@@ -105,20 +98,29 @@
     (with-slots (rid rname) r
       (format stream "RID:~A RNAME:~A" rid rname))))
 
-(defun make-entry (cid id &optional prev curr next)
+(defmethod initialize-instance :after ((e entry) &key registry)
+  "Update entry E in registry."
+  (let ((counter (spawn-ecounter registry)))
+    (with-slots (id) e
+      (setf id counter))))
+
+(defun make-entry (cid registry &optional prev curr next)
   "Create an instance of the entry class."
-  (make-instance 'entry :cid cid :id id :prev prev :curr curr :next next))
+  (make-instance 'entry :cid cid :prev prev :curr curr :next next :registry registry))
 
-(defmethod initialize-instance :after ((c column) &key)
-  "Set the CLENGTH slot for C after instantiating."
-  (with-slots (cid cstart cend clength) c
-    (setf clength (1+ (- cend cstart)))))
+(defmethod initialize-instance :after ((c column) &key registry)
+  "Update column C in REGISTRY."
+  (let ((counter (spawn-ccounter registry)))
+    (with-slots (cid cstart cend clength) c
+      (setf clength (1+ (- cend cstart))
+            cid counter))))
 
-(defun make-column (rid cid cname cstart cend &optional (cleft -1) (cright -1))
+(defun make-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
-  (make-instance 'column :rid rid :cid cid :cname (string-upcase cname)
+  (make-instance 'column :rid rid :cname (string-upcase cname)
                          :cstart cstart :cend cend
-                         :cleft cleft :cright cright))
+                         :cleft cleft :cright cright
+                         :registry registry))
 
 (defun make-registry (&optional (rname (genstring "REGISTRY")))
   "Create an instance of the registry class."
@@ -155,12 +157,12 @@
          (start (1+ (ecounter registry)))
          (offset (1- (+ start length)))
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-         (column (make-column (rid registry) (spawn-ccounter registry) cname start offset)))
+         (column (make-column (rid registry) registry cname start offset)))
     (add-record column registry)
     (loop :for prev :in pillar
           :for curr :in (rest pillar)
           :for next :in (rest (rest pillar))
-          :for entry = (make-entry (cid column) (spawn-ecounter registry) prev curr next)
+          :for entry = (make-entry (cid column) registry prev curr next)
           :do (add-record entry registry))
     registry))
 
@@ -272,26 +274,26 @@
   "Return an empty registry."
   (make-registry (genstring "REGISTRY")))
 
-(defun shallow-copy-registry (registry name)
-  "Create a shallow copy of REGISTRY."
-  (declare (ignorable registry name))
-  (when (find-registry name)
-    (error "Target registry name already exists."))
+(defun shallow-copy-registry (template registry)
+  "Create a shallow copy of TEMPLATE to REGISTRY."
+  (declare (ignorable template registry))
+  (unless (and template registry)
+    (error "Either the template or the target registry does not exist."))
   nil)
 
 (defun wall-copy-registry (template registry)
   "Create blank columns from TEMPLATE to REGISTRY with uniform lengths from the wall in TEMPLATE."
-  (assert (null (find-registry registry)))
+  (unless (and template registry)
+    (error "Either the template or the target registry does not exist."))
   (let* ((wall (wall template))
          (length (clength wall)))
     (loop :for count :from 1 :to (length (find-columns template))
           :for start = (1+ (ecounter registry))
           :for offset = (+ start length)
           :for cname = (genstring "COLUMN")
-          :for column = (add-record (make-column (rid registry) (spawn-ccounter registry)
-                                                 cname start offset)
+          :for column = (add-record (make-column (rid registry) registry cname start offset)
                                     registry)
           :do (loop :for cid :from (cstart column) :to (cend column)
-                    :for entry = (make-entry (cid column) (spawn-ecounter registry))
+                    :for entry = (make-entry (cid column) registry)
                     :do (add-record entry registry)))
     registry))
