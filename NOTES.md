@@ -37,3 +37,4 @@ TODO
 - [ ] Handle arbitrary amount of columns
 - [ ] Handle arbitrary delimiters
 - [ ] Implement inter-registry traversal
+- [ ] Handle XLSX files

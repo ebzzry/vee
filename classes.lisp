@@ -11,7 +11,7 @@
            :initform (make-hash-table)
            :accessor rtable
            :documentation "The top-level collection of registries."))
-  (:documentation "The top-level structure for registries."))
+  (:documentation "The top-level structure for registries. Take note that when the instance is bound to a special variable, the special variable can also point to other world instances."))
 
 (defclass registry ()
   ((rid :initarg :rid
@@ -38,7 +38,7 @@
            :initform (make-hash-table)
            :accessor ctable
            :documentation "The column table."))
-  (:documentation "Information about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different data dataset comparisons."))
+  (:documentation "Tables and counters about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons."))
 
 (defclass column ()
   ((rid :initarg :rid
@@ -73,7 +73,7 @@
            :initform -1
            :reader cright
            :documentation "The column to the right of the current one."))
-  (:documentation "Information about the range of entries that it contains. It may also contain links to other columns inside a registry."))
+  (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry."))
 
 (defclass entry ()
   ((cid :initarg :cid
@@ -96,4 +96,4 @@
          :initform nil
          :reader next
          :documentation "The next entry in a column."))
-  (:documentation "Information about individual entries usually coming in from a delimited source."))
+  (:documentation "Information instantiated from feeds."))

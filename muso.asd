@@ -1,6 +1,6 @@
 ;;;; muso.asd
 
-#-asdf3.1 (error "ASDF 3.1 or bust!")
+#-ASDF3.1 (error "ASDF 3.1 or bust!")
 
 (defpackage #:muso-system
   (:use #:cl #:asdf))
@@ -11,13 +11,12 @@
   :name "muso"
   :version "0.0.1"
   :description ""
+  :license ""
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
   :depends-on (#:uiop
                #:cl-ppcre
-               #:trivia
                #:fare-csv
-               #:mof
-               #:trivia)
+               #:mof)
   :serial t
   :components ((:file "packages")
                (:file "globals")

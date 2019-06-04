@@ -3,8 +3,7 @@
 (in-package #:cl-user)
 
 (uiop:define-package #:muso/core
-    (:use #:cl
-          #:trivia)
+    (:use #:cl)
   (:nicknames #:muso)
   (:export #:boot-world
            #:read-file
