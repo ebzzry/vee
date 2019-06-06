@@ -157,21 +157,6 @@
   (setf *world* (make-world)))
 (mof:defalias boot-world initialize-world)
 
-;; (defun import-feed (feed name registry)
-;;   "Import items from FEED to REGISTRY with name NAME."
-;;   (let* ((pillar (pad-feed feed))
-;;          (length (length feed))
-;;          (start (1+ (ecounter registry)))
-;;          (offset (1- (+ start length)))
-;;          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-;;          (column (forge-column (rid registry) registry cname start offset))
-;;          (cid (cid column)))
-;;     (loop :for prev :in pillar
-;;           :for value :in (rest pillar)
-;;           :for next :in (rest (rest pillar))
-;;           :do (forge-entry (cid column) registry prev next value))
-;;     registry))
-
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
   (let* ((length (length feed))
@@ -180,12 +165,7 @@
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
          (column (forge-column (rid registry) registry cname start offset))
          (cid (cid column)))
-    ;; forge first
     (loop :for item :in feed :do (forge-entry cid registry nil nil item))
-
-    ;; then update
-    ;; if an entry is first in the column do not update PREV
-    ;; if an entry is last in the column do not update NEXT
     (loop :for id :from (cstart column) :to (cend column)
           :for entry = (find-entry id registry)
           :do (cond ((= id (cstart column)) (setf (next entry) (1+ id)))
@@ -194,18 +174,6 @@
                          (setf (prev entry) (1- id)
                                (next entry) (1+ id))))))
     registry))
-
-;;; Notes
-;;;
-;;; - Is that a delimiter?
-;;;
-;;; 10045 => (1001 10045 10044 ("this" "DT") 10046)
-;;; 10046 => (1001 10046 10045 ("book" "NN") NIL)
-
-;;; 10047 => (1002 10047 NIL ("NOTRE-DAME" "PROPER-MODIFIER") 10048)
-;;; 10048 => (1002 10048 10047 ("DE" "PROPER-MODIFIER") 10049)
-;;; 10049 => (1002 10049 10048 ("PARIS" "PROPER-NAME") 10050)
-
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))
