@@ -23,5 +23,6 @@
                (:file "classes")
                (:file "common")
                (:file "world")
+               (:file "propagation")
                (:file "walker")
                (:file "tests")))

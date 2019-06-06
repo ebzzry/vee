@@ -21,6 +21,8 @@ Glossary
 TODO
 ----
 
+- [ ] Implement propagation
+- [ ] Implement clustering of matches
 - [x] Design the registry system
 - [x] Implement light traversal
 - [x] Write feed imported
@@ -29,7 +31,7 @@ TODO
 - [x] Generalize spawners
 - [x] Factor out counter generators
 - [x] Define methods for INITIALIZE-INSTANCE on COLUMN and ENTRY classes
-- [ ] Reimplement the walker
+- [ ] Reimplement/ditch the walker
 - [ ] Design the inheritence of the classes
 - [ ] Write a Python bridge
 - [ ] Write a Python API

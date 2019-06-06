@@ -45,7 +45,7 @@
 
 (defun dump-registry (registry)
   "Dump the contents of the tables from REGISTRY."
-  (format t "** ENTRIES~%")
+  (format t "~%** ENTRIES~%")
   (maphash #'(lambda (k v)
                (with-slots (cid id prev curr next) v
                  (format t "~S => ~S~%" k (list cid id prev curr next))))
