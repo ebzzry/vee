@@ -47,8 +47,8 @@
   "Dump the contents of the tables from REGISTRY."
   (format t "~%** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (cid id prev curr next) v
-                 (format t "~S => ~S~%" k (list cid id prev curr next))))
+               (with-slots (cid id prev value next) v
+                 (format t "~S => ~S~%" k (list cid id prev value next))))
            (etable registry))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
@@ -84,8 +84,8 @@
 
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
-    (with-slots (cid id curr) e
-      (format stream "CID:~A ID:~A CURR:~S" cid id curr))))
+    (with-slots (cid id value) e
+      (format stream "CID:~A ID:~A VALUE:~S" cid id value))))
 (defmethod print-object ((c column) stream)
   (print-unreadable-object (c stream :type t)
     (with-slots (rid cid cname) c
@@ -101,9 +101,9 @@
     (with-slots (id) e
       (setf id counter))))
 
-(defun make-entry (cid registry &optional prev curr next)
+(defun make-entry (cid registry &optional prev value next)
   "Create an instance of the entry class."
-  (make-instance 'entry :cid cid :prev prev :curr curr :next next :registry registry))
+  (make-instance 'entry :cid cid :prev prev :value value :next next :registry registry))
 
 (defmethod initialize-instance :after ((c column) &key registry)
   "Update column C in REGISTRY."
@@ -112,12 +112,22 @@
       (setf clength (1+ (- cend cstart))
             cid counter))))
 
+(defun forge-entry (cid registry &optional prev value next)
+  "Create an entry under column CID in REGISTRY."
+  (let ((entry (make-entry cid registry prev value next)))
+    (add-record entry registry)))
+
 (defun make-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
   "Create an instance of the column class."
   (make-instance 'column :rid rid :cname (string-upcase cname)
                          :cstart cstart :cend cend
                          :cleft cleft :cright cright
                          :registry registry))
+
+(defun forge-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
+  "Create a column under registry RID in REGISTRY."
+  (let ((column (make-column rid registry cname cstart cend cleft cright)))
+    (add-record column registry)))
 
 (defun make-registry (&optional (rname (genstring "REGISTRY")))
   "Create an instance of the registry class."
@@ -154,13 +164,11 @@
          (start (1+ (ecounter registry)))
          (offset (1- (+ start length)))
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-         (column (make-column (rid registry) registry cname start offset)))
-    (add-record column registry)
+         (column (forge-column (rid registry) registry cname start offset)))
     (loop :for prev :in pillar
-          :for curr :in (rest pillar)
+          :for value :in (rest pillar)
           :for next :in (rest (rest pillar))
-          :for entry = (make-entry (cid column) registry prev curr next)
-          :do (add-record entry registry))
+          :do (forge-entry (cid column) registry prev value next))
     registry))
 
 (defgeneric find-registry (query)
@@ -230,22 +238,22 @@
               rid cid cstart cend clength cleft cright))
     (loop :for e :from cstart :to cend
           :for entry = (find-entry e (find-registry rid))
-          :do (with-slots (cid id prev curr next) entry
+          :do (with-slots (cid id prev value next) entry
                 (if complete
-                    (format t "~&CID:~A, ID:~A, PREV:~S, CURR:~S, NEXT:~S~%"
-                            cid id prev curr next)
-                    (format t "~&~S~%" curr))))
+                    (format t "~&CID:~A, ID:~A, PREV:~S, VALUE:~S, NEXT:~S~%"
+                            cid id prev value next)
+                    (format t "~&~S~%" value))))
     (values)))
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
 (defmethod dump-entry ((e entry) &key (complete nil))
-  (with-slots (cid id prev curr next) e
+  (with-slots (cid id prev value next) e
     (if complete
-        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
-                cid id prev curr next)
-        (format t "~&PREV: ~S~%CURR: ~S~%NEXT: ~S~%"
-                prev curr next))
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%VALUE: ~S~%NEXT: ~S~%"
+                cid id prev value next)
+        (format t "~&PREV: ~S~%VALUE: ~S~%NEXT: ~S~%"
+                prev value next))
     (values)))
 
 (defun display-column (cname rname)
@@ -288,9 +296,7 @@
           :for start = (1+ (ecounter registry))
           :for offset = (+ start length)
           :for cname = (genstring "COLUMN")
-          :for column = (add-record (make-column (rid registry) registry cname start offset)
-                                    registry)
+          :for column = (forge-column (rid registry) registry cname start offset)
           :do (loop :for cid :from (cstart column) :to (cend column)
-                    :for entry = (make-entry (cid column) registry)
-                    :do (add-record entry registry)))
+                    :do (forge-entry (cid column) registry)))
     registry))
