@@ -86,14 +86,14 @@
        :documentation "The numeric ID of an entry.")
    (prev :initarg :prev
          :initform nil
-         :reader prev
+         :accessor prev
          :documentation "The ID of the previous entry in a column.")
-   (value :initarg :value
-         :initform nil
-         :reader value
-         :documentation "The data value of the entry..")
    (next :initarg :next
          :initform nil
-         :reader next
-         :documentation "The ID of the next entry in a column."))
+         :accessor next
+         :documentation "The ID of the next entry in a column.")
+   (value :initarg :value
+          :initform nil
+          :reader value
+          :documentation "The datum of an entry."))
   (:documentation "Information instantiated from feeds."))

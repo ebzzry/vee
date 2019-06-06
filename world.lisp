@@ -47,8 +47,8 @@
   "Dump the contents of the tables from REGISTRY."
   (format t "~%** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (cid id prev value next) v
-                 (format t "~S => ~S~%" k (list cid id prev value next))))
+               (with-slots (cid id prev next value) v
+                 (format t "~S => ~S~%" k (list cid id prev next value))))
            (etable registry))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
@@ -85,15 +85,15 @@
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
     (with-slots (cid id value) e
-      (format stream "CID:~A ID:~A VALUE:~S" cid id value))))
+      (format stream "CID: ~A ID: ~A VALUE:~S" cid id value))))
 (defmethod print-object ((c column) stream)
   (print-unreadable-object (c stream :type t)
     (with-slots (rid cid cname) c
-      (format stream "RID:~A CID:~A CNAME:~A" rid cid cname))))
+      (format stream "RID: ~A CID: ~A CNAME: ~A" rid cid cname))))
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid rname) r
-      (format stream "RID:~A RNAME:~A" rid rname))))
+      (format stream "RID: ~A RNAME: ~A" rid rname))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
@@ -101,9 +101,9 @@
     (with-slots (id) e
       (setf id counter))))
 
-(defun make-entry (cid registry &optional prev value next)
+(defun make-entry (cid registry &optional prev next value)
   "Create an instance of the entry class."
-  (make-instance 'entry :cid cid :prev prev :value value :next next :registry registry))
+  (make-instance 'entry :cid cid :prev prev :next next :value value :registry registry))
 
 (defmethod initialize-instance :after ((c column) &key registry)
   "Update column C in REGISTRY."
@@ -112,9 +112,9 @@
       (setf clength (1+ (- cend cstart))
             cid counter))))
 
-(defun forge-entry (cid registry &optional prev value next)
+(defun forge-entry (cid registry &optional prev next value)
   "Create an entry under column CID in REGISTRY."
-  (let ((entry (make-entry cid registry prev value next)))
+  (let ((entry (make-entry cid registry prev next value)))
     (add-record entry registry)))
 
 (defun make-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
@@ -157,19 +157,55 @@
   (setf *world* (make-world)))
 (mof:defalias boot-world initialize-world)
 
+;; (defun import-feed (feed name registry)
+;;   "Import items from FEED to REGISTRY with name NAME."
+;;   (let* ((pillar (pad-feed feed))
+;;          (length (length feed))
+;;          (start (1+ (ecounter registry)))
+;;          (offset (1- (+ start length)))
+;;          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
+;;          (column (forge-column (rid registry) registry cname start offset))
+;;          (cid (cid column)))
+;;     (loop :for prev :in pillar
+;;           :for value :in (rest pillar)
+;;           :for next :in (rest (rest pillar))
+;;           :do (forge-entry (cid column) registry prev next value))
+;;     registry))
+
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
-  (let* ((pillar (pad-feed feed))
-         (length (length feed))
+  (let* ((length (length feed))
          (start (1+ (ecounter registry)))
          (offset (1- (+ start length)))
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-         (column (forge-column (rid registry) registry cname start offset)))
-    (loop :for prev :in pillar
-          :for value :in (rest pillar)
-          :for next :in (rest (rest pillar))
-          :do (forge-entry (cid column) registry prev value next))
+         (column (forge-column (rid registry) registry cname start offset))
+         (cid (cid column)))
+    ;; forge first
+    (loop :for item :in feed :do (forge-entry cid registry nil nil item))
+
+    ;; then update
+    ;; if an entry is first in the column do not update PREV
+    ;; if an entry is last in the column do not update NEXT
+    (loop :for id :from (cstart column) :to (cend column)
+          :for entry = (find-entry id registry)
+          :do (cond ((= id (cstart column)) (setf (next entry) (1+ id)))
+                    ((= id (cend column)) (setf (prev entry) (1- id)))
+                    (t (progn
+                         (setf (prev entry) (1- id)
+                               (next entry) (1+ id))))))
     registry))
+
+;;; Notes
+;;;
+;;; - Is that a delimiter?
+;;;
+;;; 10045 => (1001 10045 10044 ("this" "DT") 10046)
+;;; 10046 => (1001 10046 10045 ("book" "NN") NIL)
+
+;;; 10047 => (1002 10047 NIL ("NOTRE-DAME" "PROPER-MODIFIER") 10048)
+;;; 10048 => (1002 10048 10047 ("DE" "PROPER-MODIFIER") 10049)
+;;; 10049 => (1002 10049 10048 ("PARIS" "PROPER-NAME") 10050)
+
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))
@@ -234,13 +270,13 @@
 (defmethod dump-column ((c column) &key (complete nil))
   (with-slots (rid cid cstart cend clength cleft cright) c
     (when complete
-      (format t "~&RID:~A, CID:~A, CSTART:~A, CEND:~A, CLENGTH:~A, CLEFT:~A, CRIGHT:~A~%"
+      (format t "~&RID: ~A, CID: ~A, CSTART: ~A, CEND: ~A, CLENGTH: ~A, CLEFT: ~A, CRIGHT: ~A~%"
               rid cid cstart cend clength cleft cright))
     (loop :for e :from cstart :to cend
           :for entry = (find-entry e (find-registry rid))
           :do (with-slots (cid id prev value next) entry
                 (if complete
-                    (format t "~&CID:~A, ID:~A, PREV:~S, VALUE:~S, NEXT:~S~%"
+                    (format t "~&CID: ~A, ID: ~A, PREV:~S, VALUE:~S, NEXT:~S~%"
                             cid id prev value next)
                     (format t "~&~S~%" value))))
     (values)))
@@ -300,3 +336,9 @@
           :do (loop :for cid :from (cstart column) :to (cend column)
                     :do (forge-entry (cid column) registry)))
     registry))
+
+;;; Note: when holes will be linked with normal entries, the sequencing of
+;;; CSTART and CEND may be disrupted
+(defun forge-hole (cid registry &optional prev next)
+  "Create a hole entry in registry."
+  (forge-entry cid registry prev next nil))
