@@ -112,6 +112,9 @@
       (setf clength (1+ (- cend cstart))
             cid counter))))
 
+(defmethod prev ((e null)) "Return nil on null entries." nil)
+(defmethod next ((e null)) "Return nil on null entries." nil)
+
 (defun forge-entry (cid registry &optional prev next value)
   "Create an entry under column CID in REGISTRY."
   (let ((entry (make-entry cid registry prev next value)))

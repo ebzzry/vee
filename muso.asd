@@ -24,5 +24,6 @@
                (:file "common")
                (:file "world")
                (:file "propagation")
-               (:file "walker")
+               (:file "feeds")
+               ;; (:file "walker")
                (:file "tests")))
