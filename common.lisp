@@ -171,3 +171,8 @@
   (let* ((initial (elt0 feed))
          (pad (make-empty initial)))
     (append (list pad) feed (list pad))))
+
+(defun slots (object)
+  "Return the slot names of an object."
+  (mapcar #'sb-mop:slot-definition-name
+          (sb-mop:class-direct-slots (class-of object))))

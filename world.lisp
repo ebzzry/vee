@@ -168,11 +168,13 @@
     (loop :for item :in feed :do (forge-entry cid registry nil nil item))
     (loop :for id :from (cstart column) :to (cend column)
           :for entry = (find-entry id registry)
-          :do (cond ((= id (cstart column)) (setf (next entry) (1+ id)))
-                    ((= id (cend column)) (setf (prev entry) (1- id)))
+          :do (cond ((= id (cstart column))
+                     (setf (next entry) (find-entry (1+ id) registry)))
+                    ((= id (cend column))
+                     (setf (prev entry) (find-entry (1- id) registry)))
                     (t (progn
-                         (setf (prev entry) (1- id)
-                               (next entry) (1+ id))))))
+                         (setf (prev entry) (find-entry (1- id) registry))
+                         (setf (next entry) (find-entry (1+ id) registry))))))
     registry))
 
 (defgeneric find-registry (query)
