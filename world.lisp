@@ -43,12 +43,17 @@
   (setf (ctable registry) (make-hash-table))
   (values))
 
+(defun yield-id (entry)
+  "Return ID of ENTRY."
+  (when entry
+    (id entry)))
+
 (defun dump-registry (registry)
   "Dump the contents of the tables from REGISTRY."
   (format t "~%** ENTRIES~%")
   (maphash #'(lambda (k v)
                (with-slots (cid id prev next value) v
-                 (format t "~S => ~S~%" k (list cid id prev next value))))
+                 (format t "~S => ~S~%" k (list cid id (yield-id prev) (yield-id next) value))))
            (etable registry))
   (format t "~%** COLUMNS~%")
   (maphash #'(lambda (k v)
@@ -197,7 +202,7 @@
   "Return all registries from the world."
   (loop :for r :being :the :hash-values :in (rtable *world*) :collect r))
 
-(defun dump-registries ()
+(defun dump-registries()
   "Display inforamtion about the registries."
   (format t "~&** REGISTRIES~%")
   (maphash #'(lambda (k v)
