@@ -1,4 +1,4 @@
-;;; world.lisp
+;;;; world.lisp
 
 (in-package #:muso/core)
 
@@ -13,9 +13,9 @@
   "Reset counter in REGISTRY with ACCESSOR."
   (mof:with-gensyms (global)
     `(let ((,global ,(intern (mof:cat "*INITIAL-" (string accessor) "*"))))
-      (progn
-        (setf (,accessor ,registry) ,global)
-        (values)))))
+       (progn
+         (setf (,accessor ,registry) ,global)
+         (values)))))
 (defun reset-ecounter (r) "See RESET-COUNTER." (reset-counter r ecounter))
 (defun reset-ccounter (r) "See RESET-COUNTER." (reset-counter r ccounter))
 
@@ -50,12 +50,14 @@
 
 (defun dump-registry (registry)
   "Dump the contents of the tables from REGISTRY."
-  (format t "~%** ENTRIES~%")
+  (format t "~&** ENTRIES~%")
   (maphash #'(lambda (k v)
                (with-slots (cid id prev next value) v
-                 (format t "~S => ~S~%" k (list cid id (yield-id prev) (yield-id next) value))))
+                 (let ((fmt "~S => ~S~%")
+                       (slots (list cid id prev next value)))
+                   (format t fmt k slots))))
            (etable registry))
-  (format t "~%** COLUMNS~%")
+  (format t "~&** COLUMNS~%")
   (maphash #'(lambda (k v)
                (with-slots (rid cid cname cstart cend clength cleft cright) v
                  (format t "~S => ~S~%" k
@@ -69,7 +71,6 @@
     (loop :for registry :in registries
           :do (dump-registry registry))
     (when registries
-      (format t "~%")
       (dump-registries))
     (values)))
 
@@ -89,16 +90,16 @@
 
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
-    (with-slots (cid id value) e
-      (format stream "CID: ~A ID: ~A VALUE:~S" cid id value))))
+    (with-slots (id) e
+      (format stream "~A" id))))
 (defmethod print-object ((c column) stream)
   (print-unreadable-object (c stream :type t)
-    (with-slots (rid cid cname) c
-      (format stream "RID: ~A CID: ~A CNAME: ~A" rid cid cname))))
+    (with-slots (cid) c
+      (format stream "~A" cid))))
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid rname) r
-      (format stream "RID: ~A RNAME: ~A" rid rname))))
+      (format stream "~A" rid))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
@@ -165,24 +166,35 @@
   (setf *world* (make-world)))
 (mof:defalias boot-world initialize-world)
 
+(defun forge-entries (column registry &key feed)
+  "Forge unlinked entries in COLUMN under REGISTRY. If FEED is true, use it to seed values."
+  (if feed
+      (loop :for item :in feed
+            :do (forge-entry (cid column) registry nil nil item))
+      (loop :for cid :from (cstart column) :to (cend column)
+            :do (forge-entry (cid column) registry))))
+
+(defun link-entries (column registry)
+  "Attached the entries in column under registry to one another."
+  (loop :for id :from (cstart column) :to (cend column)
+        :for entry = (find-entry id registry)
+        :do (cond ((= id (cstart column))
+                   (setf (next entry) (find-entry (1+ id) registry)))
+                  ((= id (cend column))
+                   (setf (prev entry) (find-entry (1- id) registry)))
+                  (t (progn
+                       (setf (prev entry) (find-entry (1- id) registry))
+                       (setf (next entry) (find-entry (1+ id) registry)))))))
+
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
   (let* ((length (length feed))
          (start (1+ (ecounter registry)))
          (offset (1- (+ start length)))
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-         (column (forge-column (rid registry) registry cname start offset))
-         (cid (cid column)))
-    (loop :for item :in feed :do (forge-entry cid registry nil nil item))
-    (loop :for id :from (cstart column) :to (cend column)
-          :for entry = (find-entry id registry)
-          :do (cond ((= id (cstart column))
-                     (setf (next entry) (find-entry (1+ id) registry)))
-                    ((= id (cend column))
-                     (setf (prev entry) (find-entry (1- id) registry)))
-                    (t (progn
-                         (setf (prev entry) (find-entry (1- id) registry))
-                         (setf (next entry) (find-entry (1+ id) registry))))))
+         (column (forge-column (rid registry) registry cname start offset)))
+    (forge-entries column registry :feed feed)
+    (link-entries column registry)
     registry))
 
 (defgeneric find-registry (query)
@@ -245,18 +257,16 @@
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
-(defmethod dump-column ((c column) &key (complete nil))
-  (with-slots (rid cid cstart cend clength cleft cright) c
-    (when complete
-      (format t "~&RID: ~A, CID: ~A, CSTART: ~A, CEND: ~A, CLENGTH: ~A, CLEFT: ~A, CRIGHT: ~A~%"
-              rid cid cstart cend clength cleft cright))
+(defmethod dump-column ((c column) &key complete)
+  (with-slots (rid cid cname cstart cend clength cleft cright) c
+    (format t "~&RID: ~A~%CID: ~A~%CNAME: ~A~%CSTART: ~A~%CEND: ~A~%CLENGTH: ~A~%CLEFT: ~A~%CRIGHT: ~A~%"
+              rid cid cname cstart cend clength cleft cright)
     (loop :for e :from cstart :to cend
           :for entry = (find-entry e (find-registry rid))
-          :do (with-slots (cid id prev value next) entry
-                (if complete
-                    (format t "~&CID: ~A, ID: ~A, PREV:~S, VALUE:~S, NEXT:~S~%"
-                            cid id prev value next)
-                    (format t "~&~S~%" value))))
+          :do (with-slots (cid id prev next value) entry
+                (when complete
+                  (format t "~&CID: ~A, ID: ~A, PREV: ~S, NEXT: ~S, VALUE: ~S~%"
+                          cid id prev next value))))
     (values)))
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
@@ -264,18 +274,18 @@
 (defmethod dump-entry ((e entry) &key (complete nil))
   (with-slots (cid id prev value next) e
     (if complete
-        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%VALUE: ~S~%NEXT: ~S~%"
-                cid id prev value next)
-        (format t "~&PREV: ~S~%VALUE: ~S~%NEXT: ~S~%"
-                prev value next))
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%"
+                cid id prev next value)
+        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%"
+                prev next value))
     (values)))
 
-(defun display-column (cname rname)
-  "Display the contents of column CNAME in registry RNAME."
-  (dump-column (find-column cname (find-registry rname))))
-(defun display-entry (id rname)
-  "Display the contents of entry ID in registry RNAME."
-  (dump-entry (find-entry id (find-registry rname))))
+(defun display-column (query rname)
+  "Display the contents of column QUERY in registry RNAME."
+  (dump-column (find-column query (find-registry rname))))
+(defun display-entry (query rname)
+  "Display the contents of entry QUERY in registry RNAME."
+  (dump-entry (find-entry query (find-registry rname))))
 
 (defun locate-column (cname rname)
   "Locate the column CNAME in registry RNAME."
@@ -283,6 +293,7 @@
 (defun locate-entry (id rname)
   "Locate the entry ID in registry RNAME."
   (find-entry id (find-registry rname)))
+(mof:defalias locate-registry find-registry)
 
 (defun max-column (registry)
   "Return the biggest column in REGISTRY."
@@ -311,12 +322,14 @@
           :for offset = (+ start length)
           :for cname = (genstring "COLUMN")
           :for column = (forge-column (rid registry) registry cname start offset)
-          :do (loop :for cid :from (cstart column) :to (cend column)
-                    :do (forge-entry (cid column) registry)))
+
+          ;; Note: these entries are not linked to one another, should they be?
+          :do (forge-entries column registry))
     registry))
 
 ;;; Note: when holes will be linked with normal entries, the sequencing of
-;;; CSTART and CEND may be disrupted
+;;; CSTART and CEND may be disrupted. So column values must also be updated
+;;; appropriately
 (defun forge-hole (cid registry &optional prev next)
   "Create a hole entry in registry."
   (forge-entry cid registry prev next nil))

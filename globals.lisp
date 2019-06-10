@@ -28,3 +28,9 @@
 
 (defparameter *world* nil
   "The top-level structure which contains all the registries.")
+
+(defvar *field-test* #'string=
+  "The test function that will be used to compare fields.")
+
+(defvar *default-selectors* (list #'elt0)
+  "The default list of functions that are used for specifying clusters.")

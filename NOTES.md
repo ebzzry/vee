@@ -17,27 +17,43 @@ Glossary
 - wall copy (v): to create a copy of a template to a new registry, wherein all
   columns in the new registry have the same lengths as the wall from template
 - forge (v): to instantiate a record then add it to the registry
+- field (n): a part of an entry
 
 
 TODO
 ----
 
-- [ ] Implement propagation
-- [ ] Implement clustering of matches
+
+### Model
+
 - [x] Design the registry system
 - [x] Implement light traversal
-- [x] Write feed imported
+- [x] Write feed importation
 - [x] Write displayer and locaters
 - [x] Implement registry wall copying
 - [x] Generalize spawners
 - [x] Factor out counter generators
-- [x] Define methods for INITIALIZE-INSTANCE on COLUMN and ENTRY classes
+- [x] Define methods fro auto-updates of counters
+
+
+### Propagation
+
+- [ ] Implement propagation
+- [x] Implement clustering of matches
+
+
+### Interface
+
 - [ ] Reimplement/ditch the walker
 - [ ] Design the inheritence of the classes
 - [ ] Write a Python bridge
 - [ ] Write a Python API
+- [ ] Handle XLSX files
 - [ ] Connect to Wordnet to be able to connect “dogs” and “puppies”
+
+
+### Miscellany
+
 - [ ] Handle arbitrary amount of columns
 - [ ] Handle arbitrary delimiters
 - [ ] Implement inter-registry traversal
-- [ ] Handle XLSX files

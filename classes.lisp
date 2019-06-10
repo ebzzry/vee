@@ -48,7 +48,7 @@
    (cid :initarg :cid
         :initform nil
         :accessor cid
-        :documentation "The numeric ID of a column.")
+        :documentation "The unique numeric ID of a column in a registry.")
    (cname :initarg :cname
           :initform ""
           :reader cname
@@ -83,7 +83,7 @@
    (id :initarg :id
        :initform -1
        :reader id
-       :documentation "The numeric ID of an entry.")
+       :documentation "The unique numeric ID of an entry in a registry.")
    (prev :initarg :prev
          :initform nil
          :accessor prev
