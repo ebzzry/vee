@@ -254,8 +254,20 @@
   "Return all items in registry. Limit search only to COLUMN if it is specified."
   (cond (column (loop :for cid :from (cstart column) :to (cend column)
                       :collect (find-entry cid registry)))
-        (t (loop :for e :being :the :hash-values :in (etable registry)
-                 :collect e))))
+        (t (loop :for entry :being :the :hash-values :in (etable registry)
+                 :collect entry))))
+
+(defun locate-entities (registry &optional column)
+  "Return registry and column as values."
+  (cond (column (values (locate-registry registry)
+                        (locate-column column registry)))
+        (t (locate-registry registry))))
+
+(defun collect (registry &optional column)
+  "Return the entries in registry or as scoped by column."
+  (multiple-value-bind (r c)
+      (locate-entities registry column)
+    (find-entries r c)))
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
