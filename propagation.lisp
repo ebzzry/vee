@@ -44,6 +44,6 @@
                 &key (selectors *default-selectors*)
                      (test *field-test*))
   "Return the offsets of a query in COLUMN within REGISTRY."
-  (mapcar #'(lambda (e)
-              (compute-offset column e))
+  (mapcar #'(lambda (entry)
+              (compute-offset column entry))
           (find-matches query column registry :selectors selectors :test test)))

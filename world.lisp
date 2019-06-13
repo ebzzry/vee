@@ -250,10 +250,12 @@
         :when (= query (id entry))
         :return entry))
 
-(defgeneric find-entries (registry)
-  (:documentation "Return all entries from REGISTRY."))
-(defmethod find-entries ((r registry))
-  (loop :for e :being :the :hash-values :in (etable r) :collect e))
+(defun find-entries (registry &optional column)
+  "Return all items in registry. Limit search only to COLUMN if it is specified."
+  (cond (column (loop :for cid :from (cstart column) :to (cend column)
+                      :collect (find-entry cid registry)))
+        (t (loop :for e :being :the :hash-values :in (etable registry)
+                 :collect e))))
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
