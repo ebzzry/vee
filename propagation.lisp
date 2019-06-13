@@ -2,10 +2,6 @@
 
 (in-package #:muso/core)
 
-(defun compute-offset (column entry)
-  "Return the offset in the wall for the matching entry."
-  (- (id entry) (cstart column)))
-
 (defgeneric full (object)
   (:documentation "Return the full, unsectioned version of OBJECT."))
 (defmethod full ((object list)) list)
@@ -39,3 +35,15 @@
                               (test *field-test*))
   (find-matches (apply-selectors entry selectors)
                 column registry :selectors selectors :test test))
+
+(defun compute-offset (column entry)
+  "Return the offset in the wall for the matching entry."
+  (- (id entry) (cstart column)))
+
+(defun offsets (query column registry
+                &key (selectors *default-selectors*)
+                     (test *field-test*))
+  "Return the offsets of a query in COLUMN within REGISTRY."
+  (mapcar #'(lambda (e)
+              (compute-offset column e))
+          (find-matches query column registry :selectors selectors :test test)))
