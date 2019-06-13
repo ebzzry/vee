@@ -18,6 +18,8 @@ Glossary
   columns in the new registry have the same lengths as the wall from template
 - forge (v): to instantiate a record then add it to the registry
 - field (n): a part of an entry
+- selectors (n): a group of functions to narrow down searches
+- test (n): the predicate used to test matches between entry values
 
 
 TODO

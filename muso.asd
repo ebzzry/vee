@@ -19,6 +19,7 @@
                #:mof)
   :serial t
   :components ((:file "packages")
+               (:file "preload")
                (:file "globals")
                (:file "classes")
                (:file "common")

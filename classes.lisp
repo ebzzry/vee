@@ -97,3 +97,14 @@
           :reader value
           :documentation "The datum of an entry."))
   (:documentation "Information instantiated from feeds."))
+
+(defclass cluster ()
+  ((uid :initarg :uid
+        :initform nil
+        :reader uid
+        :documentation "The unique numeric ID of a cluster in a registry.")
+   (uvalue :initarg :uvalue
+           :initform nil
+           :reader uvalue
+           :documentation "The contents of a cluster."))
+  (:documentation "Information about selected fields from an entry."))

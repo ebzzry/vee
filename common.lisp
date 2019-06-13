@@ -38,14 +38,6 @@
   "Returns items in LIST as tab-separated values."
   (format nil "~{~a~^	~}" list))
 
-(defmacro defselectors (limit)
-    "Define selectors."
-    `(progn
-       ,@(loop :for n :from 0 :to limit
-               :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
-               :collect `(defun ,name (list) (elt list ,n)))))
-(defselectors 1000)
-
 (defun join (items)
   "Return a string from items in LIST."
   (reduce #'mof:cat items))

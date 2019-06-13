@@ -287,12 +287,12 @@
   "Display the contents of entry QUERY in registry RNAME."
   (dump-entry (find-entry query (find-registry rname))))
 
-(defun locate-column (cname rname)
+(defun locate-column (query rname)
   "Locate the column CNAME in registry RNAME."
-  (find-column cname (find-registry rname)))
-(defun locate-entry (id rname)
+  (find-column query (find-registry rname)))
+(defun locate-entry (query rname)
   "Locate the entry ID in registry RNAME."
-  (find-entry id (find-registry rname)))
+  (find-entry query (find-registry rname)))
 (mof:defalias locate-registry find-registry)
 
 (defun max-column (registry)
