@@ -264,7 +264,7 @@
         (t (locate-registry registry))))
 
 (defun collect (registry &optional column)
-  "Return the entries in registry or as scoped by column."
+  "Return all the entries in registry or as scoped by column. Registry and column here are represented in query format, that is, as string or integer."
   (multiple-value-bind (r c)
       (locate-entities registry column)
     (find-entries r c)))
@@ -347,3 +347,66 @@
 (defun forge-hole (cid registry &optional prev next)
   "Create a hole entry in registry."
   (forge-entry cid registry prev next nil))
+
+;;; Notes
+;;;
+;;; - update CID
+;;; - update CLENGTH
+;;; - update ETABLE
+;;; - What is the relationship between CID and ID?
+;;; - When an entry is removed, does it get blanked or do the other entries move up?
+;;; - What should the value of a blank entry be?
+;;; - Should ECOUNTER be updated?
+
+(defun column-start-p (entry)
+  "Return true if entry is found at the start of a column."
+  (when (and (null (prev entry))
+             (next entry))
+    t))
+
+(defun column-end-p (entry)
+  "Return true if entry is found at the end of a column."
+  (when (and (prev entry)
+             (null (next entry)))
+    t))
+
+(defun unlink-entry (entry)
+  "Remove the linking of an entry."
+  ;; Gapful changes
+  ;; After this operation the ID will be in limbo
+  (cond ((column-start-p entry)
+         (setf (prev (next entry)) nil))
+        ((column-end-p entry)
+         (setf (next (prev entry)) nil))
+        (t (progn (setf (next (prev entry))
+                        (next entry))
+                  (setf (prev (next entry))
+                        (prev entry)))))
+  (values))
+
+(defun remove-entry (entry registry)
+  "Remove an entry from COLUMN within REGISTRY, and adjust pointers accordingly."
+  (let* ((id (id entry))
+         (cid (cid entry))
+         (column (find-column cid registry)))
+    (unlink-entry entry)
+    (remhash id (etable registry))
+    (decf (ecounter registry))
+    (decf (clength column))
+    (values)))
+
+(defun find-gaps (column registry)
+  "Show where the gaps are in a registry."
+  nil)
+
+(defun blank-entry (entry)
+  "Set a blank value to an entry within REGISTRY, but do not remove it."
+  (setf (value entry) nil))
+
+(defun move-up (entry column registry steps)
+  "Move ENTRY STEPS amount upward in COLUMN within REGISTRY."
+  nil)
+
+(defun move-down (entry column registry steps)
+  "Move ENTRY STEPS amount downward in COLUMN within REGISTRY."
+  nil)

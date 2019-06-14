@@ -20,6 +20,8 @@ Glossary
 - field (n): a part of an entry
 - selectors (n): a group of functions to narrow down searches
 - test (n): the predicate used to test matches between entry values
+- query (n): either an integer or a string
+- offset (n): the distance from the start of a column to a specific entry
 
 
 TODO

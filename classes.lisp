@@ -37,7 +37,11 @@
    (ctable :initarg :ctable
            :initform (make-hash-table)
            :accessor ctable
-           :documentation "The column table."))
+           :documentation "The column table.")
+   (control :initarg :control
+            :initform nil
+            :accessor control
+            :documentation "Whether a column is a control value or not."))
   (:documentation "Tables and counters about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons."))
 
 (defclass column ()
@@ -94,7 +98,7 @@
          :documentation "The ID of the next entry in a column.")
    (value :initarg :value
           :initform nil
-          :reader value
+          :accessor value
           :documentation "The datum of an entry."))
   (:documentation "Information instantiated from feeds."))
 
