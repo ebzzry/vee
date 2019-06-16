@@ -52,9 +52,9 @@
   "Dump the contents of the tables from REGISTRY."
   (format t "~&** ENTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (cid id prev next value) v
+               (with-slots (cid id prev next value hidden) v
                  (let ((fmt "~S => ~S~%")
-                       (slots (list cid id prev next value)))
+                       (slots (list cid id prev next value hidden)))
                    (format t fmt k slots))))
            (etable registry))
   (format t "~&** COLUMNS~%")
@@ -286,12 +286,12 @@
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
 (defmethod dump-entry ((e entry) &key (complete nil))
-  (with-slots (cid id prev value next) e
+  (with-slots (cid id prev next value hidden) e
     (if complete
-        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%"
-                cid id prev next value)
-        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%"
-                prev next value))
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%HIDDEN: ~S~%"
+                cid id prev next value hidden)
+        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%HIDDEN: ~S~%"
+                prev next value hidden))
     (values)))
 
 (defun display-column (query rname)
@@ -370,43 +370,81 @@
              (null (next entry)))
     t))
 
-(defun unlink-entry (entry)
-  "Remove the linking of an entry."
-  ;; Gapful changes
-  ;; After this operation the ID will be in limbo
-  (cond ((column-start-p entry)
-         (setf (prev (next entry)) nil))
-        ((column-end-p entry)
-         (setf (next (prev entry)) nil))
-        (t (progn (setf (next (prev entry))
-                        (next entry))
-                  (setf (prev (next entry))
-                        (prev entry)))))
+(defun stash-add (id registry)
+  "Add an ID to the stash in REGISTRY."
+  (push id (stash registry)))
+
+(defun stash-get (registry)
+  "Return the latest item from the stash in REGISTRY."
+  (pop (stash registry)))
+
+(defun hide-entry (entry)
+  "Remove the linking of an entry, but keep it."
+  (when (and (null (hidden entry))
+             (or (prev entry)
+                 (next entry)))
+    (cond ((column-start-p entry)
+           (setf (prev (next entry)) nil))
+          ((column-end-p entry)
+           (setf (next (prev entry)) nil))
+          (t (progn (setf (next (prev entry))
+                          (next entry))
+                    (setf (prev (next entry))
+                          (prev entry)))))
+    (setf (hidden entry) t))
   (values))
+
+(defun unhide-entry (entry)
+  "Make an entry appear again."
+  (when (and (hidden entry)
+             (or (prev entry)
+                 (next entry)))
+    (cond ((column-start-p entry)
+           (setf (prev (next entry)) entry))
+          ((column-end-p entry)
+           (setf (next (prev entry)) entry))
+          (t (progn (setf (next (prev entry))
+                          entry)
+                    (setf (prev (next entry))
+                          entry))))
+    (setf (hidden entry) nil))
+  (values))
+
+(defun unlink-entry (entry)
+  "Remove the linkage of entry to its surrounding context."
+  (setf (prev entry) nil)
+  (setf (next entry) nil))
 
 (defun remove-entry (entry registry)
   "Remove an entry from COLUMN within REGISTRY, and adjust pointers accordingly."
   (let* ((id (id entry))
          (cid (cid entry))
          (column (find-column cid registry)))
-    (unlink-entry entry)
+    (hide-entry entry)
     (remhash id (etable registry))
     (decf (ecounter registry))
     (decf (clength column))
+    (setf (gapped column) t)
+    (stash-add id registry)
     (values)))
-
-(defun find-gaps (column registry)
-  "Show where the gaps are in a registry."
-  nil)
 
 (defun blank-entry (entry)
   "Set a blank value to an entry within REGISTRY, but do not remove it."
   (setf (value entry) nil))
 
-(defun move-up (entry column registry steps)
-  "Move ENTRY STEPS amount upward in COLUMN within REGISTRY."
+(defun find-gaps (column registry)
+  "Show where the gaps are in a registry."
+  (declare (ignorable column registry))
   nil)
 
-(defun move-down (entry column registry steps)
-  "Move ENTRY STEPS amount downward in COLUMN within REGISTRY."
+(defun fill-gaps (column registry)
+  "Fill the gaps in a column with information."
+  (declare (ignorable column registry))
+  nil)
+
+(defun insert-blocks (location column registry count)
+  "Move ENTRY STEPS amount upward in COLUMN within REGISTRY."
+  (declare (ignorable location column registry count))
+  ;; If prev is null, ...
+
   nil)

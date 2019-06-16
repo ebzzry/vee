@@ -4,8 +4,8 @@
 
 (defgeneric full (object)
   (:documentation "Return the full, unsectioned version of OBJECT."))
-(defmethod full ((object list)) list)
-(defmethod full ((object entry)) entry)
+(defmethod full ((object list)) object)
+(defmethod full ((object entry)) object)
 
 ;;; Note: handle SB-KERNEL:INDEX-TOO-LARGE-ERROR here
 (defun apply-selectors (entry selectors)
