@@ -23,6 +23,15 @@ Glossary
 - query (n): either an integer or a string
 - offset (n): the distance from the start of a column to a specific entry
 - block (n): an entry that is designed to make alignments
+- bury (v): make an entry hidden by making the PREV and NEXT link to each other
+  bypassing the current one
+- unbury (v): the inverse of bury
+- unlink (v): to remove the PREV and NEXT links of an entry but keep it
+  registered
+- blank (v): to the value of a entry to nil
+- deregister (v): to remove an entry from a register
+- void (n): a kind of registry where banished entries go.
+- banish (v): to bury, send to a void, and deregister an entry
 
 
 TODO
@@ -38,7 +47,12 @@ TODO
 - [x] Implement registry wall copying
 - [x] Generalize spawners
 - [x] Factor out counter generators
-- [x] Define methods fro auto-updates of counters
+- [x] Define methods for auto-updates of counters
+
+
+### Void
+
+- [x] Implement banishment
 
 
 ### Propagation

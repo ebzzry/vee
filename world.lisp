@@ -48,21 +48,25 @@
   (when entry
     (id entry)))
 
-(defun dump-registry (registry)
+(defun dump-registry (registry &key simple)
   "Dump the contents of the tables from REGISTRY."
-  (format t "~&** ENTRIES~%")
-  (maphash #'(lambda (k v)
-               (with-slots (cid id prev next value hidden) v
-                 (let ((fmt "~S => ~S~%")
-                       (slots (list cid id prev next value hidden)))
-                   (format t fmt k slots))))
-           (etable registry))
-  (format t "~&** COLUMNS~%")
-  (maphash #'(lambda (k v)
-               (with-slots (rid cid cname cstart cend clength cleft cright) v
-                 (format t "~S => ~S~%" k
-                         (list rid cid cname cstart cend clength cleft cright))))
-           (ctable registry)))
+  (if simple
+      (with-slots (rid rname ecounter etable ccounter ctable vid control) registry
+        (format t "~&RID: ~A~%RNAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%CCOUNTER: ~A~%CTABLE: ~A~%VID: ~A~%CONTROL: ~A~%"
+                rid rname ecounter etable ccounter ctable vid control))
+      (progn (format t "~&** ENTRIES~%")
+             (maphash #'(lambda (k v)
+                          (with-slots (cid id prev next value buried) v
+                            (let ((fmt "~S => ~S~%")
+                                  (slots (list cid id prev next value buried)))
+                              (format t fmt k slots))))
+                      (etable registry))
+             (format t "~&** COLUMNS~%")
+             (maphash #'(lambda (k v)
+                          (with-slots (rid cid cname cstart cend clength cleft cright) v
+                            (format t "~S => ~S~%" k
+                                    (list rid cid cname cstart cend clength cleft cright))))
+                      (ctable registry)))))
 
 (defun dump-world ()
   "Dump the contents of the world."
@@ -99,7 +103,7 @@
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid rname) r
-      (format stream "~A" rid))))
+      (format stream "~A ~A" rid rname))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
@@ -285,13 +289,13 @@
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
-(defmethod dump-entry ((e entry) &key (complete nil))
-  (with-slots (cid id prev next value hidden) e
-    (if complete
-        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%HIDDEN: ~S~%"
-                cid id prev next value hidden)
-        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%HIDDEN: ~S~%"
-                prev next value hidden))
+(defmethod dump-entry ((e entry) &key simple)
+  (with-slots (cid id prev next value buried) e
+    (if simple
+        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIED: ~S~%"
+                prev next value buried)
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIED: ~S~%"
+                cid id prev next value buried))
     (values)))
 
 (defun display-column (query rname)
@@ -348,16 +352,6 @@
   "Create a hole entry in registry."
   (forge-entry cid registry prev next nil))
 
-;;; Notes
-;;;
-;;; - update CID
-;;; - update CLENGTH
-;;; - update ETABLE
-;;; - What is the relationship between CID and ID?
-;;; - When an entry is removed, does it get blanked or do the other entries move up?
-;;; - What should the value of a blank entry be?
-;;; - Should ECOUNTER be updated?
-
 (defun column-start-p (entry)
   "Return true if entry is found at the start of a column."
   (when (and (null (prev entry))
@@ -369,82 +363,3 @@
   (when (and (prev entry)
              (null (next entry)))
     t))
-
-(defun stash-add (id registry)
-  "Add an ID to the stash in REGISTRY."
-  (push id (stash registry)))
-
-(defun stash-get (registry)
-  "Return the latest item from the stash in REGISTRY."
-  (pop (stash registry)))
-
-(defun hide-entry (entry)
-  "Remove the linking of an entry, but keep it."
-  (when (and (null (hidden entry))
-             (or (prev entry)
-                 (next entry)))
-    (cond ((column-start-p entry)
-           (setf (prev (next entry)) nil))
-          ((column-end-p entry)
-           (setf (next (prev entry)) nil))
-          (t (progn (setf (next (prev entry))
-                          (next entry))
-                    (setf (prev (next entry))
-                          (prev entry)))))
-    (setf (hidden entry) t))
-  (values))
-
-(defun unhide-entry (entry)
-  "Make an entry appear again."
-  (when (and (hidden entry)
-             (or (prev entry)
-                 (next entry)))
-    (cond ((column-start-p entry)
-           (setf (prev (next entry)) entry))
-          ((column-end-p entry)
-           (setf (next (prev entry)) entry))
-          (t (progn (setf (next (prev entry))
-                          entry)
-                    (setf (prev (next entry))
-                          entry))))
-    (setf (hidden entry) nil))
-  (values))
-
-(defun unlink-entry (entry)
-  "Remove the linkage of entry to its surrounding context."
-  (setf (prev entry) nil)
-  (setf (next entry) nil))
-
-(defun remove-entry (entry registry)
-  "Remove an entry from COLUMN within REGISTRY, and adjust pointers accordingly."
-  (let* ((id (id entry))
-         (cid (cid entry))
-         (column (find-column cid registry)))
-    (hide-entry entry)
-    (remhash id (etable registry))
-    (decf (ecounter registry))
-    (decf (clength column))
-    (setf (gapped column) t)
-    (stash-add id registry)
-    (values)))
-
-(defun blank-entry (entry)
-  "Set a blank value to an entry within REGISTRY, but do not remove it."
-  (setf (value entry) nil))
-
-(defun find-gaps (column registry)
-  "Show where the gaps are in a registry."
-  (declare (ignorable column registry))
-  nil)
-
-(defun fill-gaps (column registry)
-  "Fill the gaps in a column with information."
-  (declare (ignorable column registry))
-  nil)
-
-(defun insert-blocks (location column registry count)
-  "Move ENTRY STEPS amount upward in COLUMN within REGISTRY."
-  (declare (ignorable location column registry count))
-  ;; If prev is null, ...
-
-  nil)

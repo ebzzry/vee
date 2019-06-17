@@ -38,10 +38,10 @@
            :initform (make-hash-table)
            :accessor ctable
            :documentation "The column table")
-   (stash :initarg :stash
-          :initform nil
-          :accessor stash
-          :documentation "The table for stash entries")
+   (vid :initarg :vid
+         :initform 0
+         :accessor vid
+         :documentation "The RID of the void counterpart of a table")
    (control :initarg :control
             :initform nil
             :accessor control
@@ -108,10 +108,10 @@
           :initform nil
           :accessor value
           :documentation "The datum of an entry")
-   (hidden :initarg :hidden
+   (buried :initarg :buried
            :initform nil
-           :accessor hidden
-           :documentation "Whether an entry is hidden or not"))
+           :accessor buried
+           :documentation "Whether an entry is buried or not"))
   (:documentation "Information instantiated from feeds"))
 
 (defclass cluster ()
