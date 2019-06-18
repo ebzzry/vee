@@ -172,13 +172,10 @@
   "Initialize the world."
   (setf *world* (make-world)))
 
-(defun forge-entries (column registry &key feed)
+(defun forge-entries (column registry &optional feed)
   "Forge unlinked entries in COLUMN under REGISTRY. If FEED is true, use it to seed values."
   (if feed
-      (loop :for item :in feed
-            :do (forge-entry column registry nil nil item))
-      ;; (loop :for cid :in (find-entries column)
-      ;;       :do (forge-entry column registry))
+      (loop :for item :in feed :do (forge-entry column registry nil nil item))
       nil))
 
 (defun find-next (entry column)
@@ -229,7 +226,7 @@
          (offset (1- (+ start length)))
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
          (column (forge-column (rid registry) registry cname start offset)))
-    (forge-entries column registry :feed feed)
+    (forge-entries column registry feed)
     (link-entries column)
     registry))
 
@@ -359,22 +356,6 @@
     (error "Either the template or the target registry does not exist."))
   nil)
 
-;; (defun wall-copy-registry (template registry)
-;;   "Create a wall copy of TEMPLATE to REGISTRY."
-;;   (unless (and template registry)
-;;     (error "Either the template or the target registry does not exist."))
-;;   (let* ((wall (wall template))
-;;          (length (clength wall)))
-;;     (loop :for count :from 1 :to (length (find-columns template))
-;;           :for start = (1+ (ecounter registry))
-;;           :for offset = (+ start length)
-;;           :for cname = (genstring "COLUMN")
-;;           :for column = (forge-column (rid registry) registry cname start offset)
-
-;;           ;; Note: these entries are not linked to one another, should they be?
-;;           :do (forge-entries column registry))
-;;     registry))
-
 (defun column-start-p (entry)
   "Return true if entry is found at the start of a column."
   (when (and (null (prev entry))
@@ -388,7 +369,7 @@
     t))
 
 (defgeneric delete-record (entry store)
-  (:documentation "Remove an entry from STORE."))
+  (:documentation "Remove ENTRY from STORE."))
 (defmethod delete-record ((e entry) (r registry))
   (let* ((id (id e)))
     (remhash id (etable r))

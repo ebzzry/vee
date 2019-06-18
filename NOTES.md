@@ -14,8 +14,6 @@ Glossary
 - world (n): the top-level encapsulating data structure
 - template (n): a source registry
 - wall (n): the longest/largest column in a registry
-- wall copy (v): to create a copy of a template to a new registry, wherein all
-  columns in the new registry have the same lengths as the wall from template
 - forge (v): to instantiate a record then add it to the registry
 - field (n): a part of an entry
 - selectors (n): a group of functions to narrow down searches
