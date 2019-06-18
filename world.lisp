@@ -107,6 +107,9 @@
   (print-unreadable-object (r stream :type t)
     (with-slots (rid rname) r
       (format stream "~A ~A" rid rname))))
+(defmethod print-object ((ht hash-table) stream)
+  (print-unreadable-object (ht stream :type t)
+    (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
@@ -134,15 +137,16 @@
     (add-record entry registry)
     (add-record entry column)))
 
-(defun make-column (rid registry cname &optional (cprev -1) (cnext -1))
+(defun make-column (registry cname &optional (cprev -1) (cnext -1))
   "Create an instance of the column class."
-  (make-instance 'column :rid rid :cname (string-upcase cname)
-                         :cprev cprev :cnext cnext
-                         :registry registry))
+  (let ((rid (rid registry)))
+    (make-instance 'column :rid rid :cname (string-upcase cname)
+                           :cprev cprev :cnext cnext
+                           :registry registry)))
 
-(defun forge-column (rid registry cname &optional (cprev -1) (cnext -1))
+(defun forge-column (registry cname &optional (cprev -1) (cnext -1))
   "Create a column under registry RID in REGISTRY."
-  (let ((column (make-column rid registry cname cprev cnext)))
+  (let ((column (make-column registry cname cprev cnext)))
     (add-record column registry)))
 
 (defun make-registry (&optional (rname (genstring "REGISTRY")))
@@ -221,11 +225,8 @@
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
-  (let* ((length (length feed))
-         (start (1+ (ecounter registry)))
-         (offset (1- (+ start length)))
-         (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
-         (column (forge-column (rid registry) registry cname start offset)))
+  (let* ((cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
+         (column (forge-column registry cname)))
     (forge-entries column registry feed)
     (link-entries column)
     registry))
