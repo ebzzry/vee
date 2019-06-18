@@ -225,7 +225,7 @@
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
-  (let* ((cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
+  (let* ((cname (build-name "COLUMN" name))
          (column (forge-column registry cname)))
     (forge-entries column registry feed)
     (link-entries column)

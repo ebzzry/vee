@@ -168,3 +168,10 @@
   "Return the slot names of an object."
   (mapcar #'sb-mop:slot-definition-name
           (sb-mop:class-direct-slots (class-of object))))
+
+(defun build-name (template fallback)
+  "Return a generate name from TEMPLATE; otherwise use FALLBACK."
+  (if (null (mof:empty-string-p fallback))
+      fallback
+      (let ((string (string-upcase template)))
+        (genstring string))))
