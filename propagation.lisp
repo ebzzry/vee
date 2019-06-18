@@ -25,8 +25,7 @@
 (defmethod find-matches ((item list) (column column) (registry registry)
                          &key (selectors *default-selectors*)
                               (test *field-test*))
-  (loop :for cid :from (cstart column) :to (cend column)
-        :for entry = (find-entry cid registry)
+  (loop :for entry :in (find-entries column)
         :for cluster = (apply-selectors entry selectors)
         :when (every test item cluster)
         :collect entry))
@@ -36,9 +35,10 @@
   (find-matches (apply-selectors entry selectors)
                 column registry :selectors selectors :test test))
 
+;;; Note: no longer reliable because of the new table mechanism
 (defun compute-offset (column entry)
   "Return the offset in the wall for the matching entry."
-  (- (id entry) (cstart column)))
+  (- (id entry) (id (first (find-entries column)))))
 
 (defun offsets (query column registry
                 &key (selectors *default-selectors*)
@@ -47,3 +47,16 @@
   (mapcar #'(lambda (entry)
               (compute-offset column entry))
           (find-matches query column registry :selectors selectors :test test)))
+
+(defun splice (location column registry count)
+  "Create COUNT entries from LOCATION in COLUMN within REGISTRY."
+  (declare (ignorable location column registry count))
+  ;; If prev is null, ...
+  ;; If next is null, ...
+
+  ;; Handle the contiguousness of IDs
+  nil)
+
+(defun forge-block (column registry &optional prev next)
+  "Create a block entry in registry."
+  (forge-entry column registry prev next nil))

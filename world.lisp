@@ -63,9 +63,9 @@
                       (etable registry))
              (format t "~&** COLUMNS~%")
              (maphash #'(lambda (k v)
-                          (with-slots (rid cid cname cstart cend clength cleft cright) v
+                          (with-slots (rid cid cname etable cprev cnext) v
                             (format t "~S => ~S~%" k
-                                    (list rid cid cname cstart cend clength cleft cright))))
+                                    (list rid cid cname etable cprev cnext))))
                       (ctable registry)))))
 
 (defun dump-world ()
@@ -78,14 +78,17 @@
       (dump-registries))
     (values)))
 
-(defgeneric add-record (record registry)
+(defgeneric add-record (data store)
   (:documentation "Add RECORD to REGISTRY."))
-(defmethod add-record ((entry entry) (r registry))
-  (setf (gethash (ecounter r) (etable r)) entry)
-  entry)
-(defmethod add-record ((column column) (r registry))
-  (setf (gethash (ccounter r) (ctable r)) column)
-  column)
+(defmethod add-record ((e entry) (r registry))
+  (setf (gethash (ecounter r) (etable r)) e)
+  e)
+(defmethod add-record ((c column) (r registry))
+  (setf (gethash (ccounter r) (ctable r)) c)
+  c)
+(defmethod add-record ((e entry) (c column))
+  (setf (gethash (id e) (etable c)) e)
+  e)
 
 (defun add-registry (registry)
   "Add REGISTRY to WORLD."
@@ -118,28 +121,28 @@
 (defmethod initialize-instance :after ((c column) &key registry)
   "Update column C in REGISTRY."
   (let ((counter (spawn-ccounter registry)))
-    (with-slots (cid cstart cend clength) c
-      (setf clength (1+ (- cend cstart))
-            cid counter))))
+    (with-slots (cid) c
+      (setf cid counter))))
 
 (defmethod prev ((e null)) "Return nil on null entries." nil)
 (defmethod next ((e null)) "Return nil on null entries." nil)
 
-(defun forge-entry (cid registry &optional prev next value)
+(defun forge-entry (column registry &optional prev next value)
   "Create an entry under column CID in REGISTRY."
-  (let ((entry (make-entry cid registry prev next value)))
-    (add-record entry registry)))
+  (let* ((cid (cid column))
+         (entry (make-entry cid registry prev next value)))
+    (add-record entry registry)
+    (add-record entry column)))
 
-(defun make-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
+(defun make-column (rid registry cname &optional (cprev -1) (cnext -1))
   "Create an instance of the column class."
   (make-instance 'column :rid rid :cname (string-upcase cname)
-                         :cstart cstart :cend cend
-                         :cleft cleft :cright cright
+                         :cprev cprev :cnext cnext
                          :registry registry))
 
-(defun forge-column (rid registry cname cstart cend &optional (cleft -1) (cright -1))
+(defun forge-column (rid registry cname &optional (cprev -1) (cnext -1))
   "Create a column under registry RID in REGISTRY."
-  (let ((column (make-column rid registry cname cstart cend cleft cright)))
+  (let ((column (make-column rid registry cname cprev cnext)))
     (add-record column registry)))
 
 (defun make-registry (&optional (rname (genstring "REGISTRY")))
@@ -165,30 +168,59 @@
   "Create an instance of the world class."
   (make-instance 'world))
 
-(defun initialize-world ()
+(defun boot-world ()
   "Initialize the world."
   (setf *world* (make-world)))
-(mof:defalias boot-world initialize-world)
 
 (defun forge-entries (column registry &key feed)
   "Forge unlinked entries in COLUMN under REGISTRY. If FEED is true, use it to seed values."
   (if feed
       (loop :for item :in feed
-            :do (forge-entry (cid column) registry nil nil item))
-      (loop :for cid :from (cstart column) :to (cend column)
-            :do (forge-entry (cid column) registry))))
+            :do (forge-entry column registry nil nil item))
+      ;; (loop :for cid :in (find-entries column)
+      ;;       :do (forge-entry column registry))
+      nil))
 
-(defun link-entries (column registry)
-  "Attached the entries in column under registry to one another."
-  (loop :for id :from (cstart column) :to (cend column)
-        :for entry = (find-entry id registry)
-        :do (cond ((= id (cstart column))
-                   (setf (next entry) (find-entry (1+ id) registry)))
-                  ((= id (cend column))
-                   (setf (prev entry) (find-entry (1- id) registry)))
-                  (t (progn
-                       (setf (prev entry) (find-entry (1- id) registry))
-                       (setf (next entry) (find-entry (1+ id) registry)))))))
+(defun find-next (entry column)
+  "Return the closest next element in COLUMN."
+  (let* ((id (id entry))
+         (table (etable column))
+         (entry (gethash (1+ id) table)))
+    (if entry
+        entry
+        (let* ((entries (find-entries column))
+               (mem (member entry entries))
+               (next (second mem)))
+          (when next
+            next)))))
+
+(defun find-prev (entry column)
+  "Return the closest previous element in COLUMN."
+  (let* ((id (id entry))
+         (table (etable column))
+         (entry (gethash (1- id) table)))
+    (if entry
+        entry
+        (let* ((entries (nreverse (find-entries column)))
+               (mem (member entry entries))
+               (prev (second mem)))
+          (when prev
+            prev)))))
+
+(defun link-entries (column)
+  "Attached the entries in COLUMN to one another."
+  (let* ((entries (find-entries column))
+         (ctop (id (first entries)))
+         (cbottom (id (mof:last* entries))))
+    (loop :for entry :in entries
+          :for id = (id entry)
+          :do (cond ((= id ctop)
+                     (setf (next entry) (find-next entry column)))
+                    ((= id cbottom)
+                     (setf (prev entry) (find-prev entry column)))
+                    (t (progn
+                         (setf (prev entry) (find-entry (1- id) column))
+                         (setf (next entry) (find-entry (1+ id) column))))))))
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
@@ -198,16 +230,15 @@
          (cname (if (mof:empty-string-p name) (genstring "COLUMN") name))
          (column (forge-column (rid registry) registry cname start offset)))
     (forge-entries column registry :feed feed)
-    (link-entries column registry)
+    (link-entries column)
     registry))
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))
 (defmethod find-registry ((query integer))
-  (loop :for rid :being :the :hash-keys :in (rtable *world*)
-        :for registry = (gethash rid (rtable *world*))
-        :when (= query (rid registry))
-        :return registry))
+  (let ((val (gethash query (rtable *world*))))
+    (when val
+      val)))
 (defmethod find-registry ((query string))
   (loop :for rid :being :the :hash-keys :in (rtable *world*)
         :for registry = (gethash rid (rtable *world*))
@@ -229,17 +260,14 @@
 (defgeneric find-column (query registry)
   (:documentation "Return a column which matches QUERY in REGISTRY."))
 (defmethod find-column ((query integer) (r registry))
-  (when r
-    (loop :for cid :being :the :hash-keys :in (ctable r)
-          :for column = (gethash cid (ctable r))
-          :when (= query (cid column))
-          :return column)))
+  (let ((val (gethash query (ctable r))))
+    (when val
+      val)))
 (defmethod find-column ((query string) (r registry))
-  (when r
-    (loop :for cid :being :the :hash-keys :in (ctable r)
-          :for column = (gethash cid (ctable r))
-          :when (string-equal (string-upcase query) (cname column))
-          :return column)))
+  (loop :for cid :being :the :hash-keys :in (ctable r)
+        :for column = (gethash cid (ctable r))
+        :when (string-equal (string-upcase query) (cname column))
+        :return column))
 
 (defgeneric find-columns (registry)
   (:documentation "Return all columns from REGISTRY."))
@@ -249,17 +277,24 @@
 (defgeneric find-entry (query registry)
   (:documentation "Return an entry which matches QUERY in COLUMN."))
 (defmethod find-entry ((query integer) (r registry))
-  (loop :for id :being :the :hash-keys :in (etable r)
-        :for entry = (gethash id (etable r))
-        :when (= query (id entry))
-        :return entry))
+  (let ((val (gethash query (etable r))))
+    (when val
+      val)))
+(defmethod find-entry ((query integer) (c column))
+  (let ((val (gethash query (etable c))))
+    (when val
+      val)))
 
-(defun find-entries (registry &optional column)
-  "Return all items in registry. Limit search only to COLUMN if it is specified."
-  (cond (column (loop :for cid :from (cstart column) :to (cend column)
-                      :collect (find-entry cid registry)))
-        (t (loop :for entry :being :the :hash-values :in (etable registry)
+(defgeneric find-entries (store &key)
+  (:documentation "Return all entries from STORE."))
+(defmethod find-entries ((r registry) &key column)
+  (cond (column (find-entries column))
+        (t (loop :for entry :being :the :hash-values :in (etable r)
                  :collect entry))))
+(defmethod find-entries ((c column) &key)
+  (loop :for entry :being :the :hash-values :in (etable c)
+        :collect entry :into entries
+        :finally (return (sort entries #'< :key #'id))))
 
 (defun locate-entities (registry &optional column)
   "Return registry and column as values."
@@ -271,21 +306,20 @@
   "Return all the entries in registry or as scoped by column. Registry and column here are represented in query format, that is, as string or integer."
   (multiple-value-bind (r c)
       (locate-entities registry column)
-    (find-entries r c)))
+    (find-entries r :column c)))
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
 (defmethod dump-column ((c column) &key complete)
-  (with-slots (rid cid cname cstart cend clength cleft cright) c
-    (format t "~&RID: ~A~%CID: ~A~%CNAME: ~A~%CSTART: ~A~%CEND: ~A~%CLENGTH: ~A~%CLEFT: ~A~%CRIGHT: ~A~%"
-              rid cid cname cstart cend clength cleft cright)
-    (loop :for e :from cstart :to cend
-          :for entry = (find-entry e (find-registry rid))
-          :do (with-slots (cid id prev next value) entry
-                (when complete
-                  (format t "~&CID: ~A, ID: ~A, PREV: ~S, NEXT: ~S, VALUE: ~S~%"
-                          cid id prev next value))))
-    (values)))
+  (let ((registry (find-registry (rid c))))
+    (with-slots (rid cid cname etable cprev cnext) c
+      (if complete
+          (loop :for k :being :the :hash-keys :in (etable c)
+                :for entry = (find-entry k registry)
+                :do (format t "~&~A => ~A~%" k entry))
+          (format t "~&RID: ~A~%CID: ~A~%CNAME: ~A~%ETABLE: ~A~%CPREV: ~A~%CNEXT: ~A~%"
+                  rid cid cname etable cprev cnext))
+      (values))))
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
@@ -315,12 +349,8 @@
 
 (defun max-column (registry)
   "Return the biggest column in REGISTRY."
-  (first (sort (find-columns registry) #'> :key #'clength)))
+  (first (sort (find-columns registry) #'> :key #'hash-table-size)))
 (mof:defalias wall max-column)
-
-(defun mktemp-registry ()
-  "Return an empty REGISTRY."
-  (make-registry (genstring "REGISTRY")))
 
 (defun shallow-copy-registry (template registry)
   "Create a shallow copy of TEMPLATE to REGISTRY."
@@ -329,28 +359,21 @@
     (error "Either the template or the target registry does not exist."))
   nil)
 
-(defun wall-copy-registry (template registry)
-  "Create a wall copy of TEMPLATE to REGISTRY."
-  (unless (and template registry)
-    (error "Either the template or the target registry does not exist."))
-  (let* ((wall (wall template))
-         (length (clength wall)))
-    (loop :for count :from 1 :to (length (find-columns template))
-          :for start = (1+ (ecounter registry))
-          :for offset = (+ start length)
-          :for cname = (genstring "COLUMN")
-          :for column = (forge-column (rid registry) registry cname start offset)
+;; (defun wall-copy-registry (template registry)
+;;   "Create a wall copy of TEMPLATE to REGISTRY."
+;;   (unless (and template registry)
+;;     (error "Either the template or the target registry does not exist."))
+;;   (let* ((wall (wall template))
+;;          (length (clength wall)))
+;;     (loop :for count :from 1 :to (length (find-columns template))
+;;           :for start = (1+ (ecounter registry))
+;;           :for offset = (+ start length)
+;;           :for cname = (genstring "COLUMN")
+;;           :for column = (forge-column (rid registry) registry cname start offset)
 
-          ;; Note: these entries are not linked to one another, should they be?
-          :do (forge-entries column registry))
-    registry))
-
-;;; Note: when holes will be linked with normal entries, the sequencing of
-;;; CSTART and CEND may be disrupted. So column values must also be updated
-;;; appropriately
-(defun forge-hole (cid registry &optional prev next)
-  "Create a hole entry in registry."
-  (forge-entry cid registry prev next nil))
+;;           ;; Note: these entries are not linked to one another, should they be?
+;;           :do (forge-entries column registry))
+;;     registry))
 
 (defun column-start-p (entry)
   "Return true if entry is found at the start of a column."

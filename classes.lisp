@@ -61,26 +61,19 @@
           :initform ""
           :reader cname
           :documentation "The name of a column")
-   (cstart :initarg :cstart
-           :initform -1
-           :reader cstart
-           :documentation "The starting number for a column, which corresponds to an entry ID")
-   (cend :initarg :cend
-         :initform -1
-         :reader cend
-         :documentation "The end number for a column, which corresponds to an entry ID")
-   (clength :initarg :clength
-            :initform -1
-            :accessor clength
-            :documentation "The length of a column, determined by the number of items in it")
-   (cleft :initarg :cleft
+   (etable :initarg :etable
+           :initform (make-hash-table)
+           :accessor etable
+           :documentation "The entry table")
+   (cprev :initarg :cprev
           :initform -1
-          :reader cleft
-          :documentation "The column to the left of the current one")
-   (cright :initarg :cright
+          :reader cprev
+          :documentation "The previous column")
+   (cnext :initarg :cnext
            :initform -1
-           :reader cright
-           :documentation "The column to the right of the current one")
+           :reader cnext
+           :documentation "The next column")
+   ;; Note: Is this flag still necessary with the new column implementation?
    (gapped :initarg :gapped
            :initform nil
            :accessor gapped

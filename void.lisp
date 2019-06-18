@@ -80,7 +80,6 @@
          (column (find-column cid registry)))
     (remhash id (etable registry))
     (decf (ecounter registry))
-    (decf (clength column))
     (setf (gapped column) t)))
 
 (defun banish (entry registry)
@@ -102,10 +101,4 @@
 (defun fill-gaps (column registry)
   "Fill the gaps in a column with information."
   (declare (ignorable column registry))
-  nil)
-
-(defun insert-blocks (location column registry count)
-  "Move ENTRY STEPS amount upward in COLUMN within REGISTRY."
-  (declare (ignorable location column registry count))
-  ;; If prev is null, ...
   nil)

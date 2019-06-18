@@ -32,6 +32,7 @@ Glossary
 - deregister (v): to remove an entry from a register
 - void (n): a kind of registry where banished entries go.
 - banish (v): to bury, send to a void, and deregister an entry
+- store (n): a column or a registry
 
 
 TODO
