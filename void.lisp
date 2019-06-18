@@ -79,7 +79,9 @@
          (cid (cid entry))
          (column (find-column cid registry)))
     (remhash id (etable registry))
-    (decf (ecounter registry))))
+    (decf (ecounter registry))
+    (remhash id (etable column))
+    (values)))
 
 (defun banish (entry registry)
   "Remove an entry from COLUMN within REGISTRY and adjust the pointers accordingly."
