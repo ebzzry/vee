@@ -386,3 +386,13 @@
   (when (and (prev entry)
              (null (next entry)))
     t))
+
+(defgeneric delete-record (entry store)
+  (:documentation "Remove an entry from STORE."))
+(defmethod delete-record ((e entry) (r registry))
+  (let* ((id (id e)))
+    (remhash id (etable r))
+    (decf (ecounter r))))
+(defmethod delete-record ((e entry) (c column))
+  (let* ((id (id e)))
+    (remhash id (etable c))))

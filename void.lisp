@@ -75,12 +75,10 @@
 
 (defun deregister (entry registry)
   "Remove ENTRY from REGISTRY."
-  (let* ((id (id entry))
-         (cid (cid entry))
+  (let* ((cid (cid entry))
          (column (find-column cid registry)))
-    (remhash id (etable registry))
-    (decf (ecounter registry))
-    (remhash id (etable column))
+    (delete-record entry registry)
+    (delete-record entry column)
     (values)))
 
 (defun banish (entry registry)
