@@ -52,7 +52,7 @@
   ((rid :initarg :rid
         :initform nil
         :reader rid
-        :documentation "The registry ID to which a column belongs to.")
+        :documentation "The registry ID to which a column belongs to")
    (cid :initarg :cid
         :initform nil
         :accessor cid
@@ -64,7 +64,7 @@
    (etable :initarg :etable
            :initform (make-hash-table)
            :accessor etable
-           :documentation "The entry table")
+           :documentation "The table for entry indexing")
    (cprev :initarg :cprev
           :initform -1
           :reader cprev
@@ -72,12 +72,7 @@
    (cnext :initarg :cnext
            :initform -1
            :reader cnext
-           :documentation "The next column")
-   ;; Note: Is this flag still necessary with the new column implementation?
-   (gapped :initarg :gapped
-           :initform nil
-           :accessor gapped
-           :documentation "Whether a column has gaps."))
+           :documentation "The next column"))
   (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry"))
 
 (defclass entry ()

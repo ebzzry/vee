@@ -79,8 +79,7 @@
          (cid (cid entry))
          (column (find-column cid registry)))
     (remhash id (etable registry))
-    (decf (ecounter registry))
-    (setf (gapped column) t)))
+    (decf (ecounter registry))))
 
 (defun banish (entry registry)
   "Remove an entry from COLUMN within REGISTRY and adjust the pointers accordingly."
