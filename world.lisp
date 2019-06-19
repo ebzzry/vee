@@ -306,20 +306,30 @@
 (defgeneric find-record (query registry)
   (:documentation "Return an entry which matches QUERY in COLUMN."))
 (defmethod find-record ((query integer) (r registry))
-  (gethash query (etable r)))
+  (multiple-value-bind (value present)
+      (gethash query (etable r))
+    (when present
+      value)))
 (defmethod find-record ((query integer) (c column))
-  (gethash query (table c)))
+  (multiple-value-bind (value present)
+      (gethash query (table c))
+    (when present
+      value)))
 
-(defgeneric find-records (store &key)
+(defun sort-records (records &key (key #'id))
+  "Sort records numerically."
+  (sort records #'< :key key))
+
+(defgeneric find-records (store &key &allow-other-keys)
   (:documentation "Return all records from STORE."))
-(defmethod find-records ((r registry) &key column)
-  (cond (column (find-records column))
-        (t (loop :for entry :being :the :hash-values :in (etable r)
-                 :collect entry))))
-(defmethod find-records ((c column) &key)
-  (loop :for entry :being :the :hash-values :in (table c)
-        :collect entry :into entries
-        :finally (return (sort entries #'< :key #'id))))
+(defmethod find-records ((r registry) &key (sort t))
+  (loop :for record :being :the :hash-values :in (etable r)
+        :collect record :into records
+        :finally (return (if sort (sort-records records) records))))
+(defmethod find-records ((c column) &key (sort t))
+  (loop :for record :being :the :hash-values :in (table c)
+        :collect record :into records
+        :finally (return (if sort (sort-records records) records))))
 
 (defun locate-entities (registry &optional column)
   "Return registry and column as values."

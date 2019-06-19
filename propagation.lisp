@@ -63,14 +63,17 @@
 ;;; Note: PREV and NEXT specifies the location of the unit
 ;;; Note: if PREV is null, then the unit is at the start
 ;;; Note: if NEXT is null, then the unit is at the end
-(defun forge-unit (column registry prev next)
+;;; Note: it should return the unit created
+;;; Note: what is the minimum context needed to provide an unambiguous location?
+(defun forge-unit (column registry &key prev next)
   "Create a unit under COLUMN in REGISTRY."
   (let* ((cid (cid column))
          (unit (make-unit cid registry prev next)))
     (add-record unit registry)
     (add-record unit column)))
 
+;;; Note: is it possible to provide a range?
 (defun forge-units (column registry count)
-  "Create units in column en masse"
+  "Create units in COLUMN en masse"
   (declare (ignorable column registry count))
   nil)
