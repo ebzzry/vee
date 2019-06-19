@@ -7,6 +7,7 @@
   `(progn (incf (,accessor ,registry))
           (,accessor ,registry)))
 (defun spawn-ecounter (r) "See SPAWN-COUNTER." (spawn-counter r ecounter))
+(defun spawn-ucounter (r) "See SPAWN-COUNTER." (spawn-counter r ucounter))
 (defun spawn-ccounter (r) "See SPAWN-COUNTER." (spawn-counter r ccounter))
 
 (defmacro reset-counter (registry accessor)
@@ -17,6 +18,7 @@
          (setf (,accessor ,registry) ,global)
          (values)))))
 (defun reset-ecounter (r) "See RESET-COUNTER." (reset-counter r ecounter))
+(defun reset-ucounter (r) "See RESET-COUNTER." (reset-counter r ucounter))
 (defun reset-ccounter (r) "See RESET-COUNTER." (reset-counter r ccounter))
 
 (defun spawn-rcounter ()
@@ -39,6 +41,8 @@
   "Reset the contents of REGISTRY."
   (setf (ecounter registry) *initial-ecounter*)
   (setf (etable registry) (make-hash-table))
+  (setf (ucounter registry) *initial-ucounter*)
+  (setf (utable registry) (make-hash-table))
   (setf (ccounter registry) *initial-ccounter*)
   (setf (ctable registry) (make-hash-table))
   (values))
@@ -51,9 +55,9 @@
 (defun dump-registry (registry &key simple)
   "Dump the contents of the tables from REGISTRY."
   (if simple
-      (with-slots (rid rname ecounter etable ccounter ctable vid control) registry
-        (format t "~&RID: ~A~%RNAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%CCOUNTER: ~A~%CTABLE: ~A~%VID: ~A~%CONTROL: ~A~%"
-                rid rname ecounter etable ccounter ctable vid control))
+      (with-slots (rid name ecounter etable ucounter utable ccounter ctable vid control) registry
+        (format t "~&RID: ~A~%NAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%UCOUNTER: ~A~%UTABLE: ~A~%CCOUNTER: ~A~%CTABLE: ~A~%VID: ~A~%CONTROL: ~A~%"
+                rid name ecounter etable ucounter utable ccounter ctable vid control))
       (progn (format t "~&** ENTRIES~%")
              (maphash #'(lambda (k v)
                           (with-slots (cid id prev next value buried) v
@@ -63,9 +67,9 @@
                       (etable registry))
              (format t "~&** COLUMNS~%")
              (maphash #'(lambda (k v)
-                          (with-slots (rid cid cname etable cprev cnext) v
+                          (with-slots (rid cid name table prev next) v
                             (format t "~S => ~S~%" k
-                                    (list rid cid cname etable cprev cnext))))
+                                    (list rid cid name table prev next))))
                       (ctable registry)))))
 
 (defun dump-world ()
@@ -78,26 +82,53 @@
       (dump-registries))
     (values)))
 
-(defgeneric add-record (data store)
-  (:documentation "Add RECORD to REGISTRY."))
-(defmethod add-record ((e entry) (r registry))
-  (setf (gethash (ecounter r) (etable r)) e)
-  e)
-(defmethod add-record ((c column) (r registry))
-  (setf (gethash (ccounter r) (ctable r)) c)
-  c)
-(defmethod add-record ((e entry) (c column))
-  (setf (gethash (id e) (etable c)) e)
-  e)
-
 (defun add-registry (registry)
   "Add REGISTRY to WORLD."
   (setf (gethash (rcounter *world*) (rtable *world*)) registry)
   registry)
 
+(defgeneric add-record (record store)
+  (:documentation "Add RECORD to REGISTRY."))
+(defmethod add-record ((c column) (r registry))
+  (setf (gethash (ccounter r) (ctable r)) c)
+  c)
+(defmethod add-record ((e entry) (r registry))
+  (setf (gethash (ecounter r) (etable r)) e)
+  e)
+(defmethod add-record ((e entry) (c column))
+  (setf (gethash (id e) (table c)) e)
+  e)
+(defmethod add-record ((u unit) (r registry))
+  (setf (gethash (ucounter r) (utable r)) u)
+  u)
+(defmethod add-record ((u unit) (c column))
+  (setf (gethash (id u) (table c)) u)
+  u)
+
+(defgeneric delete-record (record store)
+  (:documentation "Remove RECORD from STORE."))
+(defmethod delete-record ((e entry) (r registry))
+  (let ((id (id e)))
+    (remhash id (etable r))
+    (decf (ecounter r))))
+(defmethod delete-record ((e entry) (c column))
+  (let ((id (id e)))
+    (remhash id (table c))))
+(defmethod delete-record ((u unit) (r registry))
+  (let ((id (id u)))
+    (remhash id (utable r))
+    (decf (ucounter r))))
+(defmethod delete-record ((u unit) (c column))
+  (let ((id (id u)))
+    (remhash id (table c))))
+
 (defmethod print-object ((e entry) stream)
   (print-unreadable-object (e stream :type t)
     (with-slots (id) e
+      (format stream "~A" id))))
+(defmethod print-object ((u unit) stream)
+  (print-unreadable-object (u stream :type t)
+    (with-slots (id) u
       (format stream "~A" id))))
 (defmethod print-object ((c column) stream)
   (print-unreadable-object (c stream :type t)
@@ -105,8 +136,8 @@
       (format stream "~A" cid))))
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
-    (with-slots (rid rname) r
-      (format stream "~A ~A" rid rname))))
+    (with-slots (rid name) r
+      (format stream "~A ~A" rid name))))
 (defmethod print-object ((ht hash-table) stream)
   (print-unreadable-object (ht stream :type t)
     (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
@@ -131,27 +162,27 @@
 (defmethod next ((e null)) "Return nil on null entries." nil)
 
 (defun forge-entry (column registry &optional prev next value)
-  "Create an entry under column CID in REGISTRY."
+  "Create an entry under COLUMN in REGISTRY."
   (let* ((cid (cid column))
          (entry (make-entry cid registry prev next value)))
     (add-record entry registry)
     (add-record entry column)))
 
-(defun make-column (registry cname &optional (cprev -1) (cnext -1))
+(defun make-column (registry name &optional (prev -1) (next -1))
   "Create an instance of the column class."
   (let ((rid (rid registry)))
-    (make-instance 'column :rid rid :cname (string-upcase cname)
-                           :cprev cprev :cnext cnext
+    (make-instance 'column :rid rid :name (string-upcase name)
+                           :prev prev :next next
                            :registry registry)))
 
-(defun forge-column (registry cname &optional (cprev -1) (cnext -1))
+(defun forge-column (registry name &optional (prev -1) (next -1))
   "Create a column under registry RID in REGISTRY."
-  (let ((column (make-column registry cname cprev cnext)))
+  (let ((column (make-column registry name prev next)))
     (add-record column registry)))
 
-(defun make-registry (&optional (rname (genstring "REGISTRY")))
+(defun make-registry (&optional (name (genstring "REGISTRY")))
   "Create an instance of the registry class."
-  (make-instance 'registry :rid (spawn-rcounter) :rname (string-upcase rname)))
+  (make-instance 'registry :rid (spawn-rcounter) :name (string-upcase name)))
 
 (defgeneric spawn-registry (query)
   (:documentation "Return a new registry object then add it to the world, or return an existing one"))
@@ -185,11 +216,11 @@
 (defun find-next (entry column)
   "Return the closest next element in COLUMN."
   (let* ((id (id entry))
-         (table (etable column))
+         (table (table column))
          (entry (gethash (1+ id) table)))
     (if entry
         entry
-        (let* ((entries (find-entries column))
+        (let* ((entries (find-records column))
                (mem (member entry entries))
                (next (second mem)))
           (when next
@@ -198,11 +229,11 @@
 (defun find-prev (entry column)
   "Return the closest previous element in COLUMN."
   (let* ((id (id entry))
-         (table (etable column))
+         (table (table column))
          (entry (gethash (1- id) table)))
     (if entry
         entry
-        (let* ((entries (nreverse (find-entries column)))
+        (let* ((entries (nreverse (find-records column)))
                (mem (member entry entries))
                (prev (second mem)))
           (when prev
@@ -210,7 +241,7 @@
 
 (defun link-entries (column)
   "Attached the entries in COLUMN to one another."
-  (let* ((entries (find-entries column))
+  (let* ((entries (find-records column))
          (ctop (id (first entries)))
          (cbottom (id (mof:last* entries))))
     (loop :for entry :in entries
@@ -220,13 +251,13 @@
                     ((= id cbottom)
                      (setf (prev entry) (find-prev entry column)))
                     (t (progn
-                         (setf (prev entry) (find-entry (1- id) column))
-                         (setf (next entry) (find-entry (1+ id) column))))))))
+                         (setf (prev entry) (find-record (1- id) column))
+                         (setf (next entry) (find-record (1+ id) column))))))))
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
-  (let* ((cname (build-name "COLUMN" name))
-         (column (forge-column registry cname)))
+  (let* ((name (build-name "COLUMN" name))
+         (column (forge-column registry name)))
     (forge-entries column registry feed)
     (link-entries column)
     registry))
@@ -240,19 +271,19 @@
 (defmethod find-registry ((query string))
   (loop :for rid :being :the :hash-keys :in (rtable *world*)
         :for registry = (gethash rid (rtable *world*))
-        :when (string-equal (string-upcase query) (rname registry))
+        :when (string-equal (string-upcase query) (name registry))
         :return registry))
 
 (defun find-registries ()
   "Return all registries from the world."
   (loop :for r :being :the :hash-values :in (rtable *world*) :collect r))
 
-(defun dump-registries()
+(defun dump-registries ()
   "Display inforamtion about the registries."
   (format t "~&** REGISTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (rid rname ccounter ecounter) v
-                 (format t "~S => ~S~%" k (list rid rname ccounter ecounter))))
+               (with-slots (rid name ccounter ecounter ucounter) v
+                 (format t "~S => ~S~%" k (list rid name ccounter ecounter ucounter))))
            (rtable *world*)))
 
 (defgeneric find-column (query registry)
@@ -264,7 +295,7 @@
 (defmethod find-column ((query string) (r registry))
   (loop :for cid :being :the :hash-keys :in (ctable r)
         :for column = (gethash cid (ctable r))
-        :when (string-equal (string-upcase query) (cname column))
+        :when (string-equal (string-upcase query) (name column))
         :return column))
 
 (defgeneric find-columns (registry)
@@ -272,25 +303,21 @@
 (defmethod find-columns ((r registry))
   (loop :for c :being :the :hash-values :in (ctable r) :collect c))
 
-(defgeneric find-entry (query registry)
+(defgeneric find-record (query registry)
   (:documentation "Return an entry which matches QUERY in COLUMN."))
-(defmethod find-entry ((query integer) (r registry))
-  (let ((val (gethash query (etable r))))
-    (when val
-      val)))
-(defmethod find-entry ((query integer) (c column))
-  (let ((val (gethash query (etable c))))
-    (when val
-      val)))
+(defmethod find-record ((query integer) (r registry))
+  (gethash query (etable r)))
+(defmethod find-record ((query integer) (c column))
+  (gethash query (table c)))
 
-(defgeneric find-entries (store &key)
-  (:documentation "Return all entries from STORE."))
-(defmethod find-entries ((r registry) &key column)
-  (cond (column (find-entries column))
+(defgeneric find-records (store &key)
+  (:documentation "Return all records from STORE."))
+(defmethod find-records ((r registry) &key column)
+  (cond (column (find-records column))
         (t (loop :for entry :being :the :hash-values :in (etable r)
                  :collect entry))))
-(defmethod find-entries ((c column) &key)
-  (loop :for entry :being :the :hash-values :in (etable c)
+(defmethod find-records ((c column) &key)
+  (loop :for entry :being :the :hash-values :in (table c)
         :collect entry :into entries
         :finally (return (sort entries #'< :key #'id))))
 
@@ -304,19 +331,19 @@
   "Return all the entries in registry or as scoped by column. Registry and column here are represented in query format, that is, as string or integer."
   (multiple-value-bind (r c)
       (locate-entities registry column)
-    (find-entries r :column c)))
+    (find-records r :column c)))
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
 (defmethod dump-column ((c column) &key complete)
   (let ((registry (find-registry (rid c))))
-    (with-slots (rid cid cname etable cprev cnext) c
+    (with-slots (rid cid name table prev next) c
       (if complete
-          (loop :for k :being :the :hash-keys :in (etable c)
-                :for entry = (find-entry k registry)
+          (loop :for k :being :the :hash-keys :in (table c)
+                :for entry = (find-record k registry)
                 :do (format t "~&~A => ~A~%" k entry))
-          (format t "~&RID: ~A~%CID: ~A~%CNAME: ~A~%ETABLE: ~A~%CPREV: ~A~%CNEXT: ~A~%"
-                  rid cid cname etable cprev cnext))
+          (format t "~&RID: ~A~%CID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
+                  rid cid name table prev next))
       (values))))
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
@@ -330,19 +357,19 @@
                 cid id prev next value buried))
     (values)))
 
-(defun display-column (query rname)
-  "Display the contents of column QUERY in registry RNAME."
-  (dump-column (find-column query (find-registry rname))))
-(defun display-entry (query rname)
-  "Display the contents of entry QUERY in registry RNAME."
-  (dump-entry (find-entry query (find-registry rname))))
+(defun display-column (query name)
+  "Display the contents of column QUERY in registry NAME."
+  (dump-column (find-column query (find-registry name))))
+(defun display-entry (query name)
+  "Display the contents of entry QUERY in registry NAME."
+  (dump-entry (find-record query (find-registry name))))
 
-(defun locate-column (query rname)
-  "Locate the column CNAME in registry RNAME."
-  (find-column query (find-registry rname)))
-(defun locate-entry (query rname)
-  "Locate the entry ID in registry RNAME."
-  (find-entry query (find-registry rname)))
+(defun locate-column (query name)
+  "Locate the column QUERY in registry NAME."
+  (find-column query (find-registry name)))
+(defun locate-entry (query name)
+  "Locate the entry ID in registry NAME."
+  (find-record query (find-registry name)))
 (mof:defalias locate-registry find-registry)
 
 (defun max-column (registry)
@@ -369,12 +396,6 @@
              (null (next entry)))
     t))
 
-(defgeneric delete-record (entry store)
-  (:documentation "Remove ENTRY from STORE."))
-(defmethod delete-record ((e entry) (r registry))
-  (let* ((id (id e)))
-    (remhash id (etable r))
-    (decf (ecounter r))))
-(defmethod delete-record ((e entry) (c column))
-  (let* ((id (id e)))
-    (remhash id (etable c))))
+(defun forge-record (&optional prev next left right buried)
+  "Create a record instance."
+  (make-instance 'record :prev prev :next next :left left :right right :buried buried))

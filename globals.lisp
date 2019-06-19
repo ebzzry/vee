@@ -15,13 +15,16 @@
   "The minimum amount of similarity between sets so that they can be considered similar.")
 
 (defvar *initial-rcounter* 100
-  "The initial rcounter value")
+  "The initial registry counter value")
 
 (defvar *initial-ccounter* 1000
-  "The initial ccounter value")
+  "The initial column counter value")
 
 (defvar *initial-ecounter* 10000
-  "The initial counter value")
+  "The initial entry counter value")
+
+(defvar *initial-ucounter* 1000000
+  "The initial unit counter value")
 
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")

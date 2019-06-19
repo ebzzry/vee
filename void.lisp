@@ -4,8 +4,8 @@
 
 (defun void-name (template)
   "Return the void name of TEMPLATE."
-  (let* ((rname (rname template))
-         (vname (mof:cat "%" rname)))
+  (let* ((name (name template))
+         (vname (mof:cat "%" name)))
     vname))
 
 (defun void-create (template)
@@ -15,82 +15,90 @@
     (setf (vid template) (rid void))
     void))
 
-(defun void-add (entry void)
-  "Add an ENTRY to VOID."
-  (with-slots (prev next value) entry
-    (let ((e (make-instance 'entry :prev prev :next next :value value :registry void)))
-      (add-record e void))))
+(defgeneric void-send (record void)
+  (:documentation "Add RECORD to VOID"))
+(defmethod void-send ((e entry) void)
+  (with-slots (prev next value) e
+    (let ((record (make-instance 'entry :prev prev :next next :value value :registry void)))
+      (add-record record void))))
+(defmethod void-send ((u unit) void)
+  (with-slots (prev next) u
+    (let ((record (make-instance 'unit :prev prev :next next :registry void)))
+      (add-record record void))))
 
 (defun void-get (id void)
   "Return an item by ID from VOID"
   (gethash id (etable void)))
 
-(defun bury (entry)
-  "Remove the linking of an entry, but keep it."
-  (when (and (null (buried entry))
-             (or (prev entry)
-                 (next entry)))
-    (cond ((column-start-p entry)
-           (setf (prev (next entry)) nil))
-          ((column-end-p entry)
-           (setf (next (prev entry)) nil))
-          (t (progn (setf (next (prev entry))
-                          (next entry))
-                    (setf (prev (next entry))
-                          (prev entry)))))
-    (setf (buried entry) t))
+(defun bury (record)
+  "Remove the linking of a record, but keep it stored."
+  (when (and (null (buried record))
+             (or (prev record)
+                 (next record)))
+    (cond ((column-start-p record)
+           (setf (prev (next record)) nil))
+          ((column-end-p record)
+           (setf (next (prev record)) nil))
+          (t (progn (setf (next (prev record))
+                          (next record))
+                    (setf (prev (next record))
+                          (prev record)))))
+    (setf (buried record) t))
   (values))
 
-(defun unbury (entry)
-  "Make an entry appear again."
-  (when (and (buried entry)
-             (or (prev entry)
-                 (next entry)))
-    (cond ((column-start-p entry)
-           (setf (prev (next entry)) entry))
-          ((column-end-p entry)
-           (setf (next (prev entry)) entry))
-          (t (progn (setf (next (prev entry))
-                          entry)
-                    (setf (prev (next entry))
-                          entry))))
-    (setf (buried entry) nil))
+(defun unbury (record)
+  "Make a record appear again."
+  (when (and (buried record)
+             (or (prev record)
+                 (next record)))
+    (cond ((column-start-p record)
+           (setf (prev (next record)) record))
+          ((column-end-p record)
+           (setf (next (prev record)) record))
+          (t (progn (setf (next (prev record))
+                          record)
+                    (setf (prev (next record))
+                          record))))
+    (setf (buried record) nil))
   (values))
 
 (defun find-buried (registry)
   "Show the buried entries in REGISTRY."
   (loop :for k :being :the :hash-keys :in (etable registry)
-        :for entry = (find-entry k registry)
-        :when (buried entry)
-        :collect entry))
+        :for record = (find-record k registry)
+        :when (buried record)
+        :collect record))
 
-(defun unlink (entry)
+(defun unlink (record)
   "Remove the linkage of ENTRY in its surrounding context."
-  (setf (prev entry) nil)
-  (setf (next entry) nil))
+  (setf (prev record) nil)
+  (setf (next record) nil))
 
-(defun blank (entry)
-  "Set a blank value to ENTRY, but keep it linked."
-  (setf (value entry) nil))
+(defgeneric blank (record)
+  (:documentation "Set a blank value to RECORD, but keep it linked."))
+(defmethod blank ((e entry))
+  (setf (value e) nil))
 
-(defun deregister (entry registry)
-  "Remove ENTRY from REGISTRY."
-  (let* ((cid (cid entry))
+(defun deregister (record registry)
+  "Remove RECORD from REGISTRY."
+  (let* ((cid (cid record))
          (column (find-column cid registry)))
-    (delete-record entry registry)
-    (delete-record entry column)
+    (delete-record record registry)
+    (delete-record record column)
     (values)))
 
-(defun banish (entry registry)
-  "Remove an entry from COLUMN within REGISTRY and adjust the pointers accordingly."
-  (let* ((id (id entry))
-         (val (gethash id (etable registry))))
-    (when val
-      (let ((void (void-create registry)))
-        (bury entry)
-        (void-add entry void)
-        (deregister entry registry)
-        void))))
+(defun banish (record registry)
+  "Completely remove RECORD from REGISTRY."
+  (let* ((id (id record)))
+    (multiple-value-bind (value present)
+        (gethash id (etable registry))
+      (declare (ignore value))
+      (when present
+        (let ((void (void-create registry)))
+          (bury record)
+          (void-send record void)
+          (deregister record registry)
+          void)))))
 
 (defun find-gaps (column registry)
   "Show where the gaps are in a registry."

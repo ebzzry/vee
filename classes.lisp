@@ -18,9 +18,9 @@
         :initform nil
         :reader rid
         :documentation "The numeric ID of a registry")
-   (rname :initarg :rname
+   (name :initarg :name
           :initform (error "Specify a registry name")
-          :reader rname
+          :reader name
           :documentation "The name of a registry")
    (ecounter :initarg :ecounter
              :initform *initial-ecounter*
@@ -29,6 +29,14 @@
    (etable :initarg :etable
            :initform (make-hash-table)
            :accessor etable
+           :documentation "The entry table")
+   (ucounter :initarg :ucounter
+             :initform *initial-ucounter*
+             :accessor ucounter
+             :documentation "The entry counter")
+   (utable :initarg :utable
+           :initform (make-hash-table)
+           :accessor utable
            :documentation "The entry table")
    (ccounter :initarg :ccounter
              :initform *initial-ccounter*
@@ -39,9 +47,9 @@
            :accessor ctable
            :documentation "The column table")
    (vid :initarg :vid
-         :initform 0
-         :accessor vid
-         :documentation "The RID of the void counterpart of a table")
+        :initform 0
+        :accessor vid
+        :documentation "The RID of the void counterpart of a table")
    (control :initarg :control
             :initform nil
             :accessor control
@@ -57,58 +65,65 @@
         :initform nil
         :accessor cid
         :documentation "The unique numeric ID of a column in a registry")
-   (cname :initarg :cname
-          :initform ""
-          :reader cname
-          :documentation "The name of a column")
-   (etable :initarg :etable
+   (name :initarg :name
+         :initform ""
+         :reader name
+         :documentation "The name of a column")
+   (table :initarg :table
            :initform (make-hash-table)
-           :accessor etable
-           :documentation "The table for entry indexing")
-   (cprev :initarg :cprev
-          :initform -1
-          :reader cprev
-          :documentation "The previous column")
-   (cnext :initarg :cnext
-           :initform -1
-           :reader cnext
-           :documentation "The next column"))
+           :accessor table
+           :documentation "The table for entry and unit indexing")
+   (prev :initarg :prev
+         :initform -1
+         :reader prev
+         :documentation "The previous column")
+   (next :initarg :next
+         :initform -1
+         :reader next
+         :documentation "The next column"))
   (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry"))
 
-(defclass entry ()
+(defclass record ()
   ((cid :initarg :cid
         :initform nil
         :reader cid
-        :documentation "The column ID to which an entry belongs to")
-   (id :initarg :id
-       :initform -1
-       :reader id
-       :documentation "The unique numeric ID of an entry in a registry")
+        :documentation "The column ID to which a record belongs to")
    (prev :initarg :prev
          :initform nil
          :accessor prev
-         :documentation "The ID of the previous entry in a column")
+         :documentation "The ID of the previous record in a column")
    (next :initarg :next
          :initform nil
          :accessor next
-         :documentation "The ID of the next entry in a column")
-   (value :initarg :value
+         :documentation "The ID of the next record in a column")
+   (left :initarg :left
+         :initform nil
+         :accessor left
+         :documentation "The record on the left")
+   (right :initarg :right
           :initform nil
-          :accessor value
-          :documentation "The datum of an entry")
+          :accessor right
+          :documentation "The record on the right")
    (buried :initarg :buried
            :initform nil
            :accessor buried
-           :documentation "Whether an entry is buried or not"))
-  (:documentation "Information instantiated from feeds"))
+           :documentation "Whether a record is buried or not"))
+  (:documentation "An empty container which links to other records"))
 
-(defclass cluster ()
-  ((uid :initarg :uid
-        :initform nil
-        :reader uid
-        :documentation "The unique numeric ID of a cluster in a registry")
-   (uvalue :initarg :uvalue
-           :initform nil
-           :reader uvalue
-           :documentation "The contents of a cluster"))
-  (:documentation "Information about selected fields from an entry"))
+(defclass entry (record)
+  ((id :initarg :id
+       :initform -1
+       :reader id
+       :documentation "The unique numeric ID of an entry in a registry")
+   (value :initarg :value
+          :initform nil
+          :accessor value
+          :documentation "The datum of an entry"))
+  (:documentation "A record that contains a value"))
+
+(defclass unit (record)
+  ((id :initarg :id
+       :initform -1
+       :reader id
+       :documentation "The unique numeric ID of a unit in a registry"))
+  (:documentation "An empty record"))

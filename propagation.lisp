@@ -14,7 +14,7 @@
 
 (defun entries-equal-p (entry-1 entry-2
                         &key (selectors *default-selectors*)
-                             (test *field-test*))
+                          (test *field-test*))
   "Return true if ENTRY-1 is equal to ENTRY-2 using SELECTORS. SELECTORS is a list of functions that will be used to collect fields in an entry."
   (let ((selected-1 (apply-selectors entry-1 selectors))
         (selected-2 (apply-selectors entry-2 selectors)))
@@ -22,41 +22,55 @@
 
 (defgeneric find-matches (entry column registry &key &allow-other-keys)
   (:documentation "Return a list of matching instances of ENTRY in target COLUMN using SELECTOR and TEST."))
-(defmethod find-matches ((item list) (column column) (registry registry)
+(defmethod find-matches ((item list) (c column) (r registry)
                          &key (selectors *default-selectors*)
-                              (test *field-test*))
-  (loop :for entry :in (find-entries column)
+                           (test *field-test*))
+  (loop :for entry :in (find-records c)
         :for cluster = (apply-selectors entry selectors)
         :when (every test item cluster)
-        :collect entry))
-(defmethod find-matches ((entry entry) (column column) (registry registry)
+          :collect entry))
+(defmethod find-matches ((e entry) (c column) (r registry)
                          &key (selectors *default-selectors*)
-                              (test *field-test*))
-  (find-matches (apply-selectors entry selectors)
-                column registry :selectors selectors :test test))
+                           (test *field-test*))
+  (find-matches (apply-selectors e selectors)
+                c r
+                :selectors selectors :test test))
 
 ;;; Note: no longer reliable because of the new table mechanism
 (defun compute-offset (column entry)
   "Return the offset in the wall for the matching entry."
-  (- (id entry) (id (first (find-entries column)))))
+  (- (id entry) (id (first (find-records column)))))
 
 (defun offsets (query column registry
                 &key (selectors *default-selectors*)
-                     (test *field-test*))
+                  (test *field-test*))
   "Return the offsets of a query in COLUMN within REGISTRY."
   (mapcar #'(lambda (entry)
               (compute-offset column entry))
           (find-matches query column registry :selectors selectors :test test)))
 
-(defun splice (location column registry count)
-  "Create COUNT entries from LOCATION in COLUMN within REGISTRY."
-  (declare (ignorable location column registry count))
-  ;; If prev is null, ...
-  ;; If next is null, ...
+(defmethod initialize-instance :after ((u unit) &key registry)
+  "Update unit U in REGISTRY."
+  (let ((counter (spawn-ucounter registry)))
+    (with-slots (id) u
+      (setf id counter))))
 
-  ;; Handle the contiguousness of IDs
+(defun make-unit (cid registry &optional prev next)
+  "Create an instance of the unit class."
+  (make-instance 'unit :cid cid :prev prev :next next :registry registry))
+
+;;; Note: update the links of the PREV and NEXT records, much like burying
+;;; Note: PREV and NEXT specifies the location of the unit
+;;; Note: if PREV is null, then the unit is at the start
+;;; Note: if NEXT is null, then the unit is at the end
+(defun forge-unit (column registry prev next)
+  "Create a unit under COLUMN in REGISTRY."
+  (let* ((cid (cid column))
+         (unit (make-unit cid registry prev next)))
+    (add-record unit registry)
+    (add-record unit column)))
+
+(defun forge-units (column registry count)
+  "Create units in column en masse"
+  (declare (ignorable column registry count))
   nil)
-
-(defun forge-block (column registry &optional prev next)
-  "Create a block entry in registry."
-  (forge-entry column registry prev next nil))

@@ -9,7 +9,7 @@ Glossary
 - feed (n): raw groups of items, e.g., `(("foo" "bar") ("qux" "quux"))`
 - entry (n): an instantiated item
 - column (n): an instantiated feed; more accurately, an index to entries
-- record (n): either an entry or a column
+- record (n): an entry, unit, or column
 - registry (n): a particular group of entries and column in the world
 - world (n): the top-level encapsulating data structure
 - template (n): a source registry
