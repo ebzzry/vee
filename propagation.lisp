@@ -49,31 +49,105 @@
               (compute-offset column entry))
           (find-matches query column registry :selectors selectors :test test)))
 
+(defun point (origin column)
+  "Return starting point based on the type of origin."
+  (etypecase origin
+    (function (funcall origin column))
+    (entry origin)))
+
+(defun column-start (column)
+  "Return the first entry in COLUMN."
+  (let ((records (find-records column)))
+    (loop :for record :in records
+          :when (and (null (prev record))
+                     (next record))
+            :return record)))
+
+(defun column-end (column)
+  "Return the last entry in COLUMN."
+  (let ((records (nreverse (find-records column))))
+    (loop :for record :in records
+          :when (and (prev record)
+                     (null (next record)))
+            :return record)))
+
+(defun walk-up (column &key (origin #'column-end) (fn #'identity))
+  "Return records from COLUMN starting from record ORIGIN applying FN to each record."
+  (when (linked column)
+    (loop :for entry = (point origin column) :then (prev entry)
+          :while entry
+          :collect (funcall fn entry))))
+
+(defun walk-down (column &key (origin #'column-start) (fn #'identity))
+  "Return records from COLUMN starting from record ORIGIN applying FN to each record."
+  (when (linked column)
+    (loop :for entry = (point origin column) :then (next entry)
+          :while entry
+          :collect (funcall fn entry))))
+
+(defun walk-left (column)
+  "Return records starting from column across all the other columns, going left."
+  (declare (ignorable column))
+  nil)
+
+(defun walk-right (column)
+  "Return records starting from column across all the other columns, going right."
+  (declare (ignorable column))
+  nil)
+
 (defmethod initialize-instance :after ((u unit) &key registry)
   "Update unit U in REGISTRY."
   (let ((counter (spawn-ucounter registry)))
     (with-slots (id) u
       (setf id counter))))
 
-(defun make-unit (cid registry &optional prev next)
+(defun make-unit (cid registry)
   "Create an instance of the unit class."
-  (make-instance 'unit :cid cid :prev prev :next next :registry registry))
+  (make-instance 'unit :cid cid :registry registry))
 
-;;; Note: update the links of the PREV and NEXT records, much like burying
-;;; Note: PREV and NEXT specifies the location of the unit
-;;; Note: if PREV is null, then the unit is at the start
-;;; Note: if NEXT is null, then the unit is at the end
-;;; Note: it should return the unit created
-;;; Note: what is the minimum context needed to provide an unambiguous location?
-(defun forge-unit (column registry &key prev next)
-  "Create a unit under COLUMN in REGISTRY."
+(defun forge-unit (column registry)
+  "Create a unit under COLUMN within REGISTRY."
   (let* ((cid (cid column))
-         (unit (make-unit cid registry prev next)))
+         (unit (make-unit cid registry)))
     (add-record unit registry)
-    (add-record unit column)))
+    (add-record unit column)
+    unit))
 
-;;; Note: is it possible to provide a range?
-(defun forge-units (column registry count)
-  "Create units in COLUMN en masse"
-  (declare (ignorable column registry count))
-  nil)
+(defun link-unit-before (record column registry)
+  "Link a UNIT before RECORD in COLUMN within REGISTRY."
+  (let ((unit (forge-unit column registry)))
+    (cond ((column-start-p record)
+           (progn (setf (next unit) record)
+                  (setf (prev record) unit)))
+          (t (progn (setf (prev unit) (prev record))
+                    (setf (next unit) record)
+                    (setf (next (prev record)) unit)
+                    (setf (prev record) unit))))
+    unit))
+
+(defun link-unit-after (record column registry)
+  "Link a UNIT after RECORD in COLUMN within REGISTRY."
+  (let ((unit (forge-unit column registry)))
+    (cond ((column-end-p record)
+           (progn (setf (prev unit) record)
+                  (setf (next record) unit)))
+          (t (progn (setf (prev unit) record)
+                    (setf (next unit) (next record))
+                    (setf (prev (next record)) unit)
+                    (setf (next record) unit))))
+    unit))
+
+(defun link-unit (record column registry &key (position :after))
+  "Link a unit POSITION RECORD in COLUMN within REGISTRY."
+  (when (keywordp position)
+    (let ((fn (intern (mof:cat "LINK-UNIT-" (string position)))))
+      (funcall fn record column registry))))
+
+(defun link-units (record column registry count &key (position :after))
+  "Link COUNT units POSITION RECORD in COLUMN within REGISTRY."
+  (flet ((link (rec col reg pos)
+           (link-unit rec col reg :position pos)))
+    (loop :for count :from 1 :to count
+          :for unit = (link record column registry position)
+            :then (link unit column registry position)
+          :finally (return column))))

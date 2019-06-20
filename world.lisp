@@ -7,8 +7,12 @@
   `(progn (incf (,accessor ,registry))
           (,accessor ,registry)))
 (defun spawn-ecounter (r) "See SPAWN-COUNTER." (spawn-counter r ecounter))
-(defun spawn-ucounter (r) "See SPAWN-COUNTER." (spawn-counter r ucounter))
 (defun spawn-ccounter (r) "See SPAWN-COUNTER." (spawn-counter r ccounter))
+
+(defun spawn-ucounter (registry)
+  "Update ucounter value."
+  (decf (ucounter registry))
+  (ucounter registry))
 
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
@@ -239,27 +243,32 @@
           (when prev
             prev)))))
 
-(defun link-entries (column)
-  "Attached the entries in COLUMN to one another."
-  (let* ((entries (find-records column))
-         (ctop (id (first entries)))
-         (cbottom (id (mof:last* entries))))
-    (loop :for entry :in entries
-          :for id = (id entry)
-          :do (cond ((= id ctop)
-                     (setf (next entry) (find-next entry column)))
-                    ((= id cbottom)
-                     (setf (prev entry) (find-prev entry column)))
-                    (t (progn
-                         (setf (prev entry) (find-record (1- id) column))
-                         (setf (next entry) (find-record (1+ id) column))))))))
+(defun link-records (column)
+  "Link the records in COLUMN to one another."
+  (let* ((records (find-records column)) ;returns records from the hash table
+         ;; Note: fix this
+         ;; (cstart (id (column-start column)))
+         ;; (cend (id (column-end column)))
+         (cstart (id (first records)))
+         (cend (id (mof:last* records))))
+    (when records
+      (loop :for record :in records
+            :for id = (id record)
+            :do (cond ((= id cstart)
+                       (setf (next record) (find-next record column)))
+                      ((= id cend)
+                       (setf (prev record) (find-prev record column)))
+                      (t (progn
+                           (setf (prev record) (find-record (1- id) column))
+                           (setf (next record) (find-record (1+ id) column))))))
+      (setf (linked column) t))))
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
   (let* ((name (build-name "COLUMN" name))
          (column (forge-column registry name)))
     (forge-entries column registry feed)
-    (link-entries column)
+    (link-records column)
     registry))
 
 (defgeneric find-registry (query)
@@ -331,17 +340,17 @@
         :collect record :into records
         :finally (return (if sort (sort-records records) records))))
 
-(defun locate-entities (registry &optional column)
-  "Return registry and column as values."
-  (cond (column (values (locate-registry registry)
-                        (locate-column column registry)))
-        (t (locate-registry registry))))
+(defun column-start-p (entry)
+  "Return true if entry is found at the start of a column."
+  (when (and (null (prev entry))
+             (next entry))
+    t))
 
-(defun collect (registry &optional column)
-  "Return all the entries in registry or as scoped by column. Registry and column here are represented in query format, that is, as string or integer."
-  (multiple-value-bind (r c)
-      (locate-entities registry column)
-    (find-records r :column c)))
+(defun column-end-p (entry)
+  "Return true if entry is found at the end of a column."
+  (when (and (prev entry)
+             (null (next entry)))
+    t))
 
 (defgeneric dump-column (column &key &allow-other-keys)
   (:documentation "Print information about COLUMN."))
@@ -393,18 +402,6 @@
   (unless (and template registry)
     (error "Either the template or the target registry does not exist."))
   nil)
-
-(defun column-start-p (entry)
-  "Return true if entry is found at the start of a column."
-  (when (and (null (prev entry))
-             (next entry))
-    t))
-
-(defun column-end-p (entry)
-  "Return true if entry is found at the end of a column."
-  (when (and (prev entry)
-             (null (next entry)))
-    t))
 
 (defun forge-record (&optional prev next left right buried)
   "Create a record instance."

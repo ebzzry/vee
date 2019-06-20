@@ -23,7 +23,7 @@
 (defvar *initial-ecounter* 10000
   "The initial entry counter value")
 
-(defvar *initial-ucounter* 1000000
+(defvar *initial-ucounter* (- *initial-ecounter*)
   "The initial unit counter value")
 
 (defvar *selector-limit* 1000

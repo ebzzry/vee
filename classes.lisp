@@ -80,7 +80,11 @@
    (next :initarg :next
          :initform -1
          :reader next
-         :documentation "The next column"))
+         :documentation "The next column")
+   (linked :initarg :linked
+           :initform nil
+           :accessor linked
+           :documentation "Flag to indicate whether a column is linked"))
   (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry"))
 
 (defclass record ()
