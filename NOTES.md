@@ -11,26 +11,26 @@ Glossary
 - column (n): an instantiated feed; more accurately, an index to entries
 - record (n): an entry, unit, or column
 - registry (n): a particular group of entries and column in the world
+- store (n): a column or a registry
 - world (n): the top-level encapsulating data structure
 - template (n): a source registry
 - wall (n): the longest/largest column in a registry
 - forge (v): to instantiate a record then add it to the registry
 - field (n): a part of an entry
-- selectors (n): a group of functions to narrow down searches
+- selector (n): a function used to refine searches
 - test (n): the predicate used to test matches between entry values
-- query (n): either an integer or a string
+- query (n): an integer or a string
 - offset (n): the distance from the start of a column to a specific entry
-- block (n): an entry that is designed to make alignments
-- bury (v): make an entry hidden by making the PREV and NEXT link to each other
-  bypassing the current one
+- unit (n): a record that is used to resize columns and set alignments
+- bury (v): to make an entry hidden
+- link (n): a two-way connection between records
+- link (v): to create such a connection
 - unbury (v): the inverse of bury
-- unlink (v): to remove the PREV and NEXT links of an entry but keep it
-  registered
+- unlink (v): to remove the links of a record
 - blank (v): to the value of a entry to nil
 - deregister (v): to remove an entry from a register
 - void (n): a kind of registry where banished entries go.
 - banish (v): to bury, send to a void, and deregister an entry
-- store (n): a column or a registry
 
 
 TODO
@@ -46,24 +46,28 @@ TODO
 - [x] Implement registry wall copying
 - [x] Generalize spawners
 - [x] Factor out counter generators
-- [x] Define methods for auto-updates of counters
+- [x] Define methods for auto updating of counters
 
 
 ### Void
 
-- [x] Implement banishment
+- [x] Implement banish operations
+- [x] Implement bury operations
+- [x] Implement void registries
 
 
 ### Propagation
 
+- [x] Implement match clustering
+- [x] Implement column walking
+- [x] Implement units and unit linking
 - [ ] Implement propagation
-- [x] Implement clustering of matches
 
 
 ### Interface
 
-- [ ] Reimplement/ditch the walker
-- [ ] Design the inheritence of the classes
+- [x] Reimplement/ditch the walker
+- [x] Design the inheritence of the classes
 - [ ] Write a Python bridge
 - [ ] Write a Python API
 - [ ] Handle XLSX files
@@ -72,6 +76,6 @@ TODO
 
 ### Miscellany
 
+- [x] Implement inter-registry traversal
 - [ ] Handle arbitrary amount of columns
 - [ ] Handle arbitrary delimiters
-- [ ] Implement inter-registry traversal

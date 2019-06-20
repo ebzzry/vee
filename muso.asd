@@ -24,7 +24,7 @@
                (:file "classes")
                (:file "common")
                (:file "world")
+               (:file "feeds")
                (:file "void")
                (:file "propagation")
-               (:file "feeds")
                (:file "tests")))
