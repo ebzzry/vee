@@ -349,16 +349,21 @@
 
 (defgeneric find-records (store &key &allow-other-keys)
   (:documentation "Return all records from STORE."))
-(defmethod find-records ((r registry) &key sort (test #'true))
-  (loop :for record :being :the :hash-values :in (etable r)
-        :when (funcall test record)
-          :collect record :into records
-        :finally (return (if sort (sort-records records) records))))
-(defmethod find-records ((c column) &key sort (test #'true))
+(defmethod find-records ((r registry) &key sort)
+  (let* ((entries (loop :for entry :being :the :hash-values :in (etable r)
+                        :collect entry))
+         (units (loop :for unit :being :the :hash-values :in (utable r)
+                      :collect unit))
+         (records (nconc entries units)))
+    (if sort
+        (sort-records records)
+        records)))
+(defmethod find-records ((c column) &key sort)
   (loop :for record :being :the :hash-values :in (table c)
-        :when (funcall test record)
-          :collect record :into records
-        :finally (return (if sort (sort-records records) records))))
+        :collect record :into records
+        :finally (return (if sort
+                             (sort-records records)
+                             records))))
 
 (defun column-start-p (entry)
   "Return true if entry is found at the start of a column."
