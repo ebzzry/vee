@@ -329,15 +329,35 @@
   "Sort records numerically."
   (sort records #'< :key key))
 
+(defun entryp (record)
+  "Return true if RECORD is of type ENTRY."
+  (eql (type-of record) 'entry))
+
+(defun unitp (record)
+  "Return true if RECORD is of type UNIT."
+  (eql (type-of record) 'unit))
+
+(defun entry-or-unit-p (record)
+  "Return true if RECORD is an entry or unit."
+  (or (entryp record)
+      (unitp record)))
+
+(defun true (arg)
+  "Return true for anything."
+  (declare (ignore arg))
+  t)
+
 (defgeneric find-records (store &key &allow-other-keys)
   (:documentation "Return all records from STORE."))
-(defmethod find-records ((r registry) &key (sort t))
+(defmethod find-records ((r registry) &key sort (test #'true))
   (loop :for record :being :the :hash-values :in (etable r)
-        :collect record :into records
+        :when (funcall test record)
+          :collect record :into records
         :finally (return (if sort (sort-records records) records))))
-(defmethod find-records ((c column) &key (sort t))
+(defmethod find-records ((c column) &key sort (test #'true))
   (loop :for record :being :the :hash-values :in (table c)
-        :collect record :into records
+        :when (funcall test record)
+          :collect record :into records
         :finally (return (if sort (sort-records records) records))))
 
 (defun column-start-p (entry)

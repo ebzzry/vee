@@ -20,12 +20,20 @@
         (selected-2 (apply-selectors entry-2 selectors)))
     (every test selected-1 selected-2)))
 
+(defun find-entries (column)
+  "Return entries from COLUMN."
+  (find-records column :test #'entryp))
+
+(defun find-units (column)
+  "Return units from COLUMN."
+  (find-records column :test #'unitp))
+
 (defgeneric find-matches (entry column registry &key &allow-other-keys)
   (:documentation "Return a list of matching instances of ENTRY in target COLUMN using SELECTOR and TEST."))
 (defmethod find-matches ((item list) (c column) (r registry)
                          &key (selectors *default-selectors*)
                            (test *field-test*))
-  (loop :for entry :in (find-records c)
+  (loop :for entry :in (find-entries c)
         :for cluster = (apply-selectors entry selectors)
         :when (every test item cluster)
           :collect entry))
