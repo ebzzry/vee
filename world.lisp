@@ -437,7 +437,7 @@
 
 (defun max-column (registry)
   "Return the biggest column in REGISTRY."
-  (first (sort (find-columns registry) #'> :key #'hash-table-size)))
+  (first (sort (find-columns registry) #'> :key #'(lambda (c) (hash-table-size (table c))))))
 (mof:defalias wall max-column)
 
 (defun shallow-copy-registry (template registry)
