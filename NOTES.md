@@ -78,4 +78,5 @@ TODO
 
 - [x] Implement inter-registry traversal
 - [x] Handle arbitrary delimiters
+- [ ] Implement automatic detection of file delimiter
 - [ ] Handle arbitrary amount of columns
