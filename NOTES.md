@@ -77,5 +77,5 @@ TODO
 ### Miscellany
 
 - [x] Implement inter-registry traversal
+- [x] Handle arbitrary delimiters
 - [ ] Handle arbitrary amount of columns
-- [ ] Handle arbitrary delimiters

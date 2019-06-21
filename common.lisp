@@ -21,17 +21,17 @@
   "Return normalized items from SUBCOL."
   (mapcar #'normalize subcol))
 
-(defun read-csv-string (string &optional (separator #\tab))
+(defun read-csv-string (string &key (delimiter *default-delimiter*))
   "Read a CSV from string."
   (with-input-from-string (stream string)
     (fare-csv:with-rfc4180-csv-syntax ()
-      (let ((fare-csv:*separator* separator))
+      (let ((fare-csv:*separator* delimiter))
         (fare-csv:read-csv-stream stream)))))
 
-(defun read-csv-file (file &optional (separator #\tab))
+(defun read-csv-file (file &key (delimiter *default-delimiter*))
   "Read a CSV from file."
   (fare-csv:with-rfc4180-csv-syntax ()
-    (let ((fare-csv:*separator* separator))
+    (let ((fare-csv:*separator* delimiter))
       (fare-csv:read-csv-file file))))
 
 (defun delimit (list)
@@ -71,11 +71,11 @@
 
 (defun read-tsv-string (string)
   "Read a TSV string and return lists from it."
-  (read-csv-string string #\tab))
+  (read-csv-string string :delimiter #\tab))
 
 (defun read-tsv-file (file)
   "Like READ-TSV but from a disk file."
-  (read-csv-file file #\tab))
+  (read-csv-file file :delimiter #\tab))
 
 (defun take (feed &optional (limit 1))
   "Return LIMIT amount of items from FEED."
@@ -125,9 +125,10 @@
                  (some #'mof:empty-string-p item))
              feed))
 
-(defun read-feed-file (file)
+(defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
-  (fix-feed (clean-feed (read-tsv-file file))))
+  ;; (fix-feed (clean-feed (read-tsv-file file)))
+  (fix-feed (clean-feed (read-csv-file file :delimiter delimiter))))
 
 (defun read-file (&rest args)
   "An alias to READ-FEED-FILE"

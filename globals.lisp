@@ -2,6 +2,9 @@
 
 (in-package #:muso/core)
 
+(defvar *default-delimiter* #\tab
+  "The default delimiter used to separate fields.")
+
 (defvar *threshold* 5
   "The amount of lines to consider when trying to perform resoultion, backwards and forwards.")
 

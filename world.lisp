@@ -246,7 +246,7 @@
 (defun link-records (column)
   "Link the records in COLUMN to one another."
   (let* ((records (find-records column)) ;returns records from the hash table
-         ;; Note: fix this
+         ;; Note: does this need fixing?
          ;; (cstart (id (column-start column)))
          ;; (cend (id (column-end column)))
          (cstart (id (first records)))
