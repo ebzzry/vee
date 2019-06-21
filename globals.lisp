@@ -32,7 +32,7 @@
 (defparameter *world* nil
   "The top-level structure which contains all the registries.")
 
-(defvar *field-test* #'string=
+(defvar *field-test* #'string-equal
   "The test function that will be used to compare fields.")
 
 (defvar *default-selectors* (list #'elt0)
