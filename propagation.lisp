@@ -151,3 +151,19 @@
           :for unit = (link record column registry position)
             :then (link unit column registry position)
           :finally (return column))))
+
+(defgeneric find-match (entry column registry &key &allow-other-keys)
+  (:documentation "Return a list of matching instances of ENTRY in target COLUMN using SELECTOR and TEST."))
+(defmethod find-match ((item list) (c column) (r registry)
+                         &key (selectors *default-selectors*)
+                           (test *field-test*))
+  (loop :for entry :in (find-entries c)
+        :for cluster = (apply-selectors entry selectors)
+        :when (every test item cluster)
+        :return entry))                 ;aggressive first match
+(defmethod find-match ((e entry) (c column) (r registry)
+                         &key (selectors *default-selectors*)
+                           (test *field-test*))
+  (find-match (apply-selectors e selectors)
+                c r
+                :selectors selectors :test test))
