@@ -122,7 +122,11 @@
    (value :initarg :value
           :initform nil
           :accessor value
-          :documentation "The datum of an entry"))
+          :documentation "The datum of an entry")
+   (matches :initarg :matches
+            :initform (make-hash-table)
+            :accessor matches
+            :documentation "Table for matching entries across columns"))
   (:documentation "A record that contains a value"))
 
 (defclass unit (record)
@@ -131,3 +135,18 @@
        :reader id
        :documentation "The unique numeric ID of a unit in a registry"))
   (:documentation "An empty record"))
+
+(defclass match ()
+  ((record :initarg :record
+           :initform nil
+           :accessor record
+           :documentation "The matching record")
+   (column :initarg :column
+           :initform nil
+           :accessor column
+           :documentation "The matching column")
+   (offset :initarg :offset
+           :initarg nil
+           :accessor offset
+           :documentation "The index of a match relative to a column"))
+  (:documentation "Information about matching records across columns in a registry"))

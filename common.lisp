@@ -127,7 +127,6 @@
 
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
-  ;; (fix-feed (clean-feed (read-tsv-file file)))
   (fix-feed (clean-feed (read-csv-file file :delimiter delimiter))))
 
 (defun read-file (&rest args)

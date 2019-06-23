@@ -281,7 +281,7 @@
   (loop :for rid :being :the :hash-keys :in (rtable *world*)
         :for registry = (gethash rid (rtable *world*))
         :when (string-equal (string-upcase query) (name registry))
-        :return registry))
+          :return registry))
 
 (defun find-registries ()
   "Return all registries from the world."
@@ -305,7 +305,7 @@
   (loop :for cid :being :the :hash-keys :in (ctable r)
         :for column = (gethash cid (ctable r))
         :when (string-equal (string-upcase query) (name column))
-        :return column))
+          :return column))
 
 (defgeneric find-columns (registry)
   (:documentation "Return all columns from REGISTRY."))
