@@ -17,9 +17,9 @@
   "Return a normalized version of ITEM."
   (string-downcase item))
 
-(defun normalize-items (subcol)
-  "Return normalized items from SUBCOL."
-  (mapcar #'normalize subcol))
+(defun normalize-items (subvol)
+  "Return normalized items from SUBVOL."
+  (mapcar #'normalize subvol))
 
 (defun read-csv-string (string &key (delimiter *default-delimiter*))
   "Read a CSV from string."
@@ -159,7 +159,7 @@
   (string (gensym string)))
 
 (defun pad-feed (feed)
-  "Add starting and ending padding for column based on the first element."
+  "Add starting and ending padding for volume based on the first element."
   (let* ((initial (elt0 feed))
          (pad (make-empty initial)))
     (append (list pad) feed (list pad))))

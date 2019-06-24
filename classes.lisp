@@ -38,37 +38,37 @@
            :initform (make-hash-table)
            :accessor utable
            :documentation "The entry table")
-   (ccounter :initarg :ccounter
-             :initform *initial-ccounter*
-             :accessor ccounter
-             :documentation "The column counter")
-   (ctable :initarg :ctable
+   (vcounter :initarg :vcounter
+             :initform *initial-vcounter*
+             :accessor vcounter
+             :documentation "The volume counter")
+   (vtable :initarg :vtable
            :initform (make-hash-table)
-           :accessor ctable
-           :documentation "The column table")
-   (vid :initarg :vid
+           :accessor vtable
+           :documentation "The volume table")
+   (xid :initarg :xid
         :initform 0
-        :accessor vid
+        :accessor xid
         :documentation "The RID of the void counterpart of a table")
    (control :initarg :control
             :initform nil
             :accessor control
-            :documentation "Whether a column is a control value or not"))
-  (:documentation "Tables and counters about entries and columns. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons"))
+            :documentation "Whether a volume is a control value or not"))
+  (:documentation "Tables and counters about entries and volumes. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons"))
 
-(defclass column ()
+(defclass volume ()
   ((rid :initarg :rid
         :initform nil
         :reader rid
-        :documentation "The registry ID to which a column belongs to")
-   (cid :initarg :cid
+        :documentation "The registry ID to which a volume belongs to")
+   (vid :initarg :vid
         :initform nil
-        :accessor cid
-        :documentation "The unique numeric ID of a column in a registry")
+        :accessor vid
+        :documentation "The unique numeric ID of a volume in a registry")
    (name :initarg :name
          :initform ""
          :reader name
-         :documentation "The name of a column")
+         :documentation "The name of a volume")
    (table :initarg :table
            :initform (make-hash-table)
            :accessor table
@@ -76,30 +76,30 @@
    (prev :initarg :prev
          :initform -1
          :reader prev
-         :documentation "The previous column")
+         :documentation "The previous volume")
    (next :initarg :next
          :initform -1
          :reader next
-         :documentation "The next column")
+         :documentation "The next volume")
    (linkedp :initarg :linkedp
             :initform nil
             :accessor linkedp
-            :documentation "Flag to indicate whether a column is linked"))
-  (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry"))
+            :documentation "Flag to indicate whether a volume is linked"))
+  (:documentation "Pointer class for the entries. It may also contain links to other volumes inside a registry"))
 
 (defclass record ()
-  ((cid :initarg :cid
+  ((vid :initarg :vid
         :initform nil
-        :reader cid
-        :documentation "The column ID to which a record belongs to")
+        :reader vid
+        :documentation "The volume ID to which a record belongs to")
    (prev :initarg :prev
          :initform nil
          :accessor prev
-         :documentation "The ID of the previous record in a column")
+         :documentation "The ID of the previous record in a volume")
    (next :initarg :next
          :initform nil
          :accessor next
-         :documentation "The ID of the next record in a column")
+         :documentation "The ID of the next record in a volume")
    ;; Note: is this for linear bindings?
    (left :initarg :left
          :initform nil
@@ -142,12 +142,12 @@
            :initform nil
            :accessor record
            :documentation "The matching record")
-   (column :initarg :column
+   (volume :initarg :volume
            :initform nil
-           :accessor column
-           :documentation "The matching column")
+           :accessor volume
+           :documentation "The matching volume")
    (offset :initarg :offset
            :initarg nil
            :accessor offset
-           :documentation "The index of a match relative to a column"))
-  (:documentation "Information about matching records across columns in a registry"))
+           :documentation "The index of a match relative to a volume"))
+  (:documentation "Information about matching records across volumes in a registry"))

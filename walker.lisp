@@ -31,10 +31,10 @@
 ;;; Notes
 ;;;
 ;;; - Inspect PREV and NEXT
-;;; - The walker should operate on entry or column instances
+;;; - The walker should operate on entry or volume instances
 
 (defun walk (lfeed rfeed acc &key (lcarry nil) (rcarry nil))
-  "Walk through the columns and build value."
+  "Walk through the volumes and build value."
   (let ((lhead (or lcarry (current-head lfeed)))
         (rhead (or rcarry (current-head rfeed))))
     (cond
@@ -120,5 +120,5 @@
 ;;;
 ;;; - Convert COMPLETE-MATCH-P and PARTIAL-MATCH-P to generic functions
 ;;; - Maybe reimplement WALK
-;;; - Loop over the IDs found in a column instance
+;;; - Loop over the IDs found in a volume instance
 

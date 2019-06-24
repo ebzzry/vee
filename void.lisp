@@ -12,7 +12,7 @@
   "Create a VOID from TEMPLATE."
   (let* ((vname (void-name template))
          (void (spawn-registry vname)))
-    (setf (vid template) (rid void))
+    (setf (xid template) (rid void))
     void))
 
 (defgeneric void-send (record void)
@@ -35,9 +35,9 @@
   (when (and (null (buriedp record))
              (or (prev record)
                  (next record)))
-    (cond ((column-start-p record)
+    (cond ((volume-start-p record)
            (setf (prev (next record)) nil))
-          ((column-end-p record)
+          ((volume-end-p record)
            (setf (next (prev record)) nil))
           (t (progn (setf (next (prev record))
                           (next record))
@@ -51,9 +51,9 @@
   (when (and (buriedp record)
              (or (prev record)
                  (next record)))
-    (cond ((column-start-p record)
+    (cond ((volume-start-p record)
            (setf (prev (next record)) record))
-          ((column-end-p record)
+          ((volume-end-p record)
            (setf (next (prev record)) record))
           (t (progn (setf (next (prev record))
                           record)
@@ -81,10 +81,10 @@
 
 (defun deregister (record registry)
   "Remove RECORD from REGISTRY."
-  (let* ((cid (cid record))
-         (column (find-column cid registry)))
+  (let* ((vid (vid record))
+         (volume (find-volume vid registry)))
     (delete-record record registry)
-    (delete-record record column)
+    (delete-record record volume)
     (values)))
 
 (defun banish (record registry)
@@ -100,12 +100,12 @@
           (deregister record registry)
           void)))))
 
-(defun find-gaps (column registry)
+(defun find-gaps (volume registry)
   "Show where the gaps are in a registry."
-  (declare (ignorable column registry))
+  (declare (ignorable volume registry))
   nil)
 
-(defun fill-gaps (column registry)
-  "Fill the gaps in a column with information."
-  (declare (ignorable column registry))
+(defun fill-gaps (volume registry)
+  "Fill the gaps in a volume with information."
+  (declare (ignorable volume registry))
   nil)

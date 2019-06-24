@@ -86,16 +86,16 @@
   "Return the unique items from FEED."
   (delete-duplicates (normalize-items (mapcar selector feed)) :test test))
 
-(defun minimal-common-p (lcol rcol &key (selector #'elt0) (test #'string-equal))
-  "Return true if there are common lines between LCOL and RCOL."
+(defun minimal-common-p (lvol rvol &key (selector #'elt0) (test #'string-equal))
+  "Return true if there are common lines between LVOL and RVOL."
   (flet ((fn (arg) (uniques arg :selector selector :test test)))
-    (when (intersection (fn lcol) (fn rcol) :test test)
+    (when (intersection (fn lvol) (fn rvol) :test test)
       t)))
 
-(defun similarity (lcol rcol &key (selector #'elt0) (test #'string-equal))
-  "Return in % how similar are LCOL and RCOL."
-  (let ((common (length (nintersection (mapcar selector lcol)
-                                       (mapcar selector rcol)
+(defun similarity (lvol rvol &key (selector #'elt0) (test #'string-equal))
+  "Return in % how similar are LVOL and RVOL."
+  (let ((common (length (nintersection (mapcar selector lvol)
+                                       (mapcar selector rvol)
                                        :test test)))
-        (total (length (map-nappend selector lcol rcol))))
+        (total (length (map-nappend selector lvol rvol))))
     (* (/ common (/ total 1.0)) 100)))

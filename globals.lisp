@@ -20,8 +20,8 @@
 (defvar *initial-rcounter* 100
   "The initial registry counter value")
 
-(defvar *initial-ccounter* 1000
-  "The initial column counter value")
+(defvar *initial-vcounter* 1000
+  "The initial volume counter value")
 
 (defvar *initial-ecounter* 10000
   "The initial entry counter value")
