@@ -180,58 +180,67 @@
   "Return a MATCH object."
   (make-instance 'match :record record :column column :offset offset))
 
-;;; Note: the use of :ORIGIN allows a shorter next path
-;;; Note: find a way to carry the offset moving forward
-(defun retrieve-one (column &key (origin #'column-start) (fn #'true))
-  "Go through all the records in COLUMN from ORIGIN and return the first record that satisfieds FN."
-  (when (linked column)
-    (loop :for record = (point origin column) :then (next record)
-          :for offset = 0 :then (1+ offset)
-          :when (funcall fn record)
-          :return (make-match record column offset))))
-
 (defun everyp (item entry &key (test *field-test*) (selectors *default-selectors*))
   "Return true if ITEM matches to the applied version of ENTRY."
   (every test item (apply-selectors entry selectors)))
 
-(defgeneric find-matching-record (item column &key &allow-other-keys)
-  (:documentation "Return the first record that satisfies FN, and its offset relative to ORIGIN."))
-(defmethod find-matching-record ((item list) column &key
-                                                    (origin #'column-start)
-                                                    (test *field-test*)
-                                                    (selectors *default-selectors*))
-  (retrieve-one column
-                :origin origin
-                :fn #'(lambda (entry) (everyp item entry :test test :selectors selectors))))
-(defmethod find-matching-record ((entry entry) column &key
-                                                      (origin #'column-start)
-                                                      (test *field-test*)
-                                                      (selectors *default-selectors*))
-  (find-matching-record (value entry) column :origin origin :test test :selectors selectors))
-
 (defgeneric find-matching-records (query store &key &allow-other-keys)
   (:documentation "Go through all the records in COLUMN from ORIGIN and return all the records that satisfies FN."))
-(defmethod find-matching-records ((query list) (c column) &key (origin #'column-start))
+(defmethod find-matching-records ((query list) (c column)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
   (when (linked c)
     (loop :for record :in (walk-down c :origin origin)
           :for offset = 0 :then (1+ offset)
-          :when (everyp query record)
+          :when (everyp query record :test test :selectors selectors)
           :collect (make-match record c offset))))
-(defmethod find-matching-records ((query entry) (c column) &key (origin #'column-start))
+(defmethod find-matching-records ((query entry) (c column)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
   (when (linked c)
-    (find-matching-records (value query) c :origin origin)))
-(defmethod find-matching-records ((query list) (r registry) &key (origin #'column-start))
+    (find-matching-records (value query) c :origin origin :test test :selectors selectors)))
+(defmethod find-matching-records ((query list) (r registry)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
   (let ((columns (find-columns r)))
     (loop :for column :in columns
-          :nconc (find-matching-records query column :origin origin))))
-(defmethod find-matching-records ((query entry) (r registry) &key (origin #'column-start))
-  (find-matching-records (value query) r :origin origin))
+          :nconc (find-matching-records query column :origin origin :test test :selectors selectors))))
+(defmethod find-matching-records ((query entry) (r registry)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
+  (find-matching-records (value query) r :origin origin :test test :selectors selectors))
+
+(defgeneric find-matching-record (query store &key &allow-other-keys)
+  (:documentation "Go through all the records in COLUMN from ORIGIN and return the first record that satisfies FN."))
+(defmethod find-matching-record ((query list) (c column)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
+  (when (linked c)
+    (loop :for record :in (walk-down c :origin origin)
+          :for offset = 0 :then (1+ offset)
+          :when (everyp query record :test test :selectors selectors)
+          :return (make-match record c offset))))
+(defmethod find-matching-record ((query entry) (c column)
+                                  &key (origin #'column-start)
+                                       (test *field-test*)
+                                       (selectors *default-selectors*))
+  (when (linked c)
+    (find-matching-record (value query) c :origin origin :test test :selectors selectors)))
 
 ;;; Note: if multiple matches are found, find a way to disambiguate them
 
 ;;; Note: should LEFT and RIGHT be modified, instead?
 
-;;; Create snaking and non-snaking bindings?
+;;; Note: Create snaking and non-snaking bindings?
+;;; Note: is this for non-linear bindings?
+
+;;; Note: bind in the MATCH slot of ENTRY, or
+;;;       bind in the LEFT and RIGHT slots of RECORD?
 (defun bind-matches (record column registry)
   ""
   nil)

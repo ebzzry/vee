@@ -100,6 +100,7 @@
          :initform nil
          :accessor next
          :documentation "The ID of the next record in a column")
+   ;; Note: is this for linear bindings?
    (left :initarg :left
          :initform nil
          :accessor left
@@ -123,6 +124,8 @@
           :initform nil
           :accessor value
           :documentation "The datum of an entry")
+   ;; Note: is this for non-linear bindings
+   ;; Note: should an entry be marked ‘bound’ after binding?
    (matches :initarg :matches
             :initform (make-hash-table)
             :accessor matches
