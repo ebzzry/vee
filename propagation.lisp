@@ -152,7 +152,7 @@
                                        (test *field-test*)
                                        (selectors *default-selectors*))
   (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin)
+    (loop :for record :in (walk-down v :origin origin :skip #'unitp)
           :for offset = 0 :then (1+ offset)
           :when (everyp query record :test test :selectors selectors)
           :collect (make-match record v offset))))
@@ -167,7 +167,8 @@
                                        (selectors *default-selectors*))
   (let ((volumes (find-volumes r)))
     (loop :for volume :in volumes
-          :nconc (find-matching-records query volume :origin origin :test test :selectors selectors))))
+          :nconc (find-matching-records query volume
+                                        :origin origin :test test :selectors selectors))))
 (defmethod find-matching-records ((query entry) (r registry)
                                   &key (origin #'volume-start)
                                        (test *field-test*)
@@ -192,22 +193,67 @@
   (find-matching-record (value query) v :origin origin :test test :selectors selectors))
 
 (defmethod value ((m match))
-  "Return contents of MATCH object."
+  "Return record value from M."
   (value (record m)))
+
+(defmethod id ((m match))
+  "Retturn record id from M."
+  (id (record m)))
 
 (defun find-other-volumes (volume registry)
   "Find the other volumes in REGISTRY."
   (let ((vid (vid volume)))
     (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
 
-;;; Note: if multiple matches are found, find a way to disambiguate them
-;;; Note: create snaking and non-snaking bindings?
-(defun bind-all-matches (record volume registry tvolume tregistry)
-  "Bind all matching records."
-  (declare (ignorable record volume registry tvolume tregistry))
-  nil)
+(defgeneric find-exclusive-matching-records (query volume registry &key &allow-other-keys)
+  (:documentation "Find all matching records of QUERY in all VOLUMES of REGISTRY except the volume of QUERY."))
+(defmethod find-exclusive-matching-records ((query entry) (v volume) (r registry)
+                                            &key (origin #'volume-start)
+                                                 (test *field-test*)
+                                                 (selectors *default-selectors*))
+  (when (linkedp v)
+    (let ((volumes (find-other-volumes v r)))
+      (loop :for volume :in volumes
+            :nconc (find-matching-records (value query) volume :origin origin :test test :selectors selectors)))))
+(defmethod find-exclusive-matching-records ((query list) (v volume) (r registry)
+                                            &key (origin #'volume-start)
+                                                 (test *field-test*)
+                                                 (selectors *default-selectors*))
+  (when (linkedp v)
+    (let ((volumes (find-other-volumes v r)))
+      (loop :for volume :in volumes
+            :nconc (find-matching-records query volume :origin origin :test test :selectors selectors)))))
 
+(defgeneric find-exclusive-matching-first-records (query volume registry &key &allow-other-keys)
+  (:documentation "Find all matching first records of QUERY in all VOLUMES of REGISTRY except the volume of QUERY."))
+(defmethod find-exclusive-matching-first-records ((query entry) (v volume) (r registry)
+                                                  &key (origin #'volume-start)
+                                                       (test *field-test*)
+                                                       (selectors *default-selectors*))
+  (when (linkedp v)
+    (let ((volumes (find-other-volumes v r)))
+      (loop :for volume :in volumes
+            :collect (find-matching-record (value query) volume :origin origin :test test :selectors selectors)))))
+(defmethod find-exclusive-matching-first-records ((query list) (v volume) (r registry)
+                                                  &key (origin #'volume-start)
+                                                       (test *field-test*)
+                                                       (selectors *default-selectors*))
+  (when (linkedp v)
+    (let ((volumes (find-other-volumes v r)))
+      (loop :for volume :in volumes
+            :collect (find-matching-record query volume :origin origin :test test :selectors selectors)))))
+
+;;; Note: snaking bindings
+;;; Note: find a way to disambiguate multiple matches
+(defun bind-all-matches (record volume registry)
+  "Bind all matching records."
+  (let ((matches (find-exclusive-matching-records record volume registry)))
+    (when matches
+      (setf (matches record) matches))))
+
+;;; Note: non-snaking bindings
 (defun bind-first-matches (record volume registry tvolume tregistry)
   "Bind all first matching records."
-  (declare (ignorable record volume registry tvolume tregistry))
-  nil)
+  (let ((matches (find-exclusive-matching-first-records record volume registry)))
+    (when matches
+      (setf (matches record) matches))))

@@ -141,10 +141,10 @@
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid name) r
-      (format stream "~A/~S" rid name))))
+      (format stream "~A ~S" rid name))))
 (defmethod print-object ((ht hash-table) stream)
   (print-unreadable-object (ht stream :type t)
-    (format stream "~A/~A" (hash-table-test ht) (hash-table-count ht))))
+    (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
