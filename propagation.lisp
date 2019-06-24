@@ -12,30 +12,6 @@
   "Apply items in selectors to create a new value."
   (loop :for fn :in selectors :collect (funcall fn (value entry))))
 
-(defun entries-equal-p (entry-1 entry-2
-                        &key (selectors *default-selectors*)
-                             (test *field-test*))
-  "Return true if ENTRY-1 is equal to ENTRY-2 using SELECTORS. SELECTORS is a list of functions that will be used to collect fields in an entry."
-  (let ((selected-1 (apply-selectors entry-1 selectors))
-        (selected-2 (apply-selectors entry-2 selectors)))
-    (every test selected-1 selected-2)))
-
-(defgeneric find-matches (entry column registry &key &allow-other-keys)
-  (:documentation "Return a list of matching instances of ENTRY in target COLUMN using SELECTOR and TEST."))
-(defmethod find-matches ((item list) (c column) (r registry)
-                         &key (selectors *default-selectors*)
-                              (test *field-test*))
-  (loop :for entry :in (find-entries c)
-        :for cluster = (apply-selectors entry selectors)
-        :when (every test item cluster)
-        :collect entry))
-(defmethod find-matches ((e entry) (c column) (r registry)
-                         &key (selectors *default-selectors*)
-                              (test *field-test*))
-  (find-matches (apply-selectors e selectors)
-                c r
-                :selectors selectors :test test))
-
 (defun point (origin column)
   "Return starting point based on the type of origin."
   (etypecase origin
@@ -115,34 +91,19 @@
           :then (link unit column registry position)
           :finally (return column))))
 
-(defgeneric find-match (entry column registry &key &allow-other-keys)
-  (:documentation "Return a list of matching instances of ENTRY in target COLUMN using SELECTOR and TEST."))
-(defmethod find-match ((item list) (c column) (r registry)
-                       &key (selectors *default-selectors*)
-                            (test *field-test*))
-  (loop :for entry :in (find-entries c)
-        :for cluster = (apply-selectors entry selectors)
-        :when (every test item cluster)
-        :return entry))                 ;aggressive first match
-(defmethod find-match ((e entry) (c column) (r registry)
-                       &key (selectors *default-selectors*)
-                            (test *field-test*))
-  (find-match (apply-selectors e selectors)
-              c r
-              :selectors selectors :test test))
-
 (defun walk-up (column &key (origin #'column-end) (fn #'identity))
   "Return records from COLUMN starting from record ORIGIN applying FN to each record."
-  (when (linked column)
+  (when (linkedp column)
     (loop :for entry = (point origin column) :then (prev entry)
           :while entry
           :collect (funcall fn entry))))
 
-(defun walk-down (column &key (origin #'column-start) (fn #'identity))
+(defun walk-down (column &key (origin #'column-start) (fn #'identity) (skip #'false))
   "Return records from COLUMN starting from record ORIGIN applying FN to each record."
-  (when (linked column)
+  (when (linkedp column)
     (loop :for entry = (point origin column) :then (next entry)
           :while entry
+          :unless (funcall skip entry)
           :collect (funcall fn entry))))
 
 (defun walk-left (column)
@@ -157,7 +118,7 @@
 
 (defun get-offset (record column &key (origin #'column-start))
   "Return the 0-indexed offset of ENTRY in COLUMN."
-  (when (linked column)
+  (when (linkedp column)
     (loop :for rec = (point origin column) :then (next rec)
           :for count = 0 :then (1+ count)
           :when (eql record rec)
@@ -165,7 +126,7 @@
 
 (defun nth-record (n column &key (origin #'column-start))
   "Return the 0-indexed Nth record in COLUMN."
-  (when (linked column)
+  (when (linkedp column)
     (loop :for rec = (point origin column) :then (next rec)
           :for count = 0 :then (1+ count)
           :when (= count n)
@@ -173,8 +134,8 @@
 
 (defmethod print-object ((m match) stream)
   (print-unreadable-object (m stream :type t)
-    (with-slots (record column offset) m
-      (format stream "~A ~A ~A" (id record) (cid column) offset))))
+    (with-slots (column) m
+      (format stream "~A" (cid column)))))
 
 (defun make-match (record column offset)
   "Return a MATCH object."
@@ -185,12 +146,12 @@
   (every test item (apply-selectors entry selectors)))
 
 (defgeneric find-matching-records (query store &key &allow-other-keys)
-  (:documentation "Go through all the records in COLUMN from ORIGIN and return all the records that satisfies FN."))
+  (:documentation "Return all the records from STORE that matches QUERY."))
 (defmethod find-matching-records ((query list) (c column)
                                   &key (origin #'column-start)
                                        (test *field-test*)
                                        (selectors *default-selectors*))
-  (when (linked c)
+  (when (linkedp c)
     (loop :for record :in (walk-down c :origin origin)
           :for offset = 0 :then (1+ offset)
           :when (everyp query record :test test :selectors selectors)
@@ -199,8 +160,7 @@
                                   &key (origin #'column-start)
                                        (test *field-test*)
                                        (selectors *default-selectors*))
-  (when (linked c)
-    (find-matching-records (value query) c :origin origin :test test :selectors selectors)))
+  (find-matching-records (value query) c :origin origin :test test :selectors selectors))
 (defmethod find-matching-records ((query list) (r registry)
                                   &key (origin #'column-start)
                                        (test *field-test*)
@@ -215,32 +175,39 @@
   (find-matching-records (value query) r :origin origin :test test :selectors selectors))
 
 (defgeneric find-matching-record (query store &key &allow-other-keys)
-  (:documentation "Go through all the records in COLUMN from ORIGIN and return the first record that satisfies FN."))
+  (:documentation "Return the first record from STORE that matches QUERY."))
 (defmethod find-matching-record ((query list) (c column)
-                                  &key (origin #'column-start)
-                                       (test *field-test*)
-                                       (selectors *default-selectors*))
-  (when (linked c)
+                                 &key (origin #'column-start)
+                                      (test *field-test*)
+                                      (selectors *default-selectors*))
+  (when (linkedp c)
     (loop :for record :in (walk-down c :origin origin)
           :for offset = 0 :then (1+ offset)
           :when (everyp query record :test test :selectors selectors)
           :return (make-match record c offset))))
 (defmethod find-matching-record ((query entry) (c column)
-                                  &key (origin #'column-start)
-                                       (test *field-test*)
-                                       (selectors *default-selectors*))
-  (when (linked c)
-    (find-matching-record (value query) c :origin origin :test test :selectors selectors)))
+                                 &key (origin #'column-start)
+                                      (test *field-test*)
+                                      (selectors *default-selectors*))
+  (find-matching-record (value query) c :origin origin :test test :selectors selectors))
+
+(defmethod value ((m match))
+  "Return contents of MATCH object."
+  (value (record m)))
+
+(defun find-other-columns (column registry)
+  "Find the other columns in REGISTRY."
+  (let ((cid (cid column)))
+    (find-columns registry :skip #'(lambda (c) (= cid (cid c))))))
 
 ;;; Note: if multiple matches are found, find a way to disambiguate them
+;;; Note: create snaking and non-snaking bindings?
+(defun bind-all-matches (record column registry tcolumn tregistry)
+  "Bind all matching records."
+  (declare (ignorable record column registry tcolumn tregistry))
+  nil)
 
-;;; Note: should LEFT and RIGHT be modified, instead?
-
-;;; Note: Create snaking and non-snaking bindings?
-;;; Note: is this for non-linear bindings?
-
-;;; Note: bind in the MATCH slot of ENTRY, or
-;;;       bind in the LEFT and RIGHT slots of RECORD?
-(defun bind-matches (record column registry)
-  ""
+(defun bind-first-matches (record column registry tcolumn tregistry)
+  "Bind all first matching records."
+  (declare (ignorable record column registry tcolumn tregistry))
   nil)

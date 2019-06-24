@@ -64,9 +64,9 @@
                 rid name ecounter etable ucounter utable ccounter ctable vid control))
       (progn (format t "~&** ENTRIES~%")
              (maphash #'(lambda (k v)
-                          (with-slots (cid id prev next value buried) v
+                          (with-slots (cid id prev next value buriedp) v
                             (let ((fmt "~S => ~S~%")
-                                  (slots (list cid id prev next value buried)))
+                                  (slots (list cid id prev next value buriedp)))
                               (format t fmt k slots))))
                       (etable registry))
              (format t "~&** COLUMNS~%")
@@ -141,10 +141,10 @@
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid name) r
-      (format stream "~A ~A" rid name))))
+      (format stream "~A/~S" rid name))))
 (defmethod print-object ((ht hash-table) stream)
   (print-unreadable-object (ht stream :type t)
-    (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
+    (format stream "~A/~A" (hash-table-test ht) (hash-table-count ht))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Update entry E in REGISTRY."
@@ -261,7 +261,7 @@
                       (t (progn
                            (setf (prev record) (find-record (1- id) column))
                            (setf (next record) (find-record (1+ id) column))))))
-      (setf (linked column) t))))
+      (setf (linkedp column) t))))
 
 (defun import-feed (feed name registry)
   "Import items from FEED to REGISTRY with name NAME."
@@ -307,10 +307,11 @@
         :when (string-equal (string-upcase query) (name column))
           :return column))
 
-(defgeneric find-columns (registry)
-  (:documentation "Return all columns from REGISTRY."))
-(defmethod find-columns ((r registry))
-  (loop :for c :being :the :hash-values :in (ctable r) :collect c))
+(defun find-columns (registry &key (skip #'false))
+  "Return all columns from REGISTRY, except SKIP"
+  (loop :for column :being :the :hash-values :in (ctable registry)
+        :unless (funcall skip column)
+        :collect column))
 
 (defgeneric find-record (query registry)
   (:documentation "Return an entry which matches QUERY in COLUMN."))
@@ -346,6 +347,11 @@
   "Return true for anything."
   (declare (ignore arg))
   t)
+
+(defun false (arg)
+  "Return false for anything."
+  (declare (ignore arg))
+  nil)
 
 (defgeneric find-entries (store)
   (:documentation "Return entries from STORE."))
@@ -412,12 +418,12 @@
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
 (defmethod dump-entry ((e entry) &key simple)
-  (with-slots (cid id prev next value buried) e
+  (with-slots (cid id prev next value buriedp) e
     (if simple
-        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIED: ~S~%"
-                prev next value buried)
-        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIED: ~S~%"
-                cid id prev next value buried))
+        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIEDP: ~S~%"
+                prev next value buriedp)
+        (format t "~&CID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIEDP: ~S~%"
+                cid id prev next value buriedp))
     (values)))
 
 (defun display-column (query name)
@@ -447,6 +453,6 @@
     (error "Either the template or the target registry does not exist."))
   nil)
 
-(defun forge-record (&optional prev next left right buried)
+(defun forge-record (&optional prev next left right buriedp)
   "Create a record instance."
-  (make-instance 'record :prev prev :next next :left left :right right :buried buried))
+  (make-instance 'record :prev prev :next next :left left :right right :buriedp buriedp))

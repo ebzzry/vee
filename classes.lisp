@@ -81,10 +81,10 @@
          :initform -1
          :reader next
          :documentation "The next column")
-   (linked :initarg :linked
-           :initform nil
-           :accessor linked
-           :documentation "Flag to indicate whether a column is linked"))
+   (linkedp :initarg :linkedp
+            :initform nil
+            :accessor linkedp
+            :documentation "Flag to indicate whether a column is linked"))
   (:documentation "Pointer class for the entries. It may also contain links to other columns inside a registry"))
 
 (defclass record ()
@@ -109,9 +109,9 @@
           :initform nil
           :accessor right
           :documentation "The record on the right")
-   (buried :initarg :buried
+   (buriedp :initarg :buriedp
            :initform nil
-           :accessor buried
+           :accessor buriedp
            :documentation "Whether a record is buried or not"))
   (:documentation "An empty container which links to other records"))
 
@@ -124,12 +124,10 @@
           :initform nil
           :accessor value
           :documentation "The datum of an entry")
-   ;; Note: is this for non-linear bindings
-   ;; Note: should an entry be marked ‘bound’ after binding?
    (matches :initarg :matches
-            :initform (make-hash-table)
+            :initform ()
             :accessor matches
-            :documentation "Table for matching entries across columns"))
+            :documentation "Structure for the non-linear matches"))
   (:documentation "A record that contains a value"))
 
 (defclass unit (record)

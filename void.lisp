@@ -32,7 +32,7 @@
 
 (defun bury (record)
   "Remove the linking of a record, but keep it stored."
-  (when (and (null (buried record))
+  (when (and (null (buriedp record))
              (or (prev record)
                  (next record)))
     (cond ((column-start-p record)
@@ -43,12 +43,12 @@
                           (next record))
                     (setf (prev (next record))
                           (prev record)))))
-    (setf (buried record) t))
+    (setf (buriedp record) t))
   (values))
 
 (defun unbury (record)
   "Make a record appear again."
-  (when (and (buried record)
+  (when (and (buriedp record)
              (or (prev record)
                  (next record)))
     (cond ((column-start-p record)
@@ -59,14 +59,14 @@
                           record)
                     (setf (prev (next record))
                           record))))
-    (setf (buried record) nil))
+    (setf (buriedp record) nil))
   (values))
 
 (defun find-buried (registry)
-  "Show the buried entries in REGISTRY."
+  "Show the buriedp entries in REGISTRY."
   (loop :for k :being :the :hash-keys :in (etable registry)
         :for record = (find-record k registry)
-        :when (buried record)
+        :when (buriedp record)
         :collect record))
 
 (defun unlink (record)
