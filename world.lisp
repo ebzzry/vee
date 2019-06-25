@@ -203,6 +203,11 @@
           (add-registry r))
         registry)))
 
+(defun build-registry ()
+  "Return a new unique registry."
+  (let ((name (genstring "REGISTRY")))
+    (spawn-registry name)))
+
 (defun make-world ()
   "Create an instance of the world class."
   (make-instance 'world))

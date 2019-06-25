@@ -245,15 +245,33 @@
 
 ;;; Note: snaking bindings
 ;;; Note: find a way to disambiguate multiple matches
-(defun bind-all-matches (record volume registry)
+(defun bind-all-matches (record volume registry &key exclusive)
   "Bind all matching records."
-  (let ((matches (find-exclusive-matching-records record volume registry)))
+  (let ((matches (if exclusive
+                     (find-exclusive-matching-records record volume registry)
+                     (find-matching-records record volume registry))))
     (when matches
       (setf (matches record) matches))))
 
 ;;; Note: non-snaking bindings
-(defun bind-first-matches (record volume registry tvolume tregistry)
+(defun bind-first-matches (record volume registry &key exclusive)
   "Bind all first matching records."
-  (let ((matches (find-exclusive-matching-first-records record volume registry)))
+  (let ((matches (if exclusive
+                     (find-exclusive-matching-first-records record volume registry)
+                     (find-matching-first-records record volume registry))))
     (when matches
       (setf (matches record) matches))))
+
+(defun bind-volume (volume registry
+                    &key (origin #'volume-start)
+                         (test *field-test*)
+                         (selectors *default-selectors*)
+                         exclusive)
+  "Bind volume to other volumes in the registry."
+  (loop :for entry :in (walk-down volume :origin origin :skip #'unitp)
+        :do (bind-all-matches entry volume registry :exclusive exclusive)))
+
+(defun bind-wall (registry)
+  "Bind the wall in REGISTRY to the other volumes."
+  (let ((wall (wall registry)))
+    (bind-volume wall)))

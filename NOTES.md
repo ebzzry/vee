@@ -31,6 +31,7 @@ Glossary
 - deregister (v): to remove an entry from a register
 - void (n): a kind of registry where banished entries go.
 - banish (v): to bury, send to a void, and deregister an entry
+- bind (v): to connect an entry to another entry in another volume
 
 
 TODO
@@ -79,3 +80,10 @@ TODO
 - [x] Implement inter-registry traversal
 - [x] Handle arbitrary delimiters
 - [x] Handle arbitrary amount of volumes
+
+
+### Comprehension
+
+- [ ] Ingest WWW articles
+- [ ] Filter raw content into volume-friendly input
+- [ ] Convert filtered content to volumes
