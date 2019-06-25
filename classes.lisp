@@ -69,6 +69,10 @@
          :initform ""
          :reader name
          :documentation "The name of a volume")
+   (header :initarg :header
+           :initform ()
+           :accessor header
+           :documentation "The header of a data source")
    (table :initarg :table
            :initform (make-hash-table)
            :accessor table
@@ -151,3 +155,14 @@
            :accessor offset
            :documentation "The index of a match relative to a volume"))
   (:documentation "Information about matching records across volumes in a registry"))
+
+(defclass column ()
+  ((value :initarg :value
+          :initform ()
+          :reader value
+          :documentation "The value of a column")
+   (size :initarg :size
+          :initform 0
+          :reader size
+          :documentation "The size of a column"))
+  (:documentation "A collection of fields from a volume"))

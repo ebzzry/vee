@@ -222,7 +222,8 @@
   (when (linkedp v)
     (let ((volumes (find-other-volumes v r)))
       (loop :for volume :in volumes
-            :nconc (find-matching-records query volume :origin origin :test test :selectors selectors)))))
+            :nconc (find-matching-records
+                    query volume :origin origin :test test :selectors selectors)))))
 
 (defgeneric find-exclusive-matching-first-records (query volume registry &key &allow-other-keys)
   (:documentation "Find all matching first records of QUERY in all VOLUMES of REGISTRY except the volume of QUERY."))
@@ -233,7 +234,8 @@
   (when (linkedp v)
     (let ((volumes (find-other-volumes v r)))
       (loop :for volume :in volumes
-            :collect (find-matching-record (value query) volume :origin origin :test test :selectors selectors)))))
+            :collect (find-matching-record
+                      (value query) volume :origin origin :test test :selectors selectors)))))
 (defmethod find-exclusive-matching-first-records ((query list) (v volume) (r registry)
                                                   &key (origin #'volume-start)
                                                        (test *field-test*)
@@ -241,24 +243,37 @@
   (when (linkedp v)
     (let ((volumes (find-other-volumes v r)))
       (loop :for volume :in volumes
-            :collect (find-matching-record query volume :origin origin :test test :selectors selectors)))))
+            :collect (find-matching-record
+                      query volume :origin origin :test test :selectors selectors)))))
 
 ;;; Note: snaking bindings
 ;;; Note: find a way to disambiguate multiple matches
-(defun bind-all-matches (record volume registry &key exclusive)
+(defun bind-all-matches (record volume registry
+                         &key (origin #'volume-start)
+                              (test *field-test*)
+                              (selectors *default-selectors*)
+                              exclusive)
   "Bind all matching records."
   (let ((matches (if exclusive
-                     (find-exclusive-matching-records record volume registry)
-                     (find-matching-records record volume registry))))
+                     (find-exclusive-matching-records record volume registry
+                                                      :origin origin :test test :selectors selectors)
+                     (find-matching-records record volume registry
+                                            :origin origin :test test :selectors selectors))))
     (when matches
       (setf (matches record) matches))))
 
 ;;; Note: non-snaking bindings
-(defun bind-first-matches (record volume registry &key exclusive)
+(defun bind-first-matches (record volume registry
+                           &key (origin #'volume-start)
+                                (test *field-test*)
+                                (selectors *default-selectors*)
+                                exclusive)
   "Bind all first matching records."
   (let ((matches (if exclusive
-                     (find-exclusive-matching-first-records record volume registry)
-                     (find-matching-first-records record volume registry))))
+                     (find-exclusive-matching-first-records record volume registry
+                                                            :origin origin :test test :selectors selectors)
+                     (find-matching-record record volume
+                                           :origin origin :test test :selectors selectors))))
     (when matches
       (setf (matches record) matches))))
 
@@ -269,9 +284,32 @@
                          exclusive)
   "Bind volume to other volumes in the registry."
   (loop :for entry :in (walk-down volume :origin origin :skip #'unitp)
-        :do (bind-all-matches entry volume registry :exclusive exclusive)))
+        :do (bind-all-matches entry volume registry
+                              :test test :selectors selectors :exclusive exclusive)))
 
 (defun bind-wall (registry)
   "Bind the wall in REGISTRY to the other volumes."
   (let ((wall (wall registry)))
-    (bind-volume wall)))
+    (bind-volume wall registry :exclusive t)))
+
+(defmethod initialize-instance :after ((c column) &key)
+  "Update column C."
+  (with-slots (value size) c
+    (setf size (length value))))
+
+(defmethod print-object ((c column) stream)
+  (print-unreadable-object (c stream :type t)
+    (with-slots (size) c
+      (format stream "~A" size))))
+
+(defun make-column (value)
+  "Return a column object."
+  (make-instance 'column :value value))
+
+(defun extract-column (index volume)
+  "Return a column object from VOLUME specified by 1-indexed INDEX."
+  (flet ((fn (entry)
+           (nth (1- index) (value entry))))
+    (let* ((entries (walk-down volume :skip #'unitp))
+           (value (mapcar #'fn entries)))
+      (make-column value))))

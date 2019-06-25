@@ -38,6 +38,13 @@ TODO
 ----
 
 
+### Comprehension
+
+- [ ] Ingest arbitrary WWW article
+- [ ] Filter raw content into volume-friendly input
+- [ ] Convert filtered content to volumes
+
+
 ### Model
 
 - [x] Design the registry system
@@ -80,10 +87,3 @@ TODO
 - [x] Implement inter-registry traversal
 - [x] Handle arbitrary delimiters
 - [x] Handle arbitrary amount of volumes
-
-
-### Comprehension
-
-- [ ] Ingest WWW articles
-- [ ] Filter raw content into volume-friendly input
-- [ ] Convert filtered content to volumes
