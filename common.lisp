@@ -175,3 +175,15 @@
       fallback
       (let ((string (string-upcase template)))
         (genstring string))))
+
+(defun true-false-p (x y)
+  "Return true if X is true and Y is false."
+  (if (and x (null y)) t nil))
+
+(defun false-true-p (x y)
+  "Return true if X is false and Y is true."
+  (true-false-p y x))
+
+(defun true-true-p (x y)
+  "Return true if X is true and Y is true."
+  (and x y t))
