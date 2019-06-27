@@ -205,8 +205,15 @@
 
 (defun clone-registry (template)
   "Create a selective copy of TEMPLATE."
-  (declare (ignorable template))
-  nil)
+  (with-slots (name ecounter etable ucounter utable vcounter vtable) template
+    (let* ((cname (mof:cat name (genstring "/")))
+           (clone (make-instance 'registry
+                                 :rid (spawn-rcounter) :name cname
+                                 :ecounter ecounter :etable etable
+                                 :ucounter ucounter :utable utable
+                                 :vcounter vcounter :vtable vtable)))
+      (add-registry clone)
+      clone)))
 
 (defun build-registry ()
   "Return a new unique registry."

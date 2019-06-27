@@ -192,6 +192,7 @@
 
 ;;; Note: snaking bindings
 ;;; Note: find a way to disambiguate multiple matches
+;;; Note: find a way to specify the selectors as list of integers
 (defun bind-all-matches (record registry &rest args)
   "Bind all matching records."
   (let ((matches (apply #'find-matching-registry-records record registry args)))
@@ -243,3 +244,8 @@
     (let* ((entries (walk-down volume :skip #'unitp))
            (value (mapcar #'fn entries)))
       (make-column value))))
+
+(defun view-column (index volume)
+  "Return a column from volume in a readable form."
+  (let ((value (value (extract-column index volume))))
+    (format t "~{~A~^ ~}" value)))
