@@ -8,9 +8,12 @@
 (defmethod full ((object entry)) object)
 
 ;;; Note: handle SB-KERNEL:INDEX-TOO-LARGE-ERROR here
-(defun apply-selectors (entry selectors)
-  "Apply items in selectors to create a new value."
-  (loop :for fn :in selectors :collect (funcall fn (value entry))))
+(defgeneric apply-selectors (query selectors)
+  (:documentation "Apply items in selectors to create a new value."))
+(defmethod apply-selectors ((query list) selectors)
+  (loop :for fn :in selectors :collect (funcall fn query)))
+(defmethod apply-selectors ((query entry) selectors)
+  (apply-selectors (value query) selectors))
 
 (defun point (origin volume)
   "Return starting point based on the type of origin."
@@ -143,7 +146,7 @@
 
 (defun everyp (item entry &key (test *field-test*) (selectors *default-selectors*))
   "Return true if ITEM matches to the applied version of ENTRY."
-  (every test item (apply-selectors entry selectors)))
+  (every test (apply-selectors item selectors) (apply-selectors entry selectors)))
 
 (defmethod value ((m match))
   "Return record value from M."
@@ -158,7 +161,6 @@
   (let ((vid (vid volume)))
     (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
 
-;;; Note is it possible to specify only the volume, then the registry will be derived from the volume?
 (defgeneric find-matching-volume-records (query volume &key &allow-other-keys)
   (:documentation "Return all the records from VOLUME that match QUERY."))
 (defmethod find-matching-volume-records ((query entry) (v volume)
@@ -225,20 +227,10 @@
   (let ((wall (wall registry)))
     (bind-volume wall registry :exclusive t)))
 
-(defun bind-volumes (registry)
+(defun bind-volumes (registry &rest args)
   "Bind all the volumes in REGISTRY to one another."
   (let ((volumes (find-volumes registry)))
-    (loop :for volume :in volumes :do (bind-volume volume registry))))
-
-(defmethod initialize-instance :after ((c column) &key)
-  "Update column C."
-  (with-slots (value size) c
-    (setf size (length value))))
-
-(defmethod print-object ((c column) stream)
-  (print-unreadable-object (c stream :type t)
-    (with-slots (size) c
-      (format stream "~A" size))))
+    (loop :for volume :in volumes :do (apply #'bind-volume volume registry args))))
 
 (defun make-column (value)
   "Return a column object."

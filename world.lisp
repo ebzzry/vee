@@ -136,8 +136,8 @@
       (format stream "~A" id))))
 (defmethod print-object ((v volume) stream)
   (print-unreadable-object (v stream :type t)
-    (with-slots (vid) v
-      (format stream "~A" vid))))
+    (with-slots (vid name) v
+      (format stream "~A ~S" vid name))))
 (defmethod print-object ((r registry) stream)
   (print-unreadable-object (r stream :type t)
     (with-slots (rid name) r
@@ -189,7 +189,7 @@
   (make-instance 'registry :rid (spawn-rcounter) :name (string-upcase name)))
 
 (defgeneric spawn-registry (query)
-  (:documentation "Return a new registry object then add it to the world, or return an existing one"))
+  (:documentation "Return a new registry object then add it to the world, or return an existing one."))
 (defmethod spawn-registry ((query string))
   (let ((registry (find-registry query)))
     (if (not registry)
@@ -275,6 +275,18 @@
     (forge-entries volume registry feed)
     (link-records volume)
     registry))
+
+(defun import-file (path &key (vname (pathname-name path))
+                           (rname *default-registry-name*)
+                           (delimiter *default-delimiter*))
+  "Import file into the registry."
+  (let* ((file (mof:expand-pathname path))
+         (feed (read-file file :delimiter delimiter))
+         (registry (spawn-registry rname))
+         (name (if (find-volume vname registry)
+                   (genstring "VOLUME")
+                   vname)))
+    (import-feed feed name registry)))
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))

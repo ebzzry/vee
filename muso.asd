@@ -27,4 +27,5 @@
                (:file "feeds")
                (:file "void")
                (:file "propagation")
+               (:file "startup")
                (:file "tests")))

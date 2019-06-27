@@ -160,9 +160,5 @@
   ((value :initarg :value
           :initform ()
           :reader value
-          :documentation "The value of a column")
-   (size :initarg :size
-          :initform 0
-          :reader size
-          :documentation "The size of a column"))
+          :documentation "The value of a column"))
   (:documentation "A collection of fields from a volume"))

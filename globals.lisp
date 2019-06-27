@@ -40,3 +40,6 @@
 
 (defvar *default-selectors* (list #'elt0)
   "The default list of functions that are used for specifying clusters.")
+
+(defparameter *default-registry-name* nil
+  "The name of the default registry.")
