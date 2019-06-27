@@ -203,6 +203,11 @@
           (add-registry r))
         registry)))
 
+(defun clone-registry (template)
+  "Create a selective copy of TEMPLATE."
+  (declare (ignorable template))
+  nil)
+
 (defun build-registry ()
   "Return a new unique registry."
   (let ((name (genstring "REGISTRY")))
