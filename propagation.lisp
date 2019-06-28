@@ -136,15 +136,18 @@
 ;;; Note: header-specifiers should only be used when matching an entry against an entry
 (defgeneric everyp (object entry registry &key &allow-other-keys)
   (:documentation "Return true if ITEM matches to the applied version of ENTRY."))
-(defmethod everyp ((o list) (e entry) (r registry) &key (test *field-test*) (constraints *default-constraints*))
+(defmethod everyp ((o list) (e entry) (r registry)
+                   &key (test *field-test*)
+                        (constraints *default-constraints*))
   (every test
          (apply-constraints constraints o r :use-header nil)
          (apply-constraints constraints e r)))
-(defmethod everyp ((o entry) (e entry) (r registry) &key (test *field-test*) (constraints *default-constraints*))
+(defmethod everyp ((o entry) (e entry) (r registry)
+                   &key (test *field-test*)
+                        (constraints *default-constraints*))
   (every test
          (apply-constraints constraints o r)
          (apply-constraints constraints e r)))
-
 
 (defmethod value ((m match))
   "Return record value from M."
@@ -197,7 +200,6 @@
   (apply #'find-matching-record (value query) v args))
 
 ;;; Note: snaking bindings
-;;; Note: find a way to disambiguate multiple matches
 (defun bind-all-matches (record registry &rest args)
   "Bind all matching records."
   (let ((matches (apply #'find-matching-registry-records record registry args)))
@@ -214,10 +216,10 @@
   (loop :for entry :in (walk-down volume :skip #'unitp)
         :do (apply #'bind-all-matches entry registry args)))
 
-(defun bind-wall (registry)
+(defun bind-wall (registry &rest args)
   "Bind the wall in REGISTRY to the other volumes."
   (let ((wall (wall registry)))
-    (bind-volume wall registry :exclusive t)))
+    (apply #'bind-volume wall registry :exclusive t args)))
 
 (defun bind-volumes (registry &rest args)
   "Bind all the volumes in REGISTRY to one another."
@@ -231,7 +233,7 @@
 (defun extract-column (index volume)
   "Return a column object from VOLUME specified by 1-indexed INDEX."
   (flet ((fn (entry)
-           (nth (1- index) (value entry))))
+           (nth index (value entry))))
     (let* ((entries (walk-down volume :skip #'unitp))
            (value (mapcar #'fn entries)))
       (make-column value))))
@@ -240,3 +242,10 @@
   "Return a column from volume in a readable form."
   (let ((value (value (extract-column index volume))))
     (format t "~{~S~^ ~}" value)))
+
+;;; Note: should (FIND-REGISTRY (RID VOLUME)) be used more often to get the registry?
+(defun view-volume (constraints volume)
+  "View VOLUME with CONSTRAINTS applied to it."
+  (let ((registry (find-registry (rid volume))))
+    (loop :for entry :in (walk-down volume :skip #'unitp)
+          :collect (apply-constraints constraints entry registry))))
