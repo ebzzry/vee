@@ -288,17 +288,17 @@
       (setf (header volume) (first feed)))
     registry))
 
-(defun import-file (path &key (vname (pathname-name path))
-                           (rname *default-registry-name*)
+(defun import-file (path &key (volume-name (pathname-name path))
+                           (registry-name *default-registry-name*)
                            (delimiter *default-delimiter*)
                            extract-header)
   "Import file into the registry."
   (let* ((file (mof:expand-pathname path))
          (feed (read-file file :delimiter delimiter))
-         (registry (spawn-registry rname))
-         (name (if (find-volume vname registry)
+         (registry (spawn-registry registry-name))
+         (name (if (find-volume volume-name registry)
                    (genstring "VOLUME")
-                   vname)))
+                   volume-name)))
     (import-feed feed name registry :extract-header extract-header)))
 
 (defgeneric find-registry (query)

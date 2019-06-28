@@ -131,6 +131,8 @@
   "Return a MATCH object."
   (make-instance 'match :record record :volume volume :offset offset))
 
+;;; Note: this will always return false if one of constraints is a header-specifier
+;;; Note: header-specifiers should only be used when matching an entry against an entry
 (defun everyp (item entry registry &key (test *field-test*) (constraints *default-constraints*))
   "Return true if ITEM matches to the applied version of ENTRY."
   (every test
@@ -181,15 +183,16 @@
 
 (defgeneric find-matching-record (query store &key &allow-other-keys)
   (:documentation "Return the first record from STORE that matches QUERY."))
-(defmethod find-matching-record ((query list) (v volume) (r registry)
+(defmethod find-matching-record ((query list) (v volume)
                                  &key (origin #'volume-start)
                                       (test *field-test*)
                                       (constraints *default-constraints*))
   (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin)
-          :for offset = 0 :then (1+ offset)
-          :when (everyp query record r :test test :constraints constraints)
-          :return (make-match record v offset))))
+    (let ((registry (find-registry (rid v))))
+      (loop :for record :in (walk-down v :origin origin)
+            :for offset = 0 :then (1+ offset)
+            :when (everyp query record registry :test test :constraints constraints)
+            :return (make-match record v offset)))))
 (defmethod find-matching-record ((query entry) (v volume) &rest args)
   (apply #'find-matching-record (value query) v args))
 
