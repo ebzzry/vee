@@ -187,3 +187,7 @@
 (defun true-true-p (x y)
   "Return true if X is true and Y is true."
   (and x y t))
+
+(defun ensure-list (object)
+  "Return OBJECT if it a list, otherwise return OBJECT inside a list."
+  (if (listp object) object (list object)))

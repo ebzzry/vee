@@ -48,6 +48,6 @@
 
 (defun apply-constraints (constraints entry registry &key (use-header t))
   "Apply CONSTRAINTS to ENTRY within REGISTRY."
-  (let ((constraints (if (listp constraints) constraints (list constraints))))
+  (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :collect (get-field constraint entry registry :use-header use-header))))
