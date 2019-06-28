@@ -2,7 +2,7 @@
 
 (in-package #:muso/core)
 
-(defvar *default-delimiter* #\tab
+(defvar *default-delimiter* #\comma
   "The default delimiter used to separate fields.")
 
 (defvar *threshold* 5
@@ -41,5 +41,8 @@
 (defvar *default-selectors* (list #'elt0)
   "The default list of functions that are used for specifying clusters.")
 
-(defparameter *default-registry-name* nil
+(defvar *default-constraints* (list 0)
+  "The default list of functions that are used for specifying clusters.")
+
+(defvar *default-registry-name* "registry-0"
   "The name of the default registry.")

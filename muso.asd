@@ -26,6 +26,7 @@
                (:file "world")
                (:file "feeds")
                (:file "void")
+               (:file "constraints")
                (:file "propagation")
                (:file "startup")
                (:file "tests")))

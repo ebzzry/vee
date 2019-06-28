@@ -262,10 +262,7 @@
 
 (defun link-records (volume)
   "Link the records in VOLUME to one another."
-  (let* ((records (find-records volume)) ;returns records from the hash table
-         ;; Note: does this need fixing?
-         ;; (cstart (id (volume-start volume)))
-         ;; (cend (id (volume-end volume)))
+  (let* ((records (find-records volume))
          (cstart (id (first records)))
          (cend (id (mof:last* records))))
     (when records
@@ -280,17 +277,21 @@
                            (setf (next record) (find-record (1+ id) volume))))))
       (setf (linkedp volume) t))))
 
-(defun import-feed (feed name registry)
+(defun import-feed (feed name registry &key extract-header)
   "Import items from FEED to REGISTRY with name NAME."
   (let* ((name (build-name "VOLUME" name))
-         (volume (forge-volume registry name)))
-    (forge-entries volume registry feed)
+         (volume (forge-volume registry name))
+         (body (if extract-header (rest feed) feed)))
+    (forge-entries volume registry body)
     (link-records volume)
+    (when extract-header
+      (setf (header volume) (first feed)))
     registry))
 
 (defun import-file (path &key (vname (pathname-name path))
                            (rname *default-registry-name*)
-                           (delimiter *default-delimiter*))
+                           (delimiter *default-delimiter*)
+                           extract-header)
   "Import file into the registry."
   (let* ((file (mof:expand-pathname path))
          (feed (read-file file :delimiter delimiter))
@@ -298,7 +299,7 @@
          (name (if (find-volume vname registry)
                    (genstring "VOLUME")
                    vname)))
-    (import-feed feed name registry)))
+    (import-feed feed name registry :extract-header extract-header)))
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))

@@ -2,19 +2,6 @@
 
 (in-package #:muso/core)
 
-(defgeneric full (object)
-  (:documentation "Return the full, unsectioned version of OBJECT."))
-(defmethod full ((object list)) object)
-(defmethod full ((object entry)) object)
-
-;;; Note: handle SB-KERNEL:INDEX-TOO-LARGE-ERROR here
-(defgeneric apply-selectors (query selectors)
-  (:documentation "Apply items in selectors to create a new value."))
-(defmethod apply-selectors ((query list) selectors)
-  (loop :for fn :in selectors :collect (funcall fn query)))
-(defmethod apply-selectors ((query entry) selectors)
-  (apply-selectors (value query) selectors))
-
 (defun point (origin volume)
   "Return starting point based on the type of origin."
   (etypecase origin
@@ -144,9 +131,11 @@
   "Return a MATCH object."
   (make-instance 'match :record record :volume volume :offset offset))
 
-(defun everyp (item entry &key (test *field-test*) (selectors *default-selectors*))
+(defun everyp (item entry registry &key (test *field-test*) (constraints *default-constraints*))
   "Return true if ITEM matches to the applied version of ENTRY."
-  (every test (apply-selectors item selectors) (apply-selectors entry selectors)))
+  (every test
+         (apply-constraints constraints item registry :use-header nil)
+         (apply-constraints constraints entry registry)))
 
 (defmethod value ((m match))
   "Return record value from M."
@@ -166,12 +155,13 @@
 (defmethod find-matching-volume-records ((query entry) (v volume)
                                          &key (origin #'volume-start)
                                               (test *field-test*)
-                                              (selectors *default-selectors*))
+                                              (constraints *default-constraints*))
   (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin :skip #'unitp)
-          :for offset = 0 :then (1+ offset)
-          :when (everyp (value query) record :test test :selectors selectors)
-          :collect (make-match record v offset))))
+    (let ((registry (find-registry (rid v))))
+      (loop :for record :in (walk-down v :origin origin :skip #'unitp)
+            :for offset = 0 :then (1+ offset)
+            :when (everyp (value query) record registry :test test :constraints constraints)
+            :collect (make-match record v offset)))))
 (defmethod find-matching-volume-records ((query list) (v volume) &rest args)
   (apply #'find-matching-volume-records (value query) v args))
 
@@ -180,38 +170,36 @@
 (defmethod find-matching-registry-records ((query entry) (r registry)
                                            &key (origin #'volume-start)
                                                 (test *field-test*)
-                                                (selectors *default-selectors*)
+                                                (constraints *default-constraints*)
                                                 exclusive)
   (let* ((volume (find-volume (vid query) r))
          (volumes (if exclusive
                       (find-other-volumes volume r)
                       (find-volumes r))))
-    (loop :for vol :in volumes
-          :nconc (find-matching-volume-records query vol
-                                               :origin origin :test test :selectors selectors))))
+    (loop :for v :in volumes
+          :nconc (find-matching-volume-records query v :origin origin :test test :constraints constraints))))
+
+(defgeneric find-matching-record (query store &key &allow-other-keys)
+  (:documentation "Return the first record from STORE that matches QUERY."))
+(defmethod find-matching-record ((query list) (v volume) (r registry)
+                                 &key (origin #'volume-start)
+                                      (test *field-test*)
+                                      (constraints *default-constraints*))
+  (when (linkedp v)
+    (loop :for record :in (walk-down v :origin origin)
+          :for offset = 0 :then (1+ offset)
+          :when (everyp query record r :test test :constraints constraints)
+          :return (make-match record v offset))))
+(defmethod find-matching-record ((query entry) (v volume) &rest args)
+  (apply #'find-matching-record (value query) v args))
 
 ;;; Note: snaking bindings
 ;;; Note: find a way to disambiguate multiple matches
-;;; Note: find a way to specify the selectors as list of integers
 (defun bind-all-matches (record registry &rest args)
   "Bind all matching records."
   (let ((matches (apply #'find-matching-registry-records record registry args)))
     (when matches
       (setf (matches record) matches))))
-
-(defgeneric find-matching-record (query store &key &allow-other-keys)
-  (:documentation "Return the first record from STORE that matches QUERY."))
-(defmethod find-matching-record ((query list) (v volume)
-                                 &key (origin #'volume-start)
-                                      (test *field-test*)
-                                      (selectors *default-selectors*))
-  (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin)
-          :for offset = 0 :then (1+ offset)
-          :when (everyp query record :test test :selectors selectors)
-          :return (make-match record v offset))))
-(defmethod find-matching-record ((query entry) (v volume) &rest args)
-  (apply #'find-matching-record (value query) v args))
 
 ;;; Note: non-snaking bindings
 (defun bind-first-matches ()
@@ -219,7 +207,7 @@
   nil)
 
 (defun bind-volume (volume registry &rest args)
-  "Bind volume to other volumes in the registry."
+  "Bind VOLUME to other volumes in the registry."
   (loop :for entry :in (walk-down volume :skip #'unitp)
         :do (apply #'bind-all-matches entry registry args)))
 
@@ -248,4 +236,4 @@
 (defun view-column (index volume)
   "Return a column from volume in a readable form."
   (let ((value (value (extract-column index volume))))
-    (format t "~{~A~^ ~}" value)))
+    (format t "~{~S~^ ~}" value)))
