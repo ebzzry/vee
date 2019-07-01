@@ -29,6 +29,9 @@
 (defvar *initial-ucounter* (- *initial-ecounter*)
   "The initial unit counter value")
 
+(defvar *initial-fcounter* 1000000
+  "The initial field counter value.")
+
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")
 

@@ -191,3 +191,19 @@
 (defun ensure-list (object)
   "Return OBJECT if it a list, otherwise return OBJECT inside a list."
   (if (listp object) object (list object)))
+
+(defun nil-wrap (list)
+  "Add NIL items in the start and end of LIST."
+  (append (list nil) list (list nil)))
+
+(defun equalize-lists (list-1 list-2 &optional (padding ""))
+  "Make LIST-1 and LIST-2 of the same length by adding PADDING."
+  (let ((length-1 (length list-1))
+        (length-2 (length list-2)))
+    (flet ((fn (x y)
+             (make-list (- x y) :initial-element padding)))
+      (cond ((= length-1 length-2) (list list-1 list-2))
+            ((> length-1 length-2) (list list-1
+                                         (append list-2 (fn length-1 length-2))))
+            ((< length-1 length-2) (list (append list-1 (fn length-2 length-1))
+                                         list-2))))))

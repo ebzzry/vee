@@ -14,6 +14,11 @@
   (decf (ucounter registry))
   (ucounter registry))
 
+(defun spawn-fcounter (volume)
+  "Update fcounter value."
+  (incf (fcounter volume))
+  (fcounter volume))
+
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
   (mof:with-gensyms (global)
@@ -108,6 +113,9 @@
 (defmethod add-record ((u unit) (v volume))
   (setf (gethash (id u) (table v)) u)
   u)
+(defmethod add-record ((f field) (v volume))
+  (setf (gethash (id f) (ftable v)) f)
+  f)
 
 (defgeneric delete-record (record store)
   (:documentation "Remove RECORD from STORE."))
@@ -134,6 +142,10 @@
   (print-unreadable-object (u stream :type t)
     (with-slots (id) u
       (format stream "~A" id))))
+(defmethod print-object ((f field) stream)
+  (print-unreadable-object (f stream :type t)
+    (with-slots (id) f
+      (format stream "~A" id))))
 (defmethod print-object ((v volume) stream)
   (print-unreadable-object (v stream :type t)
     (with-slots (vid name) v
@@ -147,7 +159,7 @@
     (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
 
 (defmethod initialize-instance :after ((e entry) &key registry)
-  "Update entry E in REGISTRY."
+  "Initialize entry E in REGISTRY."
   (let ((counter (spawn-ecounter registry)))
     (with-slots (id) e
       (setf id counter))))
@@ -156,19 +168,61 @@
   "Create an instance of the entry class."
   (make-instance 'entry :vid vid :prev prev :next next :value value :registry registry))
 
+(defmethod initialize-instance :after ((f field) &key volume)
+  "Initialize field F in VOLUME."
+  (let ((counter (spawn-fcounter volume)))
+    (with-slots (id) f
+      (setf id counter))))
+
+(defun make-field (volume value)
+  "Create an instance of the field class."
+  (make-instance 'field :value value :volume volume))
+
 (defmethod initialize-instance :after ((v volume) &key registry)
-  "Update volume v in REGISTRY."
+  "Initialize volume V in REGISTRY."
   (let ((counter (spawn-vcounter registry)))
     (with-slots (vid) v
       (setf vid counter))))
 
-(defmethod prev ((e null)) "Return nil on null entries." nil)
-(defmethod next ((e null)) "Return nil on null entries." nil)
+(defmethod prev ((o null)) "Return nil on null entries." nil)
+(defmethod next ((o null)) "Return nil on null entries." nil)
+
+(defun link-fields (fields)
+  "Link FIELDS to each other."
+  (let ((start (first fields))
+        (end (mof:last* fields))
+        (values (nil-wrap fields)))
+    (loop :for field-left :in values
+          :for field-mid :in (rest values)
+          :for field-right :in (rest (rest values))
+          :do (cond ((eql field-mid start) (setf (next field-mid) field-right))
+                    ((eql field-mid end) (setf (prev field-mid) field-left))
+                    (t (progn
+                         (setf (prev field-mid) field-left)
+                         (setf (next field-mid) field-right)))))))
+
+;;; (apply #'mapcar #'list *foo*)
+(defun forge-fields (values volume)
+  "Create fields from a list of values."
+  (let ((fields (loop :for value :in values
+                      :collect (make-field volume value))))
+    (loop :for field :in fields
+          :do (progn
+                (when (header volume)
+                  (destructuring-bind (header fields)
+                      (equalize-lists (header volume) fields)
+                    (loop :for h :in header
+                          :for f :in fields
+                          :do (setf (head f) h))))
+                (add-record field volume)))
+    (link-fields fields)
+    fields))
 
 (defun forge-entry (volume registry &optional prev next value)
   "Create an entry under VOLUME in REGISTRY."
   (let* ((vid (vid volume))
-         (entry (make-entry vid registry prev next value)))
+         (fields (forge-fields value volume))
+         (entry (make-entry vid registry prev next fields)))
     (add-record entry registry)
     (add-record entry volume)))
 
@@ -282,9 +336,9 @@
   (let* ((name (build-name "VOLUME" name))
          (volume (forge-volume registry name))
          (body (if extract-header (rest feed) feed)))
+    (setf (header volume) (if extract-header (first feed) header))
     (forge-entries volume registry body)
     (link-records volume)
-    (setf (header volume) (if extract-header (first feed) header))
     registry))
 
 (defun import-file (path &key (volume-name (pathname-name path))

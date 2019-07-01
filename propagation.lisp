@@ -240,12 +240,19 @@
 
 (defun view-column (index volume)
   "Return a column from volume in a readable form."
-  (let ((value (value (extract-column index volume))))
+  (let ((value (mapcar #'value (value (extract-column index volume)))))
     (format t "~{~S~^ ~}" value)))
 
 ;;; Note: should (FIND-REGISTRY (RID VOLUME)) be used more often to get the registry?
-(defun view-volume (constraints volume)
+(defun extract-fields (constraints volume)
   "View VOLUME with CONSTRAINTS applied to it."
   (let ((registry (find-registry (rid volume))))
     (loop :for entry :in (walk-down volume :skip #'unitp)
-          :collect (apply-constraints constraints entry registry))))
+          :nconc (apply-constraints constraints entry registry))))
+
+(defun print-matches (entry)
+  "Print the chain of matches from entry."
+  (let ((matches (matches entry)))
+    (when matches
+      (format t "~{~S~^ ~}" (mapcar #'value matches)))))
+

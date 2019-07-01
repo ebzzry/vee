@@ -51,3 +51,31 @@
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :collect (get-field constraint entry registry :use-header use-header))))
+
+(defun find-fields-by-head (head entry &key (test *field-test*))
+  "Return field from from ENTRY that satisfies HEAD."
+  (loop :for field :in (value entry)
+        :when (funcall test head (head field))
+          :collect field))
+
+(defun find-fields-by-value (value entry &key (test *field-test*))
+  "Return field from from ENTRY that satisfies HEAD."
+  (loop :for field :in (value entry)
+        :when (funcall test value (value field))
+          :collect field))
+
+(defun find-fields-by-heads (heads entry &key (test *field-test*))
+  "Return fields from ENTRY that satisfy HEADS."
+  (loop :for field :in (value entry)
+        :for head :in heads
+        :nconc (find-fields-by-head head entry :test test)))
+
+(defun find-fields-by-values (values entry &key (test *field-test*))
+  "Return fields from ENTRY that satisfy VALUES."
+  (loop :for field :in (value entry)
+        :for value :in values
+        :nconc (find-fields-by-value value entry :test test)))
+
+(defun search-field (volume specifier)
+  ""
+  nil)
