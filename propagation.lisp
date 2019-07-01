@@ -134,6 +134,7 @@
 ;;; Note: define methods for ENTRY ENTRY
 ;;; Note: this will always return false if one of constraints is a header-specifier
 ;;; Note: header-specifiers should only be used when matching an entry against an entry
+;;; Note: should this be updated to reflect FIND-FIELDS?
 (defgeneric everyp (object entry registry &key &allow-other-keys)
   (:documentation "Return true if ITEM matches to the applied version of ENTRY."))
 (defmethod everyp ((o list) (e entry) (r registry)
@@ -197,7 +198,7 @@
             :when (everyp query record registry :test test :constraints constraints)
             :return (make-match record v offset)))))
 (defmethod find-matching-record ((query entry) (v volume) &rest args)
-  (apply #'find-matching-record (value query) v args))
+  (apply #'find-matching-record (fields query) v args))
 
 ;;; Note: snaking bindings
 (defun bind-all-matches (record registry &rest args)
@@ -225,34 +226,4 @@
   "Bind all the volumes in REGISTRY to one another."
   (let ((volumes (find-volumes registry)))
     (loop :for volume :in volumes :do (apply #'bind-volume volume registry args))))
-
-(defun make-column (value)
-  "Return a column object."
-  (make-instance 'column :value value))
-
-(defun extract-column (index volume)
-  "Return a column object from VOLUME specified by 1-indexed INDEX."
-  (flet ((fn (entry)
-           (nth index (value entry))))
-    (let* ((entries (walk-down volume :skip #'unitp))
-           (value (mapcar #'fn entries)))
-      (make-column value))))
-
-(defun view-column (index volume)
-  "Return a column from volume in a readable form."
-  (let ((value (mapcar #'value (value (extract-column index volume)))))
-    (format t "~{~S~^ ~}" value)))
-
-;;; Note: should (FIND-REGISTRY (RID VOLUME)) be used more often to get the registry?
-(defun extract-fields (constraints volume)
-  "View VOLUME with CONSTRAINTS applied to it."
-  (let ((registry (find-registry (rid volume))))
-    (loop :for entry :in (walk-down volume :skip #'unitp)
-          :nconc (apply-constraints constraints entry registry))))
-
-(defun print-matches (entry)
-  "Print the chain of matches from entry."
-  (let ((matches (matches entry)))
-    (when matches
-      (format t "~{~S~^ ~}" (mapcar #'value matches)))))
 

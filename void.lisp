@@ -18,8 +18,8 @@
 (defgeneric void-send (record void)
   (:documentation "Add RECORD to VOID"))
 (defmethod void-send ((e entry) void)
-  (with-slots (prev next value) e
-    (let ((record (make-instance 'entry :prev prev :next next :value value :registry void)))
+  (with-slots (prev next fields) e
+    (let ((record (make-instance 'entry :prev prev :next next :fields fields :registry void)))
       (add-record record void))))
 (defmethod void-send ((u unit) void)
   (with-slots (prev next) u
@@ -75,9 +75,9 @@
   (setf (next record) nil))
 
 (defgeneric blank (record)
-  (:documentation "Set a blank value to RECORD, but keep it linked."))
+  (:documentation "Set a blank FIELDS value to RECORD, but keep it linked."))
 (defmethod blank ((e entry))
-  (setf (value e) nil))
+  (setf (fields e) nil))
 
 (defun deregister (record registry)
   "Remove RECORD from REGISTRY."

@@ -12,14 +12,7 @@
 (defmethod apply-selectors ((query list) selectors)
   (loop :for fn :in selectors :collect (funcall fn query)))
 (defmethod apply-selectors ((query entry) selectors)
-  (apply-selectors (value query) selectors))
-
-(defmacro build-selectors (indexes)
-  "Define selectors."
-  `(progn
-     ,@(loop :for index :in indexes
-             :for name = (read-from-string (mof:cat "select-" (write-to-string index)))
-             :collect `(defun ,name (list) (elt list ,(1- index))))))
+  (apply-selectors (mapcar #'value (fields query)) selectors))
 
 (defun field-index (field header)
   "Return the index of FIELD in HEADER."
@@ -34,9 +27,11 @@
             (integerp object))
     t))
 
+;;; Note: REGISTRY may no longer be needed because the header is already part of the field
+;;; Note: FIELD-INDEX may also no longer be needed
 (defun get-field (field entry registry &key (use-header t) (fallback ""))
   "Return field from ENTRY within REGISTRY, where FIELD is either a string, function, or integer."
-  (let* ((value (if (listp entry) entry (value entry)))
+  (let* ((value (if (listp entry) entry (fields entry)))
          (header (when use-header
                    (header (find-volume (vid entry) registry))))
          (index (cond ((function-integer-p field) field)
@@ -52,30 +47,65 @@
     (loop :for constraint :in constraints
           :collect (get-field constraint entry registry :use-header use-header))))
 
-(defun find-fields-by-head (head entry &key (test *field-test*))
-  "Return field from from ENTRY that satisfies HEAD."
-  (loop :for field :in (value entry)
-        :when (funcall test head (head field))
-          :collect field))
+(defun make-column (value)
+  "Return a column object."
+  (make-instance 'column :value value))
 
-(defun find-fields-by-value (value entry &key (test *field-test*))
-  "Return field from from ENTRY that satisfies HEAD."
-  (loop :for field :in (value entry)
-        :when (funcall test value (value field))
-          :collect field))
+(defun extract-column (index volume)
+  "Return a column object from VOLUME specified by 1-indexed INDEX."
+  (flet ((fn (entry)
+           (nth index (fields entry))))
+    (let* ((entries (walk-down volume :skip #'unitp))
+           (value (mapcar #'fn entries)))
+      (make-column value))))
 
-(defun find-fields-by-heads (heads entry &key (test *field-test*))
-  "Return fields from ENTRY that satisfy HEADS."
-  (loop :for field :in (value entry)
-        :for head :in heads
-        :nconc (find-fields-by-head head entry :test test)))
+(defun view-column (index volume)
+  "Return a column from volume in a readable form."
+  (let ((value (mapcar #'value (fields (extract-column index volume)))))
+    (format t "~{~S~^ ~}" value)))
 
-(defun find-fields-by-values (values entry &key (test *field-test*))
-  "Return fields from ENTRY that satisfy VALUES."
-  (loop :for field :in (value entry)
-        :for value :in values
-        :nconc (find-fields-by-value value entry :test test)))
+(defun print-matches (entry)
+  "Print the chain of matches from entry."
+  (let ((matches (matches entry)))
+    (when matches
+      (format t "~{~S~^ ~}" (mapcar #'value matches)))))
 
-(defun search-field (volume specifier)
-  ""
-  nil)
+(defun extract-fields (constraints volume &key (test *field-test*))
+  "Extract the fields from VOLUME that satisfy CONSTRAINTS."
+  (loop :for entry :in (walk-down volume :skip #'unitp)
+        :nconc (find-fields constraints entry :type :head :test test)))
+
+;;; Note: maybe use PREV and NEXT for field traversal
+(defun find-fields (constraints entry &key type (test *field-test*))
+  "Return fields from ENTRY that satisfy QUERY, where QUERY is a list of string header-specifier, string field value, or integer index. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
+  (let ((constraints (ensure-list constraints))
+        (fields (fields entry))
+        (func (intern (string type))))
+    (ecase type
+      (:index
+       (loop :for constraint :in constraints
+             :collect (nth constraint fields)))
+      ((:head :value)
+       (loop :for constraint :in constraints
+             :nconc (loop :for field :in fields
+                          :when (funcall test constraint (funcall func field))
+                          :collect field))))))
+
+;;; (search-entries volume '(("email" "sstanleynh@wp.com") ("country" "Philippines")) :type :or)
+;;; (search-entries volume '(("email" "pwagner1x@gravatar.com") ("country" "Italy")) :type :and)
+(defun search-entries (volume specifiers &key (type :or) (test *field-test*))
+  "Search VOLUME for entries that satisfy SPECIFIERS."
+  (let ((entries (walk-down volume :skip #'unitp)))
+    (loop :for entry :in entries
+          :nconc (ecase type
+                   (:or (loop :for field :in (fields entry)
+                              :nconc (loop :for specifier :in specifiers
+                                           :when (destructuring-bind (head value) specifier
+                                                   (and (funcall test (head field) head)
+                                                        (funcall test (value field) value)))
+                                           :collect entry)))
+                   (:and (destructuring-bind (heads values)
+                             (apply #'mapcar #'list specifiers)
+                           (let ((fields (find-fields heads entry :type :head)))
+                             (when (every test (mapcar #'value fields) values)
+                               (list entry)))))))))

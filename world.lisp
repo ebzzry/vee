@@ -69,9 +69,9 @@
                 rid name ecounter etable ucounter utable vcounter vtable xid control))
       (progn (format t "~&** ENTRIES~%")
              (maphash #'(lambda (k v)
-                          (with-slots (vid id prev next value buriedp) v
+                          (with-slots (vid id prev next fields buriedp) v
                             (let ((fmt "~S => ~S~%")
-                                  (slots (list vid id prev next value buriedp)))
+                                  (slots (list vid id prev next fields buriedp)))
                               (format t fmt k slots))))
                       (etable registry))
              (format t "~&** VOLUMES~%")
@@ -164,9 +164,9 @@
     (with-slots (id) e
       (setf id counter))))
 
-(defun make-entry (vid registry &optional prev next value)
+(defun make-entry (vid registry &optional prev next fields)
   "Create an instance of the entry class."
-  (make-instance 'entry :vid vid :prev prev :next next :value value :registry registry))
+  (make-instance 'entry :vid vid :prev prev :next next :fields fields :registry registry))
 
 (defmethod initialize-instance :after ((f field) &key volume)
   "Initialize field F in VOLUME."
@@ -191,10 +191,10 @@
   "Link FIELDS to each other."
   (let ((start (first fields))
         (end (mof:last* fields))
-        (values (nil-wrap fields)))
-    (loop :for field-left :in values
-          :for field-mid :in (rest values)
-          :for field-right :in (rest (rest values))
+        (fields (nil-wrap fields)))
+    (loop :for field-left :in fields
+          :for field-mid :in (rest fields)
+          :for field-right :in (rest (rest fields))
           :do (cond ((eql field-mid start) (setf (next field-mid) field-right))
                     ((eql field-mid end) (setf (prev field-mid) field-left))
                     (t (progn
@@ -218,10 +218,10 @@
     (link-fields fields)
     fields))
 
-(defun forge-entry (volume registry &optional prev next value)
+(defun forge-entry (volume registry &optional prev next values)
   "Create an entry under VOLUME in REGISTRY."
   (let* ((vid (vid volume))
-         (fields (forge-fields value volume))
+         (fields (forge-fields values volume))
          (entry (make-entry vid registry prev next fields)))
     (add-record entry registry)
     (add-record entry volume)))
@@ -502,12 +502,12 @@
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
 (defmethod dump-entry ((e entry) &key simple)
-  (with-slots (vid id prev next value buriedp) e
+  (with-slots (vid id prev next fields buriedp) e
     (if simple
-        (format t "~&PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIEDP: ~S~%"
-                prev next value buriedp)
-        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%VALUE: ~S~%BURIEDP: ~S~%"
-                vid id prev next value buriedp))
+        (format t "~&PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
+                prev next fields buriedp)
+        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
+                vid id prev next fields buriedp))
     (values)))
 
 (defun display-volume (query name)

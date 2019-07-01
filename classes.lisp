@@ -154,10 +154,10 @@
        :initform -1
        :reader id
        :documentation "The unique numeric ID of an entry in a registry")
-   (value :initarg :value
+   (fields :initarg :fields
           :initform ()
-          :accessor value
-          :documentation "The datum of an entry")
+          :accessor fields
+          :documentation "The data fields of an entry")
    (matches :initarg :matches
             :initform ()
             :accessor matches
