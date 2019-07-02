@@ -334,10 +334,11 @@
                            (setf (next record) (find-record (1+ id) volume))))))
       (setf (linkedp volume) t))))
 
-(defun import-feed (feed name registry &key extract-header header)
+(defun import-feed (feed &key volume-name registry-name extract-header header)
   "Import items from FEED to REGISTRY with name NAME."
-  (let* ((name (build-name "VOLUME" name))
-         (volume (forge-volume registry name))
+  (let* ((volume-name (build-name "VOLUME" volume-name))
+         (registry (spawn-registry registry-name))
+         (volume (forge-volume registry volume-name))
          (body (if extract-header (rest feed) feed)))
     (setf (header volume) (if extract-header (first feed) header))
     (forge-entries volume registry body)
@@ -345,18 +346,19 @@
     registry))
 
 (defun import-file (path &key (volume-name (pathname-name path))
-                           (registry-name *default-registry-name*)
-                           (delimiter *default-delimiter*)
-                           extract-header
-                           header)
-  "Import file into the registry."
+                              (registry-name *default-registry-name*)
+                              (delimiter *default-delimiter*)
+                              extract-header
+                              header)
+  "Import a disk file into the registry."
   (let* ((file (mof:expand-pathname path))
          (feed (read-file file :delimiter delimiter))
-         (registry (spawn-registry registry-name))
+         (registry (find-registry registry-name))
          (name (if (find-volume volume-name registry)
                    (genstring "VOLUME")
                    volume-name)))
-    (import-feed feed name registry :extract-header extract-header :header header)))
+    (import-feed feed :volume-name name :registry-name registry-name
+                      :extract-header extract-header :header header)))
 
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))
@@ -368,7 +370,7 @@
   (loop :for rid :being :the :hash-keys :in (rtable *world*)
         :for registry = (gethash rid (rtable *world*))
         :when (string-equal (string-upcase query) (name registry))
-          :return registry))
+        :return registry))
 
 (defun find-registries ()
   "Return all registries from the world."
@@ -392,7 +394,9 @@
   (loop :for vid :being :the :hash-keys :in (vtable r)
         :for volume = (gethash vid (vtable r))
         :when (string-equal (string-upcase query) (name volume))
-          :return volume))
+        :return volume))
+(defmethod find-volume ((query t) (n null))
+  nil)
 
 (defun find-volumes (registry &key (skip #'false))
   "Return all volumes from REGISTRY, except SKIP"
@@ -448,7 +452,7 @@
 (defmethod find-entries ((v volume))
   (loop :for record :being :the :hash-values :in (table v)
         :when (entryp record)
-          :collect record))
+        :collect record))
 
 (defgeneric find-units (store)
   (:documentation "Return units from STORE."))
@@ -458,7 +462,7 @@
 (defmethod find-units ((v volume))
   (loop :for record :being :the :hash-values :in (table v)
         :when (unitp record)
-          :collect record))
+        :collect record))
 
 (defgeneric find-records (store &key &allow-other-keys)
   (:documentation "Return all records from STORE."))

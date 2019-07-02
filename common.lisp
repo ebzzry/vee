@@ -21,18 +21,22 @@
   "Return normalized items from SUBVOL."
   (mapcar #'normalize subvol))
 
-(defun read-csv-string (string &key (delimiter *default-delimiter*))
-  "Read a CSV from string."
-  (with-input-from-string (stream string)
-    (fare-csv:with-rfc4180-csv-syntax ()
-      (let ((fare-csv:*separator* delimiter))
-        (fare-csv:read-csv-stream stream)))))
-
 (defun read-csv-file (file &key (delimiter *default-delimiter*))
-  "Read a CSV from file."
+  "Read CSV data from FILE."
   (fare-csv:with-rfc4180-csv-syntax ()
     (let ((fare-csv:*separator* delimiter))
       (fare-csv:read-csv-file file))))
+
+(defun read-csv-stream (stream &key (delimiter *default-delimiter*))
+  "Read CSV data from STREAM."
+  (fare-csv:with-rfc4180-csv-syntax ()
+    (let ((fare-csv:*separator* delimiter))
+      (fare-csv:read-csv-stream stream))))
+
+(defun read-csv-string (string &rest args)
+  "Read CSV data from STRING."
+  (with-input-from-string (s string)
+    (apply #'read-csv-stream s args)))
 
 (defun delimit (list)
   "Returns items in LIST as tab-separated values."
@@ -125,13 +129,11 @@
                  (some #'mof:empty-string-p item))
              feed))
 
+;;; Note: generalize to streams
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
   (fix-feed (read-csv-file (mof:expand-pathname file) :delimiter delimiter)))
-
-(defun read-file (&rest args)
-  "An alias to READ-FEED-FILE"
-  (apply #'read-feed-file args))
+(mof:defalias read-file read-feed-file)
 
 (defun separators (string)
   "Return the separator used in STRING."
