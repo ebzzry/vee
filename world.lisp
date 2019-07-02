@@ -334,32 +334,6 @@
                            (setf (next record) (find-record (1+ id) volume))))))
       (setf (linkedp volume) t))))
 
-(defun import-feed (feed &key volume-name registry-name extract-header header)
-  "Import items from FEED to REGISTRY with name NAME."
-  (let* ((volume-name (build-name "VOLUME" volume-name))
-         (registry (spawn-registry registry-name))
-         (volume (forge-volume registry volume-name))
-         (body (if extract-header (rest feed) feed)))
-    (setf (header volume) (if extract-header (first feed) header))
-    (forge-entries volume registry body)
-    (link-records volume)
-    registry))
-
-(defun import-file (path &key (volume-name (pathname-name path))
-                              (registry-name *default-registry-name*)
-                              (delimiter *default-delimiter*)
-                              extract-header
-                              header)
-  "Import a disk file into the registry."
-  (let* ((file (mof:expand-pathname path))
-         (feed (read-file file :delimiter delimiter))
-         (registry (find-registry registry-name))
-         (name (if (find-volume volume-name registry)
-                   (genstring "VOLUME")
-                   volume-name)))
-    (import-feed feed :volume-name name :registry-name registry-name
-                      :extract-header extract-header :header header)))
-
 (defgeneric find-registry (query)
   (:documentation "Return the registry which matches QUERY in WORLD."))
 (defmethod find-registry ((query integer))

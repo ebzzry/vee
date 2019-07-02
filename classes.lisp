@@ -176,7 +176,7 @@
            :initform nil
            :accessor record
            :documentation "The matching record")
-   ;; Note: can this be easily inferred from the RECORD?
+   ;; Note: can this be easily inferred from the record?
    (volume :initarg :volume
            :initform nil
            :accessor volume

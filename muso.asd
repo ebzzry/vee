@@ -28,5 +28,6 @@
                (:file "propagation")
                (:file "constraints")
                (:file "bindings")
+               (:file "import")
                (:file "startup")
                (:file "tests")))
