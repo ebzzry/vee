@@ -127,7 +127,7 @@
 
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
-  (fix-feed (clean-feed (read-csv-file (mof:expand-pathname file) :delimiter delimiter))))
+  (fix-feed (read-csv-file (mof:expand-pathname file) :delimiter delimiter)))
 
 (defun read-file (&rest args)
   "An alias to READ-FEED-FILE"
@@ -207,3 +207,19 @@
                                          (append list-2 (fn length-1 length-2))))
             ((< length-1 length-2) (list (append list-1 (fn length-2 length-1))
                                          list-2))))))
+
+(defun function-integer-p (object)
+  "Return true if OBJECT is either a function or integer."
+  (when (or (functionp object)
+            (integerp object))
+    t))
+
+(defun every-list-p (object)
+  "Return true if OBJECT is a list and all members are lists."
+  (and (listp object)
+       (every #'listp object)))
+
+(defun every-string-p (object)
+  "Return true if OBJECT is a list and all members are strings."
+  (and (listp object)
+       (every #'stringp object)))

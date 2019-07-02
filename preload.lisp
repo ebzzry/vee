@@ -8,8 +8,8 @@
      ,@(loop :for n :from 0 :to limit
              :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
              :collect `(defun ,name (list) (elt list ,n)))))
-;;; Note: this is a performance bottleneck
-;; (defselectors 100)
+;;; Note: this may be a performance bottleneck
+(defselectors 100)
 
 (defmacro build-selectors (indexes)
   "Define selectors."

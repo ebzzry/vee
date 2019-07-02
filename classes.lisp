@@ -185,10 +185,3 @@
            :accessor offset
            :documentation "The index of a match relative to a volume"))
   (:documentation "Information about matching records across volumes in a registry"))
-
-(defclass column ()
-  ((value :initarg :value
-          :initform ()
-          :reader value
-          :documentation "The value of a column"))
-  (:documentation "A collection of fields from a volume"))

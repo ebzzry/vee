@@ -131,28 +131,20 @@
   "Return a MATCH object."
   (make-instance 'match :record record :volume volume :offset offset))
 
-;;; Note: define methods for ENTRY ENTRY
-;;; Note: this will always return false if one of constraints is a header-specifier
-;;; Note: header-specifiers should only be used when matching an entry against an entry
-;;; Note: should this be updated to reflect FIND-FIELDS?
-(defgeneric everyp (object entry registry &key &allow-other-keys)
-  (:documentation "Return true if ITEM matches to the applied version of ENTRY."))
-(defmethod everyp ((o list) (e entry) (r registry)
-                   &key (test *field-test*)
-                        (constraints *default-constraints*))
+(defgeneric everyp (object entry constraints &key &allow-other-keys)
+  (:documentation "Return true if OBJECT matches the applied version of ENTRY."))
+(defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
   (every test
-         (apply-constraints constraints o r :use-header nil)
-         (apply-constraints constraints e r)))
-(defmethod everyp ((o entry) (e entry) (r registry)
-                   &key (test *field-test*)
-                        (constraints *default-constraints*))
+         (apply-constraints o constraints)
+         (mapcar #'value (apply-constraints e constraints))))
+(defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*))
   (every test
-         (apply-constraints constraints o r)
-         (apply-constraints constraints e r)))
+         (mapcar #'value (apply-constraints o constraints))
+         (mapcar #'value (apply-constraints e constraints))))
 
 (defmethod value ((m match))
   "Return record value from M."
-  (value (record m)))
+  (fields-values (record m)))
 
 (defmethod id ((m match))
   "Retturn record id from M."
@@ -163,47 +155,54 @@
   (let ((vid (vid volume)))
     (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
 
-(defun find-matching-volume-records (query volume &key (origin #'volume-start)
-                                                       (test *field-test*)
-                                                       (constraints *default-constraints*))
-  "Return all the records from VOLUME that match QUERY."
-  (when (linkedp volume)
-    (let ((registry (find-registry (rid volume))))
-      (loop :for record :in (walk-down volume :origin origin :skip #'unitp)
-            :for offset = 0 :then (1+ offset)
-            :when (everyp query record registry :test test :constraints constraints)
-            :collect (make-match record volume offset)))))
+(defgeneric find-similar-entries (store entry constraints &key &allow-other-keys)
+  (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers to match against.
 
-(defun find-matching-registry-records (query registry &key (origin #'volume-start)
-                                                           (test *field-test*)
-                                                           (constraints *default-constraints*)
-                                                           exclusive)
-  "Return all the records from REGISTRY that match QUERY."
-  (let* ((volumes (if exclusive
-                      (find-other-volumes (find-volume (vid query) registry) registry)
-                      (find-volumes registry))))
-    (loop :for volume :in volumes
-          :nconc (find-matching-volume-records query volume :origin origin :test test :constraints constraints))))
+    (FIND-SIMILAR-ENTRIES VOLUME ENTRY :CONSTRAINTS '(\"country\"))
 
-(defgeneric find-matching-record (query store &key &allow-other-keys)
-  (:documentation "Return the first record from STORE that matches QUERY."))
-(defmethod find-matching-record ((query list) (v volume)
-                                 &key (origin #'volume-start)
-                                      (test *field-test*)
-                                      (constraints *default-constraints*))
+returns entries from VOLUME wherein the 'country' field is the same as that of ENTRY.
+
+    (FIND-SIMILAR-ENTRIES VOLUME ENTRY :CONSTRAINTS '(\"country\" \"gender\"))
+
+returns entries from VOLUME wherein the 'country' and 'gender' fields are the same as those of ENTRY.
+
+This generic function is mainly used for matching against data that is already inside a registry.
+"))
+(defmethod find-similar-entries ((v volume) (e entry) constraints &key (origin #'volume-start)
+                                                                 (test *field-test*))
   (when (linkedp v)
-    (let ((registry (find-registry (rid v))))
-      (loop :for record :in (walk-down v :origin origin)
-            :for offset = 0 :then (1+ offset)
-            :when (everyp query record registry :test test :constraints constraints)
-            :return (make-match record v offset)))))
-(defmethod find-matching-record ((query entry) (v volume) &rest args)
-  (apply #'find-matching-record (fields query) v args))
+    (loop :for record :in (walk-down v :origin origin :skip #'unitp)
+          :for offset = 0 :then (1+ offset)
+          :when (everyp e record constraints :test test)
+            ;; :collect (make-match record v offset)
+            :collect record)))
+(defmethod find-similar-entries ((r registry) (e entry) constraints &key (origin #'volume-start)
+                                                       (test *field-test*)
+                                                       exclusive)
+  (let ((volumes (if exclusive
+                     (find-other-volumes (find-volume (vid e) r) r)
+                     (find-volumes r))))
+    (loop :for volume :in volumes
+          :nconc (find-similar-entries volume e constraints :origin origin :test test))))
+
+(defgeneric find-similar-record (query store constraints &key &allow-other-keys)
+  (:documentation "Return the first record from STORE that matches QUERY."))
+(defmethod find-matching-record ((query list) (v volume) constraints
+                                 &key (origin #'volume-start)
+                                   (test *field-test*))
+  (when (linkedp v)
+    (loop :for record :in (walk-down v :origin origin)
+          :for offset = 0 :then (1+ offset)
+          :when (everyp query record constraints :test test)
+            ;; :return (make-match record v offset)
+            :return record)))
+(defmethod find-similar-record ((query entry) (v volume) constraint &rest args)
+  (apply #'find-similar-record (fields query) v constraint args))
 
 ;;; Note: snaking bindings
 (defun bind-all-matches (record registry &rest args)
   "Bind all matching records."
-  (let ((matches (apply #'find-matching-registry-records record registry args)))
+  (let ((matches (apply #'find-similar-entries record registry args)))
     (when matches
       (setf (matches record) matches))))
 
@@ -226,4 +225,3 @@
   "Bind all the volumes in REGISTRY to one another."
   (let ((volumes (find-volumes registry)))
     (loop :for volume :in volumes :do (apply #'bind-volume volume registry args))))
-
