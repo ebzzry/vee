@@ -200,21 +200,21 @@ This generic function is mainly used for matching against data that is already i
   (apply #'find-similar-record (fields query) v constraint args))
 
 ;;; Note: snaking bindings
-(defun bind-all-matches (record registry &rest args)
+(defun bind-all-matches (registry entry &rest args)
   "Bind all matching records."
-  (let ((matches (apply #'find-similar-entries record registry args)))
+  (let ((matches (apply #'find-similar-entries registry entry args)))
     (when matches
-      (setf (matches record) matches))))
+      (setf (matches entry) matches))))
 
 ;;; Note: non-snaking bindings
 (defun bind-first-matches ()
   "Bind all first matching records."
   nil)
 
-(defun bind-volume (volume registry &rest args)
-  "Bind VOLUME to other volumes in the registry."
+(defun bind-volume (registry volume &rest args)
+  "Bind VOLUME to other volumes of REGISTRY."
   (loop :for entry :in (walk-down volume :skip #'unitp)
-        :do (apply #'bind-all-matches entry registry args)))
+        :do (apply #'bind-all-matches registry entry args)))
 
 (defun bind-wall (registry &rest args)
   "Bind the wall in REGISTRY to the other volumes."
