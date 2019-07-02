@@ -2,11 +2,6 @@
 
 (in-package #:muso/core)
 
-(defun make-empty (datum)
-  "Return an empty item based from DATUM."
-  (let ((length (length datum)))
-    (make-list length :initial-element *pad*)))
-
 (defun current-item (feed)
   "Return the current item text in FEED."
   (first feed))

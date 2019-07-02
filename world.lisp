@@ -540,3 +540,11 @@
 (defun forge-record (&optional prev next left right buriedp)
   "Create a record instance."
   (make-instance 'record :prev prev :next next :left left :right right :buriedp buriedp))
+
+(defun search-volume (query)
+  "Return the first volume that that matches QUERY in all the registries."
+  (let ((registries (find-registries)))
+    (loop :for registry :in registries
+          :for volume = (find-volume query registry)
+          :when volume
+          :return (values volume registry))))

@@ -158,6 +158,11 @@
   "Return a GENSYM’d string."
   (string (gensym string)))
 
+(defun make-empty (datum)
+  "Return an empty item based from DATUM."
+  (let ((length (length datum)))
+    (make-list length :initial-element *pad*)))
+
 (defun pad-feed (feed)
   "Add starting and ending padding for volume based on the first element."
   (let* ((initial (elt0 feed))
