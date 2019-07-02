@@ -203,11 +203,6 @@ This generic function is mainly used for matching against data that is already i
   "Return the values contained inside ENTRY."
   (mapcar #'value (fields entry)))
 
-(defun extract-fields (constraints volume &key (test *field-test*))
-  "Extract the fields from VOLUME that satisfy CONSTRAINTS."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :collect (apply-constraints entry constraints :type :head :test test)))
-
 (defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
   "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
   (let ((constraints (ensure-list constraints))
@@ -226,10 +221,11 @@ This generic function is mainly used for matching against data that is already i
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
   (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes."))
 (defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*))
-  (loop :for constraint :in constraints
-        :nconc (etypecase constraint
-                 (string (dispatch-fields o (list constraint) :type type :test test))
-                 (integer (list (nth constraint (fields o)))))))
+  (let ((constraints (ensure-list constraints)))
+    (loop :for constraint :in constraints
+          :nconc (etypecase constraint
+                   (string (dispatch-fields o (list constraint) :type type :test test))
+                   (integer (list (nth constraint (fields o))))))))
 (defmethod apply-constraints ((o list) constraints &key (fallback ""))
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
@@ -237,6 +233,11 @@ This generic function is mainly used for matching against data that is already i
                      (function (funcall constraint o))
                      (integer (nth constraint o))
                      (t fallback)))))
+(defmethod apply-constraints ((o volume) constraints &key (test *field-test*))
+  "Extract the fields from VOLUME that satisfy CONSTRAINTS."
+  (let ((constraints (ensure-list constraints)))
+    (loop :for entry :in (walk-down o :skip #'unitp)
+          :collect (apply-constraints entry constraints :type :head :test test))))
 
 (defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
   (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type.
