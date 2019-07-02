@@ -14,7 +14,7 @@
     (loop :for record :in records
           :when (and (null (prev record))
                      (next record))
-          :return record)))
+            :return record)))
 
 (defun volume-end (volume)
   "Return the last entry in VOLUME."
@@ -22,7 +22,7 @@
     (loop :for record :in records
           :when (and (prev record)
                      (null (next record)))
-          :return record)))
+            :return record)))
 
 (defmethod initialize-instance :after ((u unit) &key registry)
   "Update unit U in REGISTRY."
@@ -78,7 +78,7 @@
            (link-unit rec vol reg :position pos)))
     (loop :for count :from 1 :to count
           :for unit = (link record volume registry position)
-          :then (link unit volume registry position)
+            :then (link unit volume registry position)
           :finally (return volume))))
 
 (defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
@@ -94,7 +94,7 @@
     (loop :for entry = (point origin volume) :then (next entry)
           :while entry
           :unless (funcall skip entry)
-          :collect (funcall fn entry))))
+            :collect (funcall fn entry))))
 
 (defun walk-left (volume)
   "Return records starting from volume across all the other volumes, going left."
@@ -105,200 +105,3 @@
   "Return records starting from volume across all the other volumes, going right."
   (declare (ignorable volume))
   nil)
-
-(defun get-offset (record volume &key (origin #'volume-start))
-  "Return the 0-indexed offset of ENTRY in VOLUME."
-  (when (linkedp volume)
-    (loop :for rec = (point origin volume) :then (next rec)
-          :for count = 0 :then (1+ count)
-          :when (eql record rec)
-          :return count)))
-
-(defun nth-record (n volume &key (origin #'volume-start))
-  "Return the 0-indexed Nth record in VOLUME."
-  (when (linkedp volume)
-    (loop :for rec = (point origin volume) :then (next rec)
-          :for count = 0 :then (1+ count)
-          :when (= count n)
-          :return rec)))
-
-(defmethod print-object ((m match) stream)
-  (print-unreadable-object (m stream :type t)
-    (with-slots (volume) m
-      (format stream "~A" (vid volume)))))
-
-(defun make-match (record volume offset)
-  "Return a MATCH object."
-  (make-instance 'match :record record :volume volume :offset offset))
-
-(defgeneric everyp (object entry constraints &key &allow-other-keys)
-  (:documentation "Return true if OBJECT matches the applied version of ENTRY."))
-(defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
-  (every test
-         (apply-constraints o constraints)
-         (mapcar #'value (apply-constraints e constraints))))
-(defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*))
-  (every test
-         (mapcar #'value (apply-constraints o constraints))
-         (mapcar #'value (apply-constraints e constraints))))
-
-(defmethod value ((m match))
-  "Return record value from M."
-  (fields-values (record m)))
-
-(defmethod id ((m match))
-  "Retturn record id from M."
-  (id (record m)))
-
-(defun find-other-volumes (volume registry)
-  "Find the other volumes in REGISTRY."
-  (let ((vid (vid volume)))
-    (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
-
-(defgeneric find-similar-entries (store entry constraints &key &allow-other-keys)
-  (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers to match against.
-
-    (FIND-SIMILAR-ENTRIES VOLUME ENTRY :CONSTRAINTS '(\"country\"))
-
-returns entries from VOLUME wherein the 'country' field is the same as that of ENTRY.
-
-    (FIND-SIMILAR-ENTRIES VOLUME ENTRY :CONSTRAINTS '(\"country\" \"gender\"))
-
-returns entries from VOLUME wherein the 'country' and 'gender' fields are the same as those of ENTRY.
-
-This generic function is mainly used for matching against data that is already inside a registry.
-"))
-(defmethod find-similar-entries ((v volume) (e entry) constraints &key (origin #'volume-start)
-                                                                 (test *field-test*))
-  (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin :skip #'unitp)
-          :for offset = 0 :then (1+ offset)
-          :when (everyp e record constraints :test test)
-            ;; :collect (make-match record v offset)
-            :collect record)))
-(defmethod find-similar-entries ((r registry) (e entry) constraints &key (origin #'volume-start)
-                                                       (test *field-test*)
-                                                       exclusive)
-  (let ((volumes (if exclusive
-                     (find-other-volumes (find-volume (vid e) r) r)
-                     (find-volumes r))))
-    (loop :for volume :in volumes
-          :nconc (find-similar-entries volume e constraints :origin origin :test test))))
-
-(defgeneric find-similar-record (query store constraints &key &allow-other-keys)
-  (:documentation "Return the first record from STORE that matches QUERY."))
-(defmethod find-matching-record ((query list) (v volume) constraints
-                                 &key (origin #'volume-start)
-                                   (test *field-test*))
-  (when (linkedp v)
-    (loop :for record :in (walk-down v :origin origin)
-          :for offset = 0 :then (1+ offset)
-          :when (everyp query record constraints :test test)
-            ;; :return (make-match record v offset)
-            :return record)))
-(defmethod find-similar-record ((query entry) (v volume) constraint &rest args)
-  (apply #'find-similar-record (fields query) v constraint args))
-
-(defun fields-values (entry)
-  "Return the values contained inside ENTRY."
-  (mapcar #'value (fields entry)))
-
-(defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
-  "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
-  (let ((constraints (ensure-list constraints))
-        (fields (fields entry))
-        (func (intern (string type))))
-    (ecase type
-      ((:index)
-       (loop :for constraint :in constraints
-             :collect (nth constraint fields)))
-      ((:head :value)
-       (loop :for constraint :in constraints
-             :nconc (loop :for field :in fields
-                          :when (funcall test constraint (funcall func field))
-                            :collect field))))))
-
-(defgeneric apply-constraints (object constraints &key &allow-other-keys)
-  (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes."))
-(defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*))
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :nconc (etypecase constraint
-                   (string (dispatch-fields o (list constraint) :type type :test test))
-                   (integer (list (nth constraint (fields o))))))))
-(defmethod apply-constraints ((o list) constraints &key (fallback ""))
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :collect (etypecase constraint
-                     (function (funcall constraint o))
-                     (integer (nth constraint o))
-                     (t fallback)))))
-(defmethod apply-constraints ((o volume) constraints &key (test *field-test*))
-  "Extract the fields from VOLUME that satisfy CONSTRAINTS."
-  (let ((constraints (ensure-list constraints)))
-    (loop :for entry :in (walk-down o :skip #'unitp)
-          :collect (apply-constraints entry constraints :type :head :test test))))
-
-(defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
-  (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type.
-
-    (FIND-MATCHING-ENTRIES STORE '((\"email\" \"sstanleynh@wp.com\") (\"country\" \"Philippines\")) :TYPE :OR)
-
-returns entries that have set either the email to sstanleynh@wp.com or the country to Philippines.
-
-    (FIND-MATCHING-ENTRIES STORE '((\"email\" \"pwagner1x@gravatar.com\") (\"country\" \"Italy\")) :TYPE :AND)
-
-returns entries that have set both the email to pwagner1x@gravatar.com and the country to Italy.
-
-This generic function is mainly used for matching againstn data that is provided by the user, which may or may not exist inside a registry.
-"))
-(defmethod find-matching-entries ((v volume) specifiers &key (type :or) (test *field-test*))
-  (let ((entries (walk-down v :skip #'unitp))
-        (specifiers (if (and (every-string-p specifiers)
-                             (not (every-list-p specifiers)))
-                        (list specifiers)
-                        specifiers)))
-    (loop :for entry :in entries
-          :nconc (ecase type
-                   (:or (loop :for field :in (fields entry)
-                              :nconc (loop :for specifier :in specifiers
-                                           :when (destructuring-bind (head value) specifier
-                                                   (and (funcall test (head field) head)
-                                                        (funcall test (value field) value)))
-                                             :collect entry)))
-                   (:and (destructuring-bind (heads values)
-                             (apply #'mapcar #'list specifiers)
-                           (let ((fields (apply-constraints entry heads :type :head)))
-                             (when (every test (mapcar #'value fields) values)
-                               (list entry)))))))))
-(defmethod find-matching-entries ((r registry) specifiers &rest args)
-  (let ((volumes (find-volumes r)))
-    (loop :for volume :in volumes
-          :nconc (apply #'find-matching-entries volume specifiers args))))
-
-;;; Note: snaking bindings
-(defun bind-all-matches (registry entry &rest args)
-  "Bind all matching records."
-  (let ((matches (apply #'find-similar-entries registry entry args)))
-    (when matches
-      (setf (matches entry) matches))))
-
-;;; Note: non-snaking bindings
-(defun bind-first-matches ()
-  "Bind all first matching records."
-  nil)
-
-(defun bind-volume (registry volume &rest args)
-  "Bind VOLUME to other volumes of REGISTRY."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :do (apply #'bind-all-matches registry entry args)))
-
-(defun bind-wall (registry &rest args)
-  "Bind the wall in REGISTRY to the other volumes."
-  (let ((wall (wall registry)))
-    (apply #'bind-volume wall registry :exclusive t args)))
-
-(defun bind-volumes (registry &rest args)
-  "Bind all the volumes in REGISTRY to one another."
-  (let ((volumes (find-volumes registry)))
-    (loop :for volume :in volumes :do (apply #'bind-volume volume registry args))))

@@ -26,5 +26,7 @@
                (:file "world")
                (:file "void")
                (:file "propagation")
+               (:file "constraints")
+               (:file "bindings")
                (:file "startup")
                (:file "tests")))

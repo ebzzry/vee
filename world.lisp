@@ -178,6 +178,10 @@
   "Create an instance of the field class."
   (make-instance 'field :value value :volume volume))
 
+(defun fields-values (entry)
+  "Return the values contained inside ENTRY."
+  (mapcar #'value (fields entry)))
+
 (defmethod initialize-instance :after ((v volume) &key registry)
   "Initialize volume V in REGISTRY."
   (let ((counter (spawn-vcounter registry)))
@@ -201,7 +205,6 @@
                          (setf (prev field-mid) field-left)
                          (setf (next field-mid) field-right)))))))
 
-;;; (apply #'mapcar #'list *foo*)
 (defun forge-fields (values volume)
   "Create fields from a list of values."
   (let ((fields (loop :for value :in values
@@ -540,6 +543,23 @@
 (defun forge-record (&optional prev next left right buriedp)
   "Create a record instance."
   (make-instance 'record :prev prev :next next :left left :right right :buriedp buriedp))
+
+(defmethod print-object ((m match) stream)
+  (print-unreadable-object (m stream :type t)
+    (with-slots (volume) m
+      (format stream "~A" (vid volume)))))
+
+(defun make-match (record volume offset)
+  "Return a MATCH object."
+  (make-instance 'match :record record :volume volume :offset offset))
+
+(defmethod value ((m match))
+  "Return record value from M."
+  (fields-values (record m)))
+
+(defmethod id ((m match))
+  "Retturn record id from M."
+  (id (record m)))
 
 (defun search-volume (query)
   "Return the first volume that that matches QUERY in all the registries."
