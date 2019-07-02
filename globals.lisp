@@ -41,10 +41,7 @@
 (defvar *field-test* #'string-equal
   "The test function that will be used to compare fields.")
 
-(defvar *default-selectors* (list #'elt0)
-  "The default list of functions that are used for specifying clusters.")
-
-(defvar *default-constraints* (list 0)
+(defvar *default-constraints* '(0)
   "The default list of functions that are used for specifying clusters.")
 
 (defvar *default-registry-name* "registry-0"
