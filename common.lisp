@@ -230,3 +230,13 @@
   "Return true if OBJECT is a list and all members are strings."
   (and (listp object)
        (every #'stringp object)))
+
+(defun true (arg)
+  "Return true for anything."
+  (declare (ignore arg))
+  t)
+
+(defun false (arg)
+  "Return false for anything."
+  (declare (ignore arg))
+  nil)

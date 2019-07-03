@@ -61,36 +61,6 @@
   (when entry
     (id entry)))
 
-(defun dump-registry (registry &key simple)
-  "Dump the contents of the tables from REGISTRY."
-  (if simple
-      (with-slots (rid name ecounter etable ucounter utable vcounter vtable xid control) registry
-        (format t "~&RID: ~A~%NAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%UCOUNTER: ~A~%UTABLE: ~A~%VCOUNTER: ~A~%VTABLE: ~A~%XID: ~A~%CONTROL: ~A~%"
-                rid name ecounter etable ucounter utable vcounter vtable xid control))
-      (progn (format t "~&** ENTRIES~%")
-             (maphash #'(lambda (k v)
-                          (with-slots (vid id prev next fields buriedp) v
-                            (let ((fmt "~S => ~S~%")
-                                  (slots (list vid id prev next fields buriedp)))
-                              (format t fmt k slots))))
-                      (etable registry))
-             (format t "~&** VOLUMES~%")
-             (maphash #'(lambda (k v)
-                          (with-slots (rid vid name table prev next) v
-                            (format t "~S => ~S~%" k
-                                    (list rid vid name table prev next))))
-                      (vtable registry)))))
-
-(defun dump-world ()
-  "Dump the contents of the world."
-  (let ((registries (loop :for v :being :the :hash-values :in (rtable *world*)
-                          :collect v)))
-    (loop :for registry :in registries
-          :do (dump-registry registry))
-    (when registries
-      (dump-registries))
-    (values)))
-
 (defun add-registry (registry)
   "Add REGISTRY to WORLD."
   (setf (gethash (rcounter *world*) (rtable *world*)) registry)
@@ -134,45 +104,9 @@
   (let ((id (id u)))
     (remhash id (table v))))
 
-(defmethod print-object ((e entry) stream)
-  (print-unreadable-object (e stream :type t)
-    (with-slots (id) e
-      (format stream "~A" id))))
-(defmethod print-object ((u unit) stream)
-  (print-unreadable-object (u stream :type t)
-    (with-slots (id) u
-      (format stream "~A" id))))
-(defmethod print-object ((f field) stream)
-  (print-unreadable-object (f stream :type t)
-    (with-slots (id) f
-      (format stream "~A" id))))
-(defmethod print-object ((v volume) stream)
-  (print-unreadable-object (v stream :type t)
-    (with-slots (vid name) v
-      (format stream "~A ~S" vid name))))
-(defmethod print-object ((r registry) stream)
-  (print-unreadable-object (r stream :type t)
-    (with-slots (rid name) r
-      (format stream "~A ~S" rid name))))
-(defmethod print-object ((ht hash-table) stream)
-  (print-unreadable-object (ht stream :type t)
-    (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
-
-(defmethod initialize-instance :after ((e entry) &key registry)
-  "Initialize entry E in REGISTRY."
-  (let ((counter (spawn-ecounter registry)))
-    (with-slots (id) e
-      (setf id counter))))
-
 (defun make-entry (vid registry &optional prev next fields)
   "Create an instance of the entry class."
   (make-instance 'entry :vid vid :prev prev :next next :fields fields :registry registry))
-
-(defmethod initialize-instance :after ((f field) &key volume)
-  "Initialize field F in VOLUME."
-  (let ((counter (spawn-fcounter volume)))
-    (with-slots (id) f
-      (setf id counter))))
 
 (defun make-field (volume value)
   "Create an instance of the field class."
@@ -181,12 +115,6 @@
 (defun fields-values (entry)
   "Return the values contained inside ENTRY."
   (mapcar #'value (fields entry)))
-
-(defmethod initialize-instance :after ((v volume) &key registry)
-  "Initialize volume V in REGISTRY."
-  (let ((counter (spawn-vcounter registry)))
-    (with-slots (vid) v
-      (setf vid counter))))
 
 (defmethod prev ((o null)) "Return nil on null entries." nil)
 (defmethod next ((o null)) "Return nil on null entries." nil)
@@ -292,7 +220,7 @@
       nil))
 
 (defun find-next (entry volume)
-  "Return the closest next element in VOLUME."
+  "Return the closest next entry in VOLUME from ENTRY."
   (let* ((id (id entry))
          (table (table volume))
          (entry (gethash (1+ id) table)))
@@ -305,7 +233,7 @@
             next)))))
 
 (defun find-prev (entry volume)
-  "Return the closest previous element in VOLUME."
+  "Return the closest previous entry in VOLUME from ENTRY"
   (let* ((id (id entry))
          (table (table volume))
          (entry (gethash (1- id) table)))
@@ -349,14 +277,6 @@
 (defun find-registries ()
   "Return all registries from the world."
   (loop :for r :being :the :hash-values :in (rtable *world*) :collect r))
-
-(defun dump-registries ()
-  "Display inforamtion about the registries."
-  (format t "~&** REGISTRIES~%")
-  (maphash #'(lambda (k v)
-               (with-slots (rid name vcounter ecounter ucounter) v
-                 (format t "~S => ~S~%" k (list rid name vcounter ecounter ucounter))))
-           (rtable *world*)))
 
 (defgeneric find-volume (query registry)
   (:documentation "Return a volume which matches QUERY in REGISTRY."))
@@ -408,15 +328,33 @@
   (or (entryp record)
       (unitp record)))
 
-(defun true (arg)
-  "Return true for anything."
-  (declare (ignore arg))
-  t)
+(defun volume-start-p (entry)
+  "Return true if entry is found at the start of a volume."
+  (when (and (null (prev entry))
+             (next entry))
+    t))
 
-(defun false (arg)
-  "Return false for anything."
-  (declare (ignore arg))
-  nil)
+(defun volume-end-p (entry)
+  "Return true if entry is found at the end of a volume."
+  (when (and (prev entry)
+             (null (next entry)))
+    t))
+
+(defun volume-start (volume)
+  "Return the first entry in VOLUME."
+  (let ((records (find-records volume)))
+    (loop :for record :in records
+          :when (and (null (prev record))
+                     (next record))
+            :return record)))
+
+(defun volume-end (volume)
+  "Return the last entry in VOLUME."
+  (let ((records (nreverse (find-records volume))))
+    (loop :for record :in records
+          :when (and (prev record)
+                     (null (next record)))
+            :return record)))
 
 (defgeneric find-entries (store)
   (:documentation "Return entries from STORE."))
@@ -455,77 +393,14 @@
                              (sort-records records)
                              records))))
 
-(defun volume-start-p (entry)
-  "Return true if entry is found at the start of a volume."
-  (when (and (null (prev entry))
-             (next entry))
-    t))
-
-(defun volume-end-p (entry)
-  "Return true if entry is found at the end of a volume."
-  (when (and (prev entry)
-             (null (next entry)))
-    t))
-
-(defgeneric dump-volume (volume &key &allow-other-keys)
-  (:documentation "Print information about VOLUME."))
-(defmethod dump-volume ((v volume) &key complete)
-  (let ((registry (find-registry (rid v))))
-    (with-slots (rid vid name table prev next) v
-      (if complete
-          (loop :for k :being :the :hash-keys :in (table v)
-                :for entry = (find-record k registry)
-                :do (format t "~&~A => ~A~%" k entry))
-          (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
-                  rid vid name table prev next))
-      (values))))
-
-(defgeneric dump-entry (entry &key &allow-other-keys)
-  (:documentation "Print information about an entry."))
-(defmethod dump-entry ((e entry) &key simple)
-  (with-slots (vid id prev next fields buriedp) e
-    (if simple
-        (format t "~&PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
-                prev next fields buriedp)
-        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
-                vid id prev next fields buriedp))
-    (values)))
-
-(defun display-volume (query name)
-  "Display the contents of volume QUERY in registry NAME."
-  (dump-volume (find-volume query (find-registry name))))
-(defun display-entry (query name)
-  "Display the contents of entry QUERY in registry NAME."
-  (dump-entry (find-record query (find-registry name))))
-
-(defun locate-volume (query name)
-  "Locate the volume QUERY in registry NAME."
-  (find-volume query (find-registry name)))
-(defun locate-entry (query name)
-  "Locate the entry ID in registry NAME."
-  (find-record query (find-registry name)))
-(mof:defalias locate-registry find-registry)
-
 (defun max-volume (registry)
-  "Return the biggest volume in REGISTRY."
+  "Return the biggest volume in REGISTRY. Size is determined by the number of records."
   (first (sort (find-volumes registry) #'> :key #'(lambda (v) (hash-table-size (table v))))))
 (mof:defalias wall max-volume)
 
-(defun shallow-copy-registry (template registry)
-  "Create a shallow copy of TEMPLATE to REGISTRY."
-  (declare (ignorable template registry))
-  (unless (and template registry)
-    (error "Either the template or the target registry does not exist."))
-  nil)
-
 (defun forge-record (&optional prev next left right buriedp)
-  "Create a record instance."
+  "Return a record instance."
   (make-instance 'record :prev prev :next next :left left :right right :buriedp buriedp))
-
-(defmethod print-object ((m match) stream)
-  (print-unreadable-object (m stream :type t)
-    (with-slots (volume) m
-      (format stream "~A" (vid volume)))))
 
 (defun make-match (record volume offset)
   "Return a MATCH object."

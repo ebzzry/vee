@@ -1,6 +1,6 @@
 ;;;; muso.asd
 
-#-ASDF3.1 (error "ASDF 3.1 or bust!")
+#-asdf3.1 (error "ASDF 3.1 or bust!")
 
 (defpackage #:muso-system
   (:use #:cl #:asdf))
@@ -24,8 +24,11 @@
                (:file "classes")
                (:file "common")
                (:file "world")
+               (:file "initialize")
+               (:file "print")
+               (:file "dump")
                (:file "void")
-               (:file "propagation")
+               (:file "units")
                (:file "constraints")
                (:file "bindings")
                (:file "import")

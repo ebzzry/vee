@@ -28,6 +28,14 @@
     (import-feed feed :volume-name name :registry-name registry-name
                       :extract-header extract-header :header header)))
 
+(defun split-field (field &optional (regex "\\s+"))
+  "Split a field into components."
+  (cl-ppcre:split regex (value field)))
+
+(defun make-feed (field &rest args)
+  "Create a feed from the text value stored in FIELD using predefined rules."
+  (mapcar #'list (apply #'split-field field args)))
+
 (defun import-field (constraint &key volume-name registry-name header)
   "Import the texts specified by CONSTRAINT from the volume and registry indicators."
   (loop :for field :in (apply-constraints

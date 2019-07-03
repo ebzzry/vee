@@ -137,11 +137,3 @@ This generic function is mainly used for matching againstn data that is provided
   (let ((volumes (find-volumes r)))
     (loop :for volume :in volumes
           :nconc (apply #'find-matching-entries volume specifiers args))))
-
-(defun split-field (field &optional (regex "\\s+"))
-  "Split a field into components."
-  (cl-ppcre:split regex (value field)))
-
-(defun make-feed (field &rest args)
-  "Create a feed from the text value stored in FIELD using predefined rules."
-  (mapcar #'list (apply #'split-field field args)))

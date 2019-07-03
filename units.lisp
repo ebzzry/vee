@@ -1,4 +1,4 @@
-;;;; propagation.lisp
+;;;; units.lisp
 
 (in-package #:muso/core)
 
@@ -7,28 +7,6 @@
   (etypecase origin
     (function (funcall origin volume))
     (entry origin)))
-
-(defun volume-start (volume)
-  "Return the first entry in VOLUME."
-  (let ((records (find-records volume)))
-    (loop :for record :in records
-          :when (and (null (prev record))
-                     (next record))
-            :return record)))
-
-(defun volume-end (volume)
-  "Return the last entry in VOLUME."
-  (let ((records (nreverse (find-records volume))))
-    (loop :for record :in records
-          :when (and (prev record)
-                     (null (next record)))
-            :return record)))
-
-(defmethod initialize-instance :after ((u unit) &key registry)
-  "Update unit U in REGISTRY."
-  (let ((counter (spawn-ucounter registry)))
-    (with-slots (id) u
-      (setf id counter))))
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."

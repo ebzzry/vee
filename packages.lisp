@@ -4,12 +4,8 @@
 
 (uiop:define-package #:muso/core
     (:use #:cl)
-  (:nicknames #:muso)
-  (:export #:boot-world
-           #:read-file
-           #:import-feed))
+  (:nicknames #:muso))
 
 (uiop:define-package #:muso/tests
     (:use #:cl
-          #:muso/core)
-  (:export #:run-tests))
+          #:muso/core))
