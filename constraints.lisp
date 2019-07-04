@@ -43,7 +43,7 @@
     (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
 
 (defgeneric find-similar-entries (store entry constraints &key &allow-other-keys)
-  (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers to match against.
+  (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers to match against. The function specified by TEST will determine equality.
 
     (FIND-SIMILAR-ENTRIES VOLUME ENTRY :CONSTRAINTS '(\"country\"))
 
@@ -102,7 +102,7 @@ This generic function is mainly used for matching against data that is already i
                             :collect field))))))
 
 (defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
-  (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type.
+  (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
 
     (FIND-MATCHING-ENTRIES STORE '((\"email\" \"sstanleynh@wp.com\") (\"country\" \"Philippines\")) :TYPE :OR)
 
@@ -123,17 +123,41 @@ This generic function is mainly used for matching againstn data that is provided
     (loop :for entry :in entries
           :nconc (ecase type
                    ((:or) (loop :for field :in (fields entry)
-                              :nconc (loop :for specifier :in specifiers
-                                           :when (destructuring-bind (head value) specifier
-                                                   (and (funcall test (head field) head)
-                                                        (funcall test (value field) value)))
-                                             :collect entry)))
+                                :nconc (loop :for specifier :in specifiers
+                                             :when (destructuring-bind (head value) specifier
+                                                     (and (funcall test (head field) head)
+                                                          (funcall test (value field) value)))
+                                               :collect entry)))
                    ((:and) (destructuring-bind (heads values)
-                             (apply #'mapcar #'list specifiers)
-                           (let ((fields (apply-constraints entry heads :type :head)))
-                             (when (every test (mapcar #'value fields) values)
-                               (list entry)))))))))
+                               (apply #'mapcar #'list specifiers)
+                             (let ((fields (apply-constraints entry heads :type :head)))
+                               (when (every test (mapcar #'value fields) values)
+                                 (list entry)))))))))
 (defmethod find-matching-entries ((r registry) specifiers &rest args)
   (let ((volumes (find-volumes r)))
     (loop :for volume :in volumes
           :nconc (apply #'find-matching-entries volume specifiers args))))
+
+(defun field-volume (field &rest args)
+  "Return a volume from the feed created from FIELD."
+  (apply #'import-field field :return 'volume args))
+
+(defun extract-field (entry head)
+  "Extract a field from ENTRY specified by HEAD."
+  (loop :for field :in (fields entry)
+        :when (string-equal (head field) head)
+          :return (value field)))
+
+;;; Note: should an update be also made in FTABLE and field pointers?
+(defun replace-field (entry head volume)
+  "Replace a FIELD in ENTRY specified by HEAD with VOLUME."
+  (declare (ignorable entry head volume))
+  (loop :for field :in (fields entry)
+        :for count = 0 :then (1+ count)
+        :when (string-equal (head field) head)
+          :do (setf (nth count (fields entry)) volume)))
+
+(defun find-duplicate-volumes (registry constraints)
+  "Return a list of volumes that have similar "
+  (declare (ignorable registry constraints))
+  nil)

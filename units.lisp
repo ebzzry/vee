@@ -5,8 +5,8 @@
 (defun point (origin volume)
   "Return starting point based on the type of origin."
   (etypecase origin
-    ((function) (funcall origin volume))
-    ((entry) origin)))
+    (function (funcall origin volume))
+    (entry origin)))
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."
@@ -75,11 +75,11 @@
             :collect (funcall fn entry))))
 
 (defun walk-left (volume)
-  "Return records starting from volume across all the other volumes, going left."
+  "Return records starting from VOLUME across all the other volumes, going left."
   (declare (ignorable volume))
   nil)
 
 (defun walk-right (volume)
-  "Return records starting from volume across all the other volumes, going right."
+  "Return records starting from VOLUME across all the other volumes, going right."
   (declare (ignorable volume))
   nil)

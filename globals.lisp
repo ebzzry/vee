@@ -43,6 +43,3 @@
 
 (defvar *default-constraints* '(0)
   "The default list of functions that are used for specifying clusters.")
-
-(defvar *default-registry-name* "registry-0"
-  "The name of the default registry.")

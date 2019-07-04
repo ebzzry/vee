@@ -45,6 +45,7 @@
   (setf (rcounter *world*) *initial-rcounter*)
   (setf (rtable *world*) (make-hash-table))
   (values))
+(mof:defalias reset reset-world)
 
 (defun reset-registry (registry)
   "Reset the contents of REGISTRY."
@@ -112,9 +113,12 @@
   "Create an instance of the field class."
   (make-instance 'field :value value :volume volume))
 
-(defun fields-values (entry)
-  "Return the values contained inside ENTRY."
-  (mapcar #'value (fields entry)))
+(defgeneric fields-values (object)
+  (:documentation "Return the values contained inside ENTRY."))
+(defmethod fields-values ((e entry))
+  (mapcar #'value (fields e)))
+(defmethod fields-values ((l list))
+  (mapcar #'fields-values l))
 
 (defmethod prev ((o null)) "Return nil on null entries." nil)
 (defmethod next ((o null)) "Return nil on null entries." nil)
@@ -169,7 +173,7 @@
   (let ((volume (make-volume registry name prev next)))
     (add-record volume registry)))
 
-(defun make-registry (&optional (name (genstring "REGISTRY")))
+(defun make-registry (&optional (name (make-registry-name)))
   "Create an instance of the registry class."
   (make-instance 'registry :rid (spawn-rcounter) :name (string-upcase name)))
 
@@ -202,7 +206,7 @@
 
 (defun build-registry ()
   "Return a new unique registry."
-  (let ((name (genstring "REGISTRY")))
+  (let ((name (make-registry-name)))
     (spawn-registry name)))
 
 (defun make-world ()
@@ -212,6 +216,7 @@
 (defun boot-world ()
   "Initialize the world."
   (setf *world* (make-world)))
+(mof:defalias boot boot-world)
 
 (defun forge-entries (volume registry &optional feed)
   "Forge unlinked entries in VOLUME under REGISTRY. If FEED is true, use it to seed values."
@@ -273,6 +278,11 @@
         :for registry = (gethash rid (rtable *world*))
         :when (string-equal (string-upcase query) (name registry))
         :return registry))
+(defmethod find-registry ((n null))
+  nil)
+(defmethod find-registry ((r registry))
+  r)
+(mof:defalias search-registry find-registry)
 
 (defun find-registries ()
   "Return all registries from the world."
@@ -291,12 +301,17 @@
         :return volume))
 (defmethod find-volume ((query t) (n null))
   nil)
+(defmethod find-volume ((v volume) (r registry))
+  v)
 
-(defun find-volumes (registry &key (skip #'false))
-  "Return all volumes from REGISTRY, except SKIP"
-  (loop :for volume :being :the :hash-values :in (vtable registry)
+(defgeneric find-volumes (registry &key &allow-other-keys)
+  (:documentation "Return all volumes from REGISTRY, except SKIP"))
+(defmethod find-volumes ((r registry) &key (skip #'false))
+  (loop :for volume :being :the :hash-values :in (vtable r)
         :unless (funcall skip volume)
         :collect volume))
+(defmethod find-volumes ((s string) &rest args)
+  (apply #'find-volumes (find-registry s) args))
 
 (defgeneric find-record (query registry)
   (:documentation "Return an entry which matches QUERY in VOLUME."))
@@ -421,3 +436,13 @@
           :for volume = (find-volume query registry)
           :when volume
           :return (values volume registry))))
+
+(defun volumep (object)
+  "Return true if OBJECT is a volume."
+  (when (eql (type-of object) 'volume)
+    t))
+
+(defun registryp (object)
+  "Return true if OBJECT is a registry."
+  (when (eql (type-of object) 'registry)
+    t))

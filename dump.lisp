@@ -48,26 +48,28 @@
       (if complete
           (loop :for k :being :the :hash-keys :in (table v)
                 :for entry = (find-record k registry)
-                :do (format t "~&~A => ~A~%" k entry))
+                :do (format t "~&~A => ~S~%" k (fields-values entry)))
           (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
                   rid vid name table prev next))
       (values))))
 
 (defgeneric dump-entry (entry &key &allow-other-keys)
   (:documentation "Print information about an entry."))
-(defmethod dump-entry ((e entry) &key simple)
+(defmethod dump-entry ((e entry) &key complete)
   (with-slots (vid id prev next fields buriedp) e
-    (if simple
-        (format t "~&PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
-                prev next fields buriedp)
+    (if complete
         (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
-                vid id prev next fields buriedp))
+                vid id prev next (mapcar #'value fields) buriedp)
+        (format t "~&~S~%" (mapcar #'value fields)))
     (values)))
 
-(defun display-volume (query name)
-  "Display the contents of volume QUERY in registry NAME."
-  (dump-volume (find-volume query (find-registry name))))
+(defun list-registries ()
+  "List all the registries."
+  (format t "~&~{~A~^~%~}" (find-registries)))
 
-(defun display-entry (query name)
-  "Display the contents of entry QUERY in registry NAME."
-  (dump-entry (find-record query (find-registry name))))
+(defun list-volumes (&optional registry)
+  "List all the volumes in all the registries."
+  (if registry
+      (format t "~&~{~A~^~%~}" (find-volumes (find-registry registry)))
+      (loop :for registry :in (find-registries)
+            :do (list-volumes registry))))

@@ -159,6 +159,12 @@
 (defun genstring (string)
   "Return a GENSYM’d string."
   (string (gensym string)))
+(defun make-volume-name ()
+  "Return a unique volume name."
+  (genstring "VOLUME"))
+(defun make-registry-name ()
+  "Return a unique registry name."
+  (genstring "REGISTRY"))
 
 (defun make-empty (datum)
   "Return an empty item based from DATUM."
@@ -240,3 +246,15 @@
   "Return false for anything."
   (declare (ignore arg))
   nil)
+
+(defun split-text (text &optional (regex "\\s+"))
+  "Split text by REGEX."
+  (cl-ppcre:split regex text))
+
+(defun basename (path)
+  "Return the base name of PATH."
+  (pathname-name path))
+
+(defun basedir (path)
+  "Return the parent directory of PATH."
+  (mof:last* (pathname-directory path)))

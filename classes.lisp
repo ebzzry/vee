@@ -19,9 +19,9 @@
         :reader rid
         :documentation "The numeric ID of a registry")
    (name :initarg :name
-          :initform (error "Specify a registry name")
-          :reader name
-          :documentation "The name of a registry")
+         :initform (error "Specify a registry name")
+         :reader name
+         :documentation "The name of a registry")
    (ecounter :initarg :ecounter
              :initform *initial-ecounter*
              :accessor ecounter
@@ -74,9 +74,9 @@
            :accessor header
            :documentation "The header of a data source")
    (table :initarg :table
-           :initform (make-hash-table)
-           :accessor table
-           :documentation "The table for entry and unit indexing")
+          :initform (make-hash-table)
+          :accessor table
+          :documentation "The table for entry and unit indexing")
    (prev :initarg :prev
          :initform -1
          :reader prev
@@ -144,9 +144,9 @@
           :accessor right
           :documentation "The record on the right")
    (buriedp :initarg :buriedp
-           :initform nil
-           :accessor buriedp
-           :documentation "Whether a record is buried or not"))
+            :initform nil
+            :accessor buriedp
+            :documentation "Whether a record is buried or not"))
   (:documentation "An empty container which links to other records"))
 
 (defclass entry (record)
@@ -155,9 +155,9 @@
        :reader id
        :documentation "The unique numeric ID of an entry in a registry")
    (fields :initarg :fields
-          :initform ()
-          :accessor fields
-          :documentation "The data fields of an entry")
+           :initform ()
+           :accessor fields
+           :documentation "The data fields of an entry")
    (matches :initarg :matches
             :initform ()
             :accessor matches
