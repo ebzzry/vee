@@ -5,8 +5,8 @@
 (defun point (origin volume)
   "Return starting point based on the type of origin."
   (etypecase origin
-    (function (funcall origin volume))
-    (entry origin)))
+    ((function) (funcall origin volume))
+    ((entry) origin)))
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."

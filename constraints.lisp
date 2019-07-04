@@ -8,14 +8,14 @@
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :nconc (etypecase constraint
-                   (string (dispatch-fields o (list constraint) :type type :test test))
-                   (integer (list (nth constraint (fields o))))))))
+                   ((string) (dispatch-fields o (list constraint) :type type :test test))
+                   ((integer) (list (nth constraint (fields o))))))))
 (defmethod apply-constraints ((o list) constraints &key (fallback ""))
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :collect (etypecase constraint
-                     (function (funcall constraint o))
-                     (integer (nth constraint o))
+                     ((function) (funcall constraint o))
+                     ((integer) (nth constraint o))
                      (t fallback)))))
 (defmethod apply-constraints ((o volume) constraints &key (test *field-test*) merge)
   "Extract the fields from VOLUME that satisfy CONSTRAINTS."
@@ -122,13 +122,13 @@ This generic function is mainly used for matching againstn data that is provided
                         specifiers)))
     (loop :for entry :in entries
           :nconc (ecase type
-                   (:or (loop :for field :in (fields entry)
+                   ((:or) (loop :for field :in (fields entry)
                               :nconc (loop :for specifier :in specifiers
                                            :when (destructuring-bind (head value) specifier
                                                    (and (funcall test (head field) head)
                                                         (funcall test (value field) value)))
                                              :collect entry)))
-                   (:and (destructuring-bind (heads values)
+                   ((:and) (destructuring-bind (heads values)
                              (apply #'mapcar #'list specifiers)
                            (let ((fields (apply-constraints entry heads :type :head)))
                              (when (every test (mapcar #'value fields) values)
