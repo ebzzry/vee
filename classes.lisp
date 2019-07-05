@@ -78,12 +78,12 @@
           :accessor table
           :documentation "The table for entry and unit indexing")
    (prev :initarg :prev
-         :initform -1
-         :reader prev
+         :initform nil
+         :accessor prev
          :documentation "The previous volume")
    (next :initarg :next
-         :initform -1
-         :reader next
+         :initform nil
+         :accessor next
          :documentation "The next volume")
    (linkedp :initarg :linkedp
             :initform nil

@@ -16,9 +16,13 @@
 
 (defmethod initialize-instance :after ((v volume) &key registry)
   "Initialize volume V in REGISTRY."
-  (let ((counter (spawn-vcounter registry)))
+  (let ((last (find-volume (vcounter registry) registry))
+        (counter (spawn-vcounter registry)))
     (with-slots (vid) v
-      (setf vid counter))))
+      (setf vid counter))
+    (when (> (vcounter registry) (1+ *initial-vcounter*))
+      (setf (next last) v)
+      (setf (prev v) last))))
 
 (defmethod initialize-instance :after ((u unit) &key registry)
   "Initialize unit U in REGISTRY."
