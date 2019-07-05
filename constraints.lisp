@@ -188,18 +188,16 @@ This generic function is mainly used for matching againstn data that is provided
           :return (value field)))
 
 ;;; Note: should an update be also made in FTABLE and field pointers?
-(defun replace-field (entry head volume)
-  "Replace a FIELD in ENTRY specified by HEAD with VOLUME."
-  (declare (ignorable entry head volume))
-  (loop :for field :in (fields entry)
+;;; Note: generalize HEAD to constraints
+(defgeneric field-replace-volume (entry constraint volume)
+  (:documentation "Replace a FIELD in ENTRY specified by CONSTRAINTT with VOLUME."))
+(defmethod field-replace-volume ((e entry) (h string) (v volume))
+  (loop :for field :in (fields e)
         :for count = 0 :then (1+ count)
-        :when (string-equal (head field) head)
-          :do (setf (nth count (fields entry)) volume)))
-
-(defun find-duplicate-volumes (registry constraints)
-  "Return a list of volumes that have similar "
-  (declare (ignorable registry constraints))
-  nil)
+        :when (string-equal (head field) h)
+          :do (setf (value (nth count (fields e))) v)))
+(defmethod field-replace-volume ((e entry) (i integer) (v volume))
+  (setf (value (nth i (fields e))) v))
 
 (defun matchesp (entry)
   "Return true if ENTRY has matches."
@@ -227,6 +225,7 @@ This generic function is mainly used for matching againstn data that is provided
   (- 100 (apply #'unmatch-percentage volume args)))
 
 ;;; Note: values for VOLUME-1 and VOLUME-2 can be derived from (IMPORT-FIELD ... :return 'VOLUME)
+;;; Note: this will be used with FIND-SIMILAR-ENTRIES
 (defun volume-matching-p (volume-1 volume-2 &optional (constraints *default-constraints*))
   "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS."
   (bind-volume-pairs volume-1 volume-2 constraints)
@@ -234,3 +233,11 @@ This generic function is mainly used for matching againstn data that is provided
     (if (>= percentage *volume-matching-threshold*)
         t
         nil)))
+
+;;; Note: implement this
+(defun find-duplicate-volumes (registry constraints)
+  "Return a list of volumes that have similar "
+  (declare (ignorable registry constraints))
+  nil)
+
+;;; Note: find a way to convert a field to its volume counterpart in all entries

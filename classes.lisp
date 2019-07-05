@@ -118,7 +118,7 @@
          :documentation "The next field in a record")
    (value :initarg :value
           :initform ""
-          :reader value
+          :accessor value
           :documentation "The data value of a field")))
 
 (defclass record ()
