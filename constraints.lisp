@@ -189,7 +189,6 @@ This generic function is mainly used for matching againstn data that is provided
   (when (matches entry)
     t))
 
-;;; Note: (bind-volume (search-volume "volume605") 0 :exclusive t)
 (defun match-values (volume)
   "Return the amount of matching and non-matching entries in VOLUME as values."
   (loop :for entry :in (walk-down volume :skip #'unitp)
@@ -197,12 +196,13 @@ This generic function is mainly used for matching againstn data that is provided
         :counting (not (matchesp entry)) :into non-matching
         :finally (return (list matching non-matching))))
 
-(defun unmatch-ratio (volume)
+(defun unmatch-ratio (volume &optional (constraints *default-constraints*))
   "Return a value of how much VOLUME does not match with the other volumes."
+  (bind-volume volume constraints :exclusive t)
   (destructuring-bind (match unmatch)
       (match-values volume)
     (/ unmatch (float match))))
 
-(defun match-ratio (volume)
+(defun match-ratio (volume &rest args)
   "Return a value of much much VOLUME does match with the other volumes."
-  (- 1.0 (unmatch-ratio volume)))
+  (- 1.0 (apply #'unmatch-ratio volume args)))
