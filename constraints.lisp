@@ -26,6 +26,9 @@
         (reduce #'nconc entries)
         entries)))
 
+;;; Note: extend :TEST to a function that handles fields. If the field is a
+;;; volume, use the matching mechanism to determine, according to a threshold,
+;;; if the fields (volumes), are the same
 (defgeneric everyp (object entry constraints &key &allow-other-keys)
   (:documentation "Return true if OBJECT matches the applied version of ENTRY."))
 (defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
@@ -41,6 +44,14 @@
   "Find the other volumes in REGISTRY."
   (let ((vid (vid volume)))
     (find-volumes registry :skip #'(lambda (v) (= vid (vid v))))))
+
+(defun find-other-volume (volume)
+  "Return the other volume in the same registry."
+  (let* ((registry (find-registry (rid volume)))
+         (volumes (find-other-volumes volume registry)))
+    (if (= (length volumes) 1)
+        (first volumes)
+        -1)))
 
 (defgeneric find-similar-entries (store entry constraints &key &allow-other-keys)
   (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers to match against. The function specified by TEST will determine equality.
@@ -138,24 +149,30 @@ This generic function is mainly used for matching againstn data that is provided
     (loop :for volume :in volumes
           :nconc (apply #'find-matching-entries volume specifiers args))))
 
-(defun bind-matches (registry entry &rest args)
+(defun bind-matches (store entry &rest args)
   "Bind matching records of ENTRY in REGISTRY."
-  (let ((matches (apply #'find-similar-entries registry entry args)))
+  (let ((matches (apply #'find-similar-entries store entry args)))
     (when matches
       (setf (matches entry) matches))))
 
+;;; Note: rename this monstrocity
 (defun bind-volume (volume &rest args)
   "Bind VOLUME to the other volumes in REGISTRY."
   (let ((registry (find-registry (rid volume))))
     (loop :for entry :in (walk-down volume :skip #'unitp)
           :do (apply #'bind-matches registry entry args))))
 
-(defun bind-wall (registry &rest args)
+(defun bind-volume-pairs (volume-1 volume-2 constraints &rest args)
+  "Bind VOLUME-1 to VOLUME-2."
+  (loop :for entry :in (walk-down volume-1 :skip #'unitp)
+        :do (apply #'bind-matches volume-2 entry constraints :exclusive t args)))
+
+(defun bind-wall (registry &optional (constraints *default-constraints*))
   "Bind the wall in REGISTRY to the other volumes."
   (let ((wall (wall registry)))
-    (apply #'bind-volume wall :exclusive t args)))
+    (bind-volume wall constraints :exclusive t)))
 
-(defun bind-volumes (registry &rest args)
+(defun bind-all-volumes (registry &rest args)
   "Bind all the volumes in REGISTRY to one another."
   (let ((volumes (find-volumes registry)))
     (loop :for volume :in volumes :do (apply #'bind-volume volume args))))
@@ -189,6 +206,8 @@ This generic function is mainly used for matching againstn data that is provided
   (when (matches entry)
     t))
 
+;;; Note: this is agnostic whether the volume was matched to one other volume or
+;;; to multiple volumes
 (defun match-values (volume)
   "Return the amount of matching and non-matching entries in VOLUME as values."
   (loop :for entry :in (walk-down volume :skip #'unitp)
@@ -196,13 +215,22 @@ This generic function is mainly used for matching againstn data that is provided
         :counting (not (matchesp entry)) :into non-matching
         :finally (return (list matching non-matching))))
 
-(defun unmatch-ratio (volume &optional (constraints *default-constraints*))
+(defun unmatch-percentage (volume &optional (constraints *default-constraints*))
   "Return a value of how much VOLUME does not match with the other volumes."
   (bind-volume volume constraints :exclusive t)
   (destructuring-bind (match unmatch)
       (match-values volume)
-    (/ unmatch (float match))))
+    (* 100 (/ unmatch (float match)))))
 
-(defun match-ratio (volume &rest args)
-  "Return a value of much much VOLUME does match with the other volumes."
-  (- 1.0 (apply #'unmatch-ratio volume args)))
+(defun match-percentage (volume &rest args)
+  "Return a value of how much VOLUME matches with the other volumes."
+  (- 100 (apply #'unmatch-percentage volume args)))
+
+;;; Note: values for VOLUME-1 and VOLUME-2 can be derived from (IMPORT-FIELD ... :return 'VOLUME)
+(defun volume-matching-p (volume-1 volume-2 &optional (constraints *default-constraints*))
+  "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS."
+  (bind-volume-pairs volume-1 volume-2 constraints)
+  (let ((percentage (match-percentage volume-1)))
+    (if (>= percentage *volume-matching-threshold*)
+        t
+        nil)))

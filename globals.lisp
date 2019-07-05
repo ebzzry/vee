@@ -43,3 +43,6 @@
 
 (defvar *default-constraints* '(0)
   "The default list of functions that are used for specifying clusters.")
+
+(defvar *volume-matching-threshold* 75.0
+  "A percentage value of what is considered matching volumes.")
