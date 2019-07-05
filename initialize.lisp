@@ -2,6 +2,7 @@
 
 (in-package #:muso/core)
 
+;;; Note: should entry-linking be done here, instead?
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Initialize entry E in REGISTRY."
   (let ((counter (spawn-ecounter registry)))

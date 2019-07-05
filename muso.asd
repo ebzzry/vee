@@ -30,7 +30,6 @@
                (:file "void")
                (:file "units")
                (:file "constraints")
-               (:file "bindings")
                (:file "import")
                (:file "startup")
                (:file "tests")))

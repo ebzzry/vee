@@ -138,6 +138,28 @@ This generic function is mainly used for matching againstn data that is provided
     (loop :for volume :in volumes
           :nconc (apply #'find-matching-entries volume specifiers args))))
 
+(defun bind-matches (registry entry &rest args)
+  "Bind matching records of ENTRY in REGISTRY."
+  (let ((matches (apply #'find-similar-entries registry entry args)))
+    (when matches
+      (setf (matches entry) matches))))
+
+(defun bind-volume (volume &rest args)
+  "Bind VOLUME to the other volumes in REGISTRY."
+  (let ((registry (find-registry (rid volume))))
+    (loop :for entry :in (walk-down volume :skip #'unitp)
+          :do (apply #'bind-matches registry entry args))))
+
+(defun bind-wall (registry &rest args)
+  "Bind the wall in REGISTRY to the other volumes."
+  (let ((wall (wall registry)))
+    (apply #'bind-volume wall :exclusive t args)))
+
+(defun bind-volumes (registry &rest args)
+  "Bind all the volumes in REGISTRY to one another."
+  (let ((volumes (find-volumes registry)))
+    (loop :for volume :in volumes :do (apply #'bind-volume volume args))))
+
 (defun field-volume (field &rest args)
   "Return a volume from the feed created from FIELD."
   (apply #'import-field field :return 'volume args))
@@ -161,3 +183,26 @@ This generic function is mainly used for matching againstn data that is provided
   "Return a list of volumes that have similar "
   (declare (ignorable registry constraints))
   nil)
+
+(defun matchesp (entry)
+  "Return true if ENTRY has matches."
+  (when (matches entry)
+    t))
+
+;;; Note: (bind-volume (search-volume "volume605") 0 :exclusive t)
+(defun match-values (volume)
+  "Return the amount of matching and non-matching entries in VOLUME as values."
+  (loop :for entry :in (walk-down volume :skip #'unitp)
+        :counting (matchesp entry) :into matching
+        :counting (not (matchesp entry)) :into non-matching
+        :finally (return (list matching non-matching))))
+
+(defun unmatch-ratio (volume)
+  "Return a value of how much VOLUME does not match with the other volumes."
+  (destructuring-bind (match unmatch)
+      (match-values volume)
+    (/ unmatch (float match))))
+
+(defun match-ratio (volume)
+  "Return a value of much much VOLUME does match with the other volumes."
+  (- 1.0 (unmatch-ratio volume)))
