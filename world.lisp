@@ -381,6 +381,11 @@
         :when (entryp record)
         :collect record))
 
+(defgeneric table-count (store)
+  (:documentation "Return the size of the hash table stored in STORE."))
+(defmethod table-count ((v volume))
+  (hash-table-count (table v)))
+
 (defgeneric find-units (store)
   (:documentation "Return units from STORE."))
 (defmethod find-units ((r registry))

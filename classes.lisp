@@ -116,10 +116,11 @@
          :initform nil
          :accessor next
          :documentation "The next field in a record")
+   ;; Note: should the default value be NIL, instead?
    (value :initarg :value
           :initform ""
           :accessor value
-          :documentation "The data value of a field")))
+          :documentation "The text or volume value of a field")))
 
 (defclass record ()
   ((vid :initarg :vid
@@ -159,7 +160,7 @@
            :accessor fields
            :documentation "The data fields of an entry")
    (matches :initarg :matches
-            :initform ()
+            :initform (make-hash-table :test #'equalp)
             :accessor matches
             :documentation "Structure for the non-linear matches"))
   (:documentation "A record that contains a value"))

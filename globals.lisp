@@ -38,7 +38,7 @@
 (defparameter *world* nil
   "The top-level structure which contains all the registries.")
 
-(defvar *field-test* #'string-equal
+(defvar *field-test* #'string-volume-equal-p
   "The test function that will be used to compare fields.")
 
 (defvar *default-constraints* '(0)

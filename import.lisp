@@ -49,11 +49,12 @@
                                 (return 'REGISTRY)
                                 remove-duplicates)
   "Import a single FIELD to a new volume VOLUME-NAME and registry REGISTRY-NAME."
-  (import-feed (make-feed field :remove-duplicates remove-duplicates)
-               :volume-name volume-name
-               :registry-name registry-name
-               :header header
-               :return return))
+  (when (stringp (value field))
+    (import-feed (make-feed field :remove-duplicates remove-duplicates)
+                 :volume-name volume-name
+                 :registry-name registry-name
+                 :header header
+                 :return return)))
 
 (defun import-fields (constraint volume &key volume-name
                                              (registry-name (make-registry-name))
@@ -62,6 +63,7 @@
                                              remove-duplicates)
   "Import the texts specified by CONSTRAINT from the volume and registry indicators."
   (loop :for field :in (apply-constraints volume (list constraint) :merge t)
+        :when (stringp (value field))
         :do (import-field field :volume-name volume-name
                                 :registry-name registry-name
                                 :header header
