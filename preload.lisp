@@ -18,8 +18,11 @@
              :for name = (read-from-string (mof:cat "select-" (write-to-string index)))
              :collect `(defun ,name (list) (elt list ,(1- index))))))
 
-(defun string-volume-equal-p (&rest args)
+(defun field-equal-p (&rest args)
   "Return true if OBJECT-1 and OBJECT-2 are equal to one another."
   (cond ((every #'stringp args) (apply #'string-equal args))
+        ((every #'blobp args) (apply #'blob-equal-p args))
+        ;; Note: these are slow
         ((every #'volumep args) (apply #'simple-volume-matching-p args))
+        ;; ((every #'volumep args) (apply #'extended-volume-matching-p args))
         (t (error "unknown types"))))

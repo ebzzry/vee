@@ -361,7 +361,7 @@
     (loop :for record :in records
           :when (and (null (prev record))
                      (next record))
-            :return record)))
+          :return record)))
 
 (defun volume-end (volume)
   "Return the last entry in VOLUME."

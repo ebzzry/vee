@@ -110,7 +110,7 @@
 
 (defun underscoredp (string)
   "Return true if STRING is prefixed with an underscore."
-  (prefixedp string '(#\ZERO_WIDTH_NO-BREAK_SPACE #\_)))
+  (prefixedp string '(#\uFEFF #\_)))
 
 (defun fix-feed (feed)
   "Make corrections to feed due to the effects of file reading."
@@ -179,8 +179,8 @@
 
 (defun slots (object)
   "Return the slot names of an object."
-  (mapcar #'sb-mop:slot-definition-name
-          (sb-mop:class-direct-slots (class-of object))))
+  (mapcar #'closer-mop:slot-definition-name
+          (closer-mop:class-slots (class-of object))))
 
 (defun build-name (template fallback)
   "Return a generate name from TEMPLATE; otherwise use FALLBACK."

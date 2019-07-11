@@ -16,7 +16,8 @@
   :depends-on (#:uiop
                #:cl-ppcre
                #:fare-csv
-               #:mof)
+               #:mof
+               #:closer-mop)
   :serial t
   :components ((:file "packages")
                (:file "preload")

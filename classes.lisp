@@ -187,3 +187,18 @@
            :accessor offset
            :documentation "The index of a match relative to a volume"))
   (:documentation "Information about matching records across volumes in a registry"))
+
+(defclass blob ()
+  ((fid :initarg :fid
+        :initform -1
+        :accessor fid
+        :documentation "The field ID where this object belongs to")
+   (value :initarg :value
+          :initform nil
+          :accessor value
+          :documentation "The value of the processed text")
+   (source :initarg :source
+           :initform nil
+           :accessor source
+           :documentation "The original raw text of a field"))
+  (:documentation "The summary of a text body"))

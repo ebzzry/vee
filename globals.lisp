@@ -2,7 +2,7 @@
 
 (in-package #:muso/core)
 
-(defvar *default-delimiter* #\comma
+(defvar *default-delimiter* #\,
   "The default delimiter used to separate fields.")
 
 (defvar *threshold* 5
@@ -38,11 +38,11 @@
 (defparameter *world* nil
   "The top-level structure which contains all the registries.")
 
-(defvar *field-test* #'string-volume-equal-p
+(defvar *field-test* #'field-equal-p
   "The test function that will be used to compare fields.")
 
 (defvar *default-constraints* '(0)
   "The default list of functions that are used for specifying clusters.")
 
-(defvar *volume-matching-threshold* 75.0
+(defvar *matching-threshold* 75.0
   "A percentage value of what is considered matching volumes.")

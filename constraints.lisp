@@ -73,10 +73,11 @@ This generic function is mainly used for matching against data that is already i
                                    (test *field-test*)
                                    entry-exclusive)
   (when (linkedp v)
-    (let ((records (progn (format t "WALK-DOWN in FIND-SIMILAR-ENTRIES~%")
+    (let ((records (progn (format t "WALK-DOWN in FIND-SIMILAR-ENTRIES; V: ~A, E: ~A, C: ~A~%"
+                                  v e constraints)
                           (walk-down v :origin origin
-                                :skip #'(lambda (rec)
-                                          (or (unitp rec) (when entry-exclusive (eql rec e))))))))
+                                       :skip #'(lambda (rec)
+                                                 (or (unitp rec) (when entry-exclusive (eql rec e))))))))
       (loop :for record :in records
             :for offset = 0 :then (1+ offset)
             :when (everyp e record constraints :test test)
@@ -188,31 +189,30 @@ This generic function is mainly used for matching againstn data that is provided
         :when (string-equal (head field) head)
           :return (value field)))
 
-(defgeneric convert-field (entry constraint volume)
+(defgeneric volume-convert-field (entry constraint volume)
   (:documentation "Replace a FIELD in ENTRY specified by CONSTRAINT with VOLUME."))
-(defmethod convert-field ((e entry) (h string) (v volume))
+(defmethod volume-convert-field ((e entry) (h string) (v volume))
   (loop :for field :in (fields e)
         :for count = 0 :then (1+ count)
         :when (string-equal (head field) h)
           :do (setf (value (nth count (fields e))) v)))
-(defmethod convert-field ((e entry) (i integer) (v volume))
+(defmethod volume-convert-field ((e entry) (i integer) (v volume))
   (setf (value (nth i (fields e))) v))
 
-(defun convert-fields (volume constraints)
+(defun volume-convert-fields (volume constraints)
   "Replace the fields in VOLUME specified by CONSTRAINT with the corresponding generated volumes."
   (let ((registry-name (mof:cat (name (find-registry (rid volume)))
                                 (genstring "/")))
         (constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
-          :do (loop :for entry :in (progn (format t "WALK-DOWN in CONVERT-FIELDS~%")
+          :do (loop :for entry :in (progn (format t "WALK-DOWN in VOLUME-CONVERT-FIELDS~%")
                                           (walk-down volume :skip #'unitp))
                     :for field = (first (apply-constraints entry constraint))
                     :for volume = (import-field field :registry-name registry-name
                                                       :header '("element")
-                                                      :remove-duplicates t
                                                       :return 'volume)
                     :when volume
-                      :do (convert-field entry constraint volume)))))
+                      :do (volume-convert-field entry constraint volume)))))
 
 (defun contains-matches-p (entry constraints)
   "Return true if ENTRY has matches under CONSTRAINTS."
@@ -230,16 +230,12 @@ This generic function is mainly used for matching againstn data that is provided
           :counting (contains-matches-p entry constraints) :into matching
           :finally (return (* 100 (/ matching count))))))
 
-;;; Note: whenever volumes are being compared everything inside of this function happens
 (defgeneric simple-volume-matching-p (volume-1 volume-2)
   (:documentation "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS."))
 (defmethod simple-volume-matching-p ((volume-1 volume) (volume-2 volume))
-  ;; Note: this is expensive
-  ;; Note: WALK-DOWN is called when binding the volumes
-  ;; Note: WALK-DOWN is called when computing the match percentages
   (bind-volume-volume volume-1 volume-2 '(0))
   (let ((percentage (match-percentage volume-1 '(0))))
-    (if (>= percentage *volume-matching-threshold*)
+    (if (>= percentage *matching-threshold*)
         (values t percentage)
         (values nil percentage))))
 (defmethod simple-volume-matching-p ((volume-1 string) (volume-2 string))
@@ -253,7 +249,7 @@ This generic function is mainly used for matching againstn data that is provided
   (let* ((percentage-1 (match-percentage volume-1 '(0)))
          (percentage-2 (match-percentage volume-2 '(0)))
          (mean (/ (+ percentage-1 percentage-2) 2.0)))
-    (if (>= mean *volume-matching-threshold*)
+    (if (>= mean *matching-threshold*)
         (values t mean)
         (values nil mean))))
 (defmethod extended-volume-matching-p ((volume-1 string) (volume-2 string))
@@ -271,67 +267,49 @@ This generic function is mainly used for matching againstn data that is provided
         (subseq string 0 (1- length)))
       string))
 
-(defun find-duplicate-entries-1 (volume constraints)
+(defun find-duplicate-entries-bang (volume constraints)
   "Return a list of entries that have similar properties according to CONSTRAINTS."
   (let* ((constraints (ensure-list constraints))
          (constraints-stripped (loop :for c :in constraints :collect (strip-bang c))))
     (loop :for constraint :in constraints
           :when (bangedp constraint)
-            :do (convert-fields volume (strip-bang constraint)))
+            :do (volume-convert-fields volume (strip-bang constraint)))
     (loop :for entry :in (walk-down volume :skip #'unitp)
           :nconc (find-similar-entries volume entry constraints-stripped :entry-exclusive t))))
 
 (defun find-duplicate-entries (volume constraints)
   "Return a list of entries that have similar properties according to CONSTRAINTS."
-  (convert-fields volume constraints)
-  ;; Note: one of the problems with this approach is that there is already a
-  ;; top-level loop on the entries in the volume, then there’ll be another loop
-  ;; inside FIND-SIMILAR-ENTRIES.
-  ;; Note: if ENTRY is skipped it will not be included in the final list
+  (volume-convert-fields volume constraints)
   (loop :for entry :in (progn (format t "WALK-DOWN in FIND-DUPLICATE-ENTRIES~%")
                               (walk-down volume :skip #'unitp))
         :nconc (find-similar-entries volume entry constraints
                                      :entry-exclusive t)))
 
-;;; Note: fix performance
-;;; Note: WALK-DOWN is called everywhere
-;;; Note: what are the necessary calls?
-;;; Note: trace steps from FIND-DUPLICATE-ENTRIES
-;;; [ ] find-duplicate-entries
-;;; [✓] convert-fields
-;;; [ ] find-similar-entries
-;;; [ ] apply-constraints
-;;; [ ] bind-volume-volume
-;;; [ ] match-percentage
-;;; Note: the problem with comparing text volume fields is, that there is a lot computation
+(defun blobp (object)
+  "Return true if OBJECT is a BLOB."
+  (when (eql (type-of object) 'blob)
+    t))
 
-;;; Note: fix duplication
-;;; Note: FIND-SIMILAR-ENTRIES returns the other entry, because it excludes itself
-;;; Note: if a match has been designated, should it be skipped?
-;;; Note: bury or skip?
-;;; Note: minimize moving parts
-;;; Note: everytime two volumes are compared, entire volumes are traversed
-;;; Note: how can volume information be cached across comparisons?
-;;; Note: the pain points are comparisons of the top-level volumes and comparisons of the text volumes
-;;; Note: should a percentage value of some sort be stored in a field containing a value to prevent recomputations?
-;;; Note: if data can be stored on a volume, then volume comparisons will be faster
-;;; Note: if such comparisons are fast, REMOVE-DUPLICATES can be used
-;;; Note: everytime EVERYP is called, APPLY-CONSTRAINTS is also called, which calls WALK-DOWN.
+(defun make-blob (field)
+  "Return a BLOB instance from field data."
+  (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal)
+                    #'string<)))
+    (make-instance 'blob :fid (id field) :value text :source (value field))))
 
-;;; Note: so, when the volume fields are compared, their locations are re-computed.
+(defun blob-convert-fields (volume constraints)
+  "Convert the fields in VOLUME specified by CONSTRAINT, to BLOB objects."
+  (let ((constraints (ensure-list constraints)))
+    (loop :for constraint :in constraints
+          :do (loop :for entry :in (walk-down volume :skip #'unitp)
+                    :for field = (first (apply-constraints entry constraint))
+                    :for value = (value field)
+                    :do (setf (value field) (make-blob field))))))
 
-;;; Note: comparisons between text volume fields should be fast.
-
-;;; Note: how do I transform a duplicate search for only one entry for the whole volume
-
-;;; Note: evaluate the performance of FIND-SIMILAR-ENTRIES when applied to normal fields
-;;; Note: trace the sequence of calls
-
-;;; Note: in FIND-DUPLICATE-ENTRIES, duplicate entries are present because inside the call, FIND-SIMILAR-ENTRIES have no knowledge of the cum
-
-;;; Note: profile the matching of two volumes
-
-;;; Note: what happens when volumes are bound to each other?
-;;  (bind-volume-volume volume-1 volume-2 '(0))
-;;  (bind-volume-volume volume-2 volume-1 '(0))
-
+(defun blob-equal-p (field-1 field-2 &key (test #'string-equal))
+  "Return true if two BLOB objects are considered equal to one another."
+  (let ((value-1 (value (value field-1)))
+        (value-2 (value (value field-2))))
+    (>= (float (* (/ (length (intersection value-1 value-2 :test test))
+                     (length (union value-1 value-2 :test test)))
+                  100))
+        *matching-threshold*)))
