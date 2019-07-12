@@ -1,4 +1,4 @@
-;;;; units.lisp
+;;;; unit.lisp
 
 (in-package #:muso/core)
 

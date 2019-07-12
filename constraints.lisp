@@ -2,45 +2,88 @@
 
 (in-package #:muso/core)
 
+(defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
+  "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
+  (let ((constraints (ensure-list constraints))
+        (fields (fields entry))
+        (func (intern (string type))))
+    (ecase type
+      ((:index)
+       (loop :for constraint :in constraints
+             :collect (nth constraint fields)))
+      ((:head :value)
+       (loop :for constraint :in constraints
+             :nconc (loop :for field :in fields
+                          :when (funcall test constraint (funcall func field))
+                            :collect field))))))
+
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
   (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes."))
 (defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*))
   (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :nconc (etypecase constraint
-                   ((string) (dispatch-fields o (list constraint) :type type :test test))
-                   ((integer) (list (nth constraint (fields o))))))))
+    ;; (loop :for constraint :in constraints
+    ;;       :nconc (etypecase constraint
+    ;;                (string (dispatch-fields o (list constraint) :type type :test test))
+    ;;                (integer (list (nth constraint (fields o))))))
+    (lparallel:pmapcan #'(lambda (constraint)
+                           (etypecase constraint
+                             (string (dispatch-fields o (list constraint :type type :test test)))
+                             (integer (list (nth constraint (fields o))))))
+                       constraints)
+    ))
 (defmethod apply-constraints ((o list) constraints &key (fallback ""))
   (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :collect (etypecase constraint
-                     ((function) (funcall constraint o))
-                     ((integer) (nth constraint o))
-                     (t fallback)))))
+    ;; (loop :for constraint :in constraints
+    ;;       :collect (etypecase constraint
+    ;;                  (function (funcall constraint o))
+    ;;                  (integer (nth constraint o))
+    ;;                  (t fallback)))
+    (lparallel:pmapcar #'(lambda (constraint)
+                           (etypecase constraint
+                             (function (funcall constraint o))
+                             (integer (nth constraint o))
+                             (t fallback)))
+                       constraints)
+    ))
 (defmethod apply-constraints ((o volume) constraints &key (test *field-test*) merge)
   "Extract the fields from VOLUME that satisfy CONSTRAINTS."
+  ;; (let* ((constraints (ensure-list constraints))
+  ;;        (entries (loop :for entry :in (walk-down o :skip #'unitp)
+  ;;                       :collect (apply-constraints entry constraints :type :head :test test))))
+  ;;   (if merge
+  ;;       (reduce #'nconc entries)
+  ;;       entries))
   (let* ((constraints (ensure-list constraints))
-         (entries (loop :for entry :in (progn "WALK-DOWN in APPLY-CONSTRAINTS~%"
-                                              (walk-down o :skip #'unitp))
-                        :collect (apply-constraints entry constraints :type :head :test test))))
+         (entries (lparallel:pmapcar #'(lambda (entry)
+                                         (apply-constraints entry constraints :type :head :test test))
+                                     (walk-down o :skip #'unitp))))
     (if merge
-        (reduce #'nconc entries)
-        entries)))
+        (lparallel:preduce #'append entries)
+        entries))
+  )
 
-(defun get-constraints (entry constraints)
-  "Retuern the value of constraints application."
+(defun resolve-constraints (entry constraints)
+  "Return the value of constraints application. This is primarily used to extract the values of fields, whether it is a BLOB or VOLUME object."
   (mapcar #'value (apply-constraints entry constraints)))
 
 (defgeneric everyp (object entry constraints &key &allow-other-keys)
-  (:documentation "Return true if OBJECT matches the applied version of ENTRY."))
+  (:documentation "Return true if OBJECT matches the applied version of ENTRY. TEST should invoke the correct function to check for equality."))
 (defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
-  (every test
-         (apply-constraints o constraints)
-         (get-constraints e constraints)))
+  ;; (every test
+  ;;        (apply-constraints o constraints)
+  ;;        (resolve-constraints e constraints))
+  (lparallel:pevery test
+                    (apply-constraints o constraints)
+                    (resolve-constraints e constraints))
+  )
 (defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*))
-  (every test
-         (get-constraints o constraints)
-         (get-constraints e constraints)))
+  ;; (every test
+  ;;        (resolve-constraints o constraints)
+  ;;        (resolve-constraints e constraints))
+  (lparallel:pevery test
+                    (resolve-constraints o constraints)
+                    (resolve-constraints e constraints))
+  )
 
 (defun find-other-volumes (volume registry)
   "Find the other volumes in REGISTRY."
@@ -73,15 +116,17 @@ This generic function is mainly used for matching against data that is already i
                                    (test *field-test*)
                                    entry-exclusive)
   (when (linkedp v)
-    (let ((records (progn (format t "WALK-DOWN in FIND-SIMILAR-ENTRIES; V: ~A, E: ~A, C: ~A~%"
-                                  v e constraints)
-                          (walk-down v :origin origin
-                                       :skip #'(lambda (rec)
-                                                 (or (unitp rec) (when entry-exclusive (eql rec e))))))))
-      (loop :for record :in records
-            :for offset = 0 :then (1+ offset)
-            :when (everyp e record constraints :test test)
-              :collect record))))
+    (let ((records (walk-down v :origin origin
+                                :skip #'(lambda (rec)
+                                          (or (unitp rec) (when entry-exclusive (eql rec e)))))))
+      ;; (loop :for record :in records
+      ;;       :when (everyp e record constraints :test test)
+      ;;         :collect record)
+      (lparallel:pmapcar #'(lambda (record)
+                             (when (everyp e record constraints :test test)
+                               record))
+                         records)
+      )))
 (defmethod find-similar-entries ((r registry) (e entry) constraints
                                  &key (origin #'volume-start)
                                    (test *field-test*)
@@ -90,24 +135,16 @@ This generic function is mainly used for matching against data that is already i
   (let ((volumes (if volume-exclusive
                      (find-other-volumes (find-volume (vid e) r) r)
                      (find-volumes r))))
-    (loop :for volume :in volumes
-          :nconc (find-similar-entries volume e constraints
-                                       :origin origin :test test :entry-exclusive entry-exclusive))))
-
-(defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
-  "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
-  (let ((constraints (ensure-list constraints))
-        (fields (fields entry))
-        (func (intern (string type))))
-    (ecase type
-      ((:index)
-       (loop :for constraint :in constraints
-             :collect (nth constraint fields)))
-      ((:head :value)
-       (loop :for constraint :in constraints
-             :nconc (loop :for field :in fields
-                          :when (funcall test constraint (funcall func field))
-                            :collect field))))))
+    ;; (loop :for volume :in volumes
+    ;;       :nconc (find-similar-entries volume e constraints
+    ;;                                    :origin origin :test test :entry-exclusive entry-exclusive))
+    (lparallel:pmapcan #'(lambda (volume)
+                           (find-similar-entries volume e constraints
+                                                 :origin origin
+                                                 :test test
+                                                 :entry-exclusive entry-exclusive))
+                       volumes)
+    ))
 
 (defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
   (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
@@ -154,16 +191,14 @@ This generic function is mainly used for matching againstn data that is provided
 
 (defun bind-volume-volume (volume-1 volume-2 constraints &rest args)
   "Bind VOLUME-1 to VOLUME-2."
-  (loop :for entry :in (progn (format t "WALK-DOWN in BIND-VOLUME-VOLUME~%")
-                              (walk-down volume-1 :skip #'unitp))
+  (loop :for entry :in (walk-down volume-1 :skip #'unitp)
         :do (apply #'bind-matches volume-2 entry constraints
                    :entry-exclusive t
                    args)))
 
 (defun bind-volume-registry (volume registry constraints &rest args)
   "Bind VOLUME to the other volumes in REGISTRY. If there is only one volume inside a registry the volume will only be bound to itself."
-  (loop :for entry :in (progn (format t "WALK-DOWN in BIND-VOLUME-REGISTRY~%")
-                              (walk-down volume :skip #'unitp))
+  (loop :for entry :in (walk-down volume :skip #'unitp)
         :do (apply #'bind-matches registry entry constraints
                    :entry-exclusive t
                    :volume-exclusive t
@@ -200,13 +235,12 @@ This generic function is mainly used for matching againstn data that is provided
   (setf (value (nth i (fields e))) v))
 
 (defun volume-convert-fields (volume constraints)
-  "Replace the fields in VOLUME specified by CONSTRAINT with the corresponding generated volumes."
+  "Replace the fields in VOLUME specified by CONSTRAINT, to VOLUME objects."
   (let ((registry-name (mof:cat (name (find-registry (rid volume)))
                                 (genstring "/")))
         (constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
-          :do (loop :for entry :in (progn (format t "WALK-DOWN in VOLUME-CONVERT-FIELDS~%")
-                                          (walk-down volume :skip #'unitp))
+          :do (loop :for entry :in (walk-down volume :skip #'unitp)
                     :for field = (first (apply-constraints entry constraint))
                     :for volume = (import-field field :registry-name registry-name
                                                       :header '("element")
@@ -225,8 +259,7 @@ This generic function is mainly used for matching againstn data that is provided
 (defun match-percentage (volume constraints)
   "Return the amount of matching and non-matching entries in VOLUME."
   (let ((count (float (table-count volume))))
-    (loop :for entry :in (progn (format t "WALK-DOWN in MATCH-PERCENTAGE~%")
-                                (walk-down volume :skip #'unitp))
+    (loop :for entry :in (walk-down volume :skip #'unitp)
           :counting (contains-matches-p entry constraints) :into matching
           :finally (return (* 100 (/ matching count))))))
 
@@ -270,20 +303,26 @@ This generic function is mainly used for matching againstn data that is provided
 (defun find-duplicate-entries-bang (volume constraints)
   "Return a list of entries that have similar properties according to CONSTRAINTS."
   (let* ((constraints (ensure-list constraints))
-         (constraints-stripped (loop :for c :in constraints :collect (strip-bang c))))
+         (constraints-stripped (mapcar #'strip-bang constraints)))
     (loop :for constraint :in constraints
           :when (bangedp constraint)
             :do (volume-convert-fields volume (strip-bang constraint)))
     (loop :for entry :in (walk-down volume :skip #'unitp)
           :nconc (find-similar-entries volume entry constraints-stripped :entry-exclusive t))))
 
-(defun find-duplicate-entries (volume constraints)
+(defun find-duplicate-entries (volume constraints &key type)
   "Return a list of entries that have similar properties according to CONSTRAINTS."
-  (volume-convert-fields volume constraints)
-  (loop :for entry :in (progn (format t "WALK-DOWN in FIND-DUPLICATE-ENTRIES~%")
-                              (walk-down volume :skip #'unitp))
+  (case type
+    (volume (volume-convert-fields volume constraints))
+    (blob (blob-convert-fields volume constraints))
+    (t nil))
+  (loop :for entry :in (walk-down volume :skip #'unitp)
         :nconc (find-similar-entries volume entry constraints
-                                     :entry-exclusive t)))
+                                     :entry-exclusive t))
+  ;; (lparallel:pmapcan #'(lambda (entry)
+  ;;                        (find-similar-entries volume entry constraints :entry-exclusive t))
+  ;;                    (walk-down volume :skip #'unitp))
+  )
 
 (defun blobp (object)
   "Return true if OBJECT is a BLOB."
@@ -292,12 +331,14 @@ This generic function is mainly used for matching againstn data that is provided
 
 (defun make-blob (field)
   "Return a BLOB instance from field data."
-  (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal)
-                    #'string<)))
-    (make-instance 'blob :fid (id field) :value text :source (value field))))
+  (if (blobp (value field))
+      (value field)
+      (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal)
+                        #'string<)))
+        (make-instance 'blob :fid (id field) :value text :source (value field)))))
 
 (defun blob-convert-fields (volume constraints)
-  "Convert the fields in VOLUME specified by CONSTRAINT, to BLOB objects."
+  "Replace the fields in VOLUME specified by CONSTRAINT, to BLOB objects."
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :do (loop :for entry :in (walk-down volume :skip #'unitp)
@@ -307,8 +348,8 @@ This generic function is mainly used for matching againstn data that is provided
 
 (defun blob-equal-p (field-1 field-2 &key (test #'string-equal))
   "Return true if two BLOB objects are considered equal to one another."
-  (let ((value-1 (value (value field-1)))
-        (value-2 (value (value field-2))))
+  (let ((value-1 (value field-1))
+        (value-2 (value field-2)))
     (>= (float (* (/ (length (intersection value-1 value-2 :test test))
                      (length (union value-1 value-2 :test test)))
                   100))

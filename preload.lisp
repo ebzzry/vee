@@ -25,4 +25,10 @@
         ;; Note: these are slow
         ((every #'volumep args) (apply #'simple-volume-matching-p args))
         ;; ((every #'volumep args) (apply #'extended-volume-matching-p args))
-        (t (error "unknown types"))))
+        (t (apply #'eql args))))
+
+(defun initialize-lparallel ()
+  "Initialize the lparallel kernel and set the number of workers."
+  (let ((cpus (cpus:get-number-of-processors)))
+    (setf lparallel:*kernel* (lparallel:make-kernel cpus))))
+(initialize-lparallel)
