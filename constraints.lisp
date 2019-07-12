@@ -2,6 +2,32 @@
 
 (in-package #:muso/core)
 
+;;; Note: use lparallel on these?
+(defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
+  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
+  (when (linkedp volume)
+    (loop :for entry = (point origin volume) :then (prev entry)
+          :while entry
+          :collect (funcall fn entry))))
+
+(defun walk-down (volume &key (origin #'volume-start) (fn #'identity) (skip #'false))
+  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
+  (when (linkedp volume)
+    (loop :for entry = (point origin volume) :then (next entry)
+          :while entry
+          :unless (funcall skip entry)
+            :collect (funcall fn entry))))
+
+(defun walk-left (volume)
+  "Return records starting from VOLUME across all the other volumes, going left."
+  (declare (ignorable volume))
+  nil)
+
+(defun walk-right (volume)
+  "Return records starting from VOLUME across all the other volumes, going right."
+  (declare (ignorable volume))
+  nil)
+
 (defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
   "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
   (let ((constraints (ensure-list constraints))
@@ -19,71 +45,71 @@
 
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
   (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes."))
-(defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*))
+(defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*) parallel)
   (let ((constraints (ensure-list constraints)))
-    ;; (loop :for constraint :in constraints
-    ;;       :nconc (etypecase constraint
-    ;;                (string (dispatch-fields o (list constraint) :type type :test test))
-    ;;                (integer (list (nth constraint (fields o))))))
-    (lparallel:pmapcan #'(lambda (constraint)
-                           (etypecase constraint
-                             (string (dispatch-fields o (list constraint :type type :test test)))
-                             (integer (list (nth constraint (fields o))))))
-                       constraints)
-    ))
-(defmethod apply-constraints ((o list) constraints &key (fallback ""))
+    (if parallel
+        (lparallel:pmapcan #'(lambda (constraint)
+                               (etypecase constraint
+                                 (string (dispatch-fields o (list constraint :type type :test test)))
+                                 (integer (list (nth constraint (fields o))))))
+                           constraints)
+        (loop :for constraint :in constraints
+              :nconc (etypecase constraint
+                       (string (dispatch-fields o (list constraint) :type type :test test))
+                       (integer (list (nth constraint (fields o)))))))))
+(defmethod apply-constraints ((o list) constraints &key (fallback "") parallel)
   (let ((constraints (ensure-list constraints)))
-    ;; (loop :for constraint :in constraints
-    ;;       :collect (etypecase constraint
-    ;;                  (function (funcall constraint o))
-    ;;                  (integer (nth constraint o))
-    ;;                  (t fallback)))
-    (lparallel:pmapcar #'(lambda (constraint)
-                           (etypecase constraint
-                             (function (funcall constraint o))
-                             (integer (nth constraint o))
-                             (t fallback)))
-                       constraints)
-    ))
-(defmethod apply-constraints ((o volume) constraints &key (test *field-test*) merge)
+    (if parallel
+        (lparallel:pmapcar #'(lambda (constraint)
+                               (etypecase constraint
+                                 (function (funcall constraint o))
+                                 (integer (nth constraint o))
+                                 (t fallback)))
+                           constraints)
+        (loop :for constraint :in constraints
+              :collect (etypecase constraint
+                         (function (funcall constraint o))
+                         (integer (nth constraint o))
+                         (t fallback))))))
+(defmethod apply-constraints ((o volume) constraints &key (test *field-test*) merge parallel)
   "Extract the fields from VOLUME that satisfy CONSTRAINTS."
-  ;; (let* ((constraints (ensure-list constraints))
-  ;;        (entries (loop :for entry :in (walk-down o :skip #'unitp)
-  ;;                       :collect (apply-constraints entry constraints :type :head :test test))))
-  ;;   (if merge
-  ;;       (reduce #'nconc entries)
-  ;;       entries))
-  (let* ((constraints (ensure-list constraints))
-         (entries (lparallel:pmapcar #'(lambda (entry)
-                                         (apply-constraints entry constraints :type :head :test test))
-                                     (walk-down o :skip #'unitp))))
-    (if merge
-        (lparallel:preduce #'append entries)
-        entries))
-  )
+  (if parallel
+      (let* ((constraints (ensure-list constraints))
+             (entries (lparallel:pmapcar #'(lambda (entry)
+                                             (apply-constraints entry constraints :type :head :test test))
+                                         (walk-down o :skip #'unitp))))
+        (if merge
+            (lparallel:preduce #'append entries)
+            entries))
+      (let* ((constraints (ensure-list constraints))
+             (entries (loop :for entry :in (walk-down o :skip #'unitp)
+                            :collect (apply-constraints entry constraints :type :head :test test))))
+        (if merge
+            (reduce #'nconc entries)
+            entries))))
 
-(defun resolve-constraints (entry constraints)
+(defun resolve-constraints (entry constraints &key parallel)
   "Return the value of constraints application. This is primarily used to extract the values of fields, whether it is a BLOB or VOLUME object."
-  (mapcar #'value (apply-constraints entry constraints)))
+  (mapcar #'value (apply-constraints entry constraints :parallel parallel)))
 
 (defgeneric everyp (object entry constraints &key &allow-other-keys)
   (:documentation "Return true if OBJECT matches the applied version of ENTRY. TEST should invoke the correct function to check for equality."))
-(defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
-  ;; (every test
-  ;;        (apply-constraints o constraints)
-  ;;        (resolve-constraints e constraints))
-  (lparallel:pevery test
-                    (apply-constraints o constraints)
-                    (resolve-constraints e constraints))
-  )
-(defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*))
-  ;; (every test
-  ;;        (resolve-constraints o constraints)
-  ;;        (resolve-constraints e constraints))
-  (lparallel:pevery test
-                    (resolve-constraints o constraints)
-                    (resolve-constraints e constraints))
-  )
+(defmethod everyp ((o list) (e entry) constraints &key (test *field-test*) parallel)
+  (if parallel
+      (lparallel:pevery test
+                        (apply-constraints o constraints :parallel parallel)
+                        (resolve-constraints e constraints :parallel parallel))
+      (every test
+             (apply-constraints o constraints)
+             (resolve-constraints e constraints))))
+(defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*) parallel)
+  (if parallel
+      (lparallel:pevery test
+                        (resolve-constraints o constraints :parallel parallel)
+                        (resolve-constraints e constraints :parallel parallel))
+      (every test
+             (resolve-constraints o constraints)
+             (resolve-constraints e constraints))))
 
 (defun find-other-volumes (volume registry)
   "Find the other volumes in REGISTRY."
@@ -114,37 +140,42 @@ This generic function is mainly used for matching against data that is already i
 (defmethod find-similar-entries ((v volume) (e entry) constraints
                                  &key (origin #'volume-start)
                                    (test *field-test*)
-                                   entry-exclusive)
+                                   entry-exclusive
+                                   parallel)
   (when (linkedp v)
     (let ((records (walk-down v :origin origin
                                 :skip #'(lambda (rec)
                                           (or (unitp rec) (when entry-exclusive (eql rec e)))))))
-      ;; (loop :for record :in records
-      ;;       :when (everyp e record constraints :test test)
-      ;;         :collect record)
-      (lparallel:pmapcar #'(lambda (record)
-                             (when (everyp e record constraints :test test)
-                               record))
-                         records)
-      )))
+      (if parallel
+          (lparallel:pmapcar #'(lambda (record)
+                                 (when (everyp e record constraints :test test :parallel parallel)
+                                   record))
+                             records)
+          (loop :for record :in records
+                :when (everyp e record constraints :test test)
+                  :collect record)))))
 (defmethod find-similar-entries ((r registry) (e entry) constraints
                                  &key (origin #'volume-start)
                                    (test *field-test*)
                                    volume-exclusive
-                                   entry-exclusive)
+                                   entry-exclusive
+                                   parallel)
   (let ((volumes (if volume-exclusive
                      (find-other-volumes (find-volume (vid e) r) r)
                      (find-volumes r))))
-    ;; (loop :for volume :in volumes
-    ;;       :nconc (find-similar-entries volume e constraints
-    ;;                                    :origin origin :test test :entry-exclusive entry-exclusive))
-    (lparallel:pmapcan #'(lambda (volume)
-                           (find-similar-entries volume e constraints
-                                                 :origin origin
-                                                 :test test
-                                                 :entry-exclusive entry-exclusive))
-                       volumes)
-    ))
+    (if parallel
+        (lparallel:pmapcan #'(lambda (volume)
+                               (find-similar-entries volume e constraints
+                                                     :origin origin
+                                                     :test test
+                                                     :entry-exclusive entry-exclusive
+                                                     :parallel parallel))
+                           volumes)
+        (loop :for volume :in volumes
+              :nconc (find-similar-entries volume e constraints
+                                           :origin origin
+                                           :test test
+                                           :entry-exclusive entry-exclusive)))))
 
 (defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
   (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
@@ -288,41 +319,25 @@ This generic function is mainly used for matching againstn data that is provided
 (defmethod extended-volume-matching-p ((volume-1 string) (volume-2 string))
   (extended-volume-matching-p (search-volume volume-1) (search-volume volume-2)))
 
-(defun bangedp (string)
-  "Return true if STRING ends with a bang character."
-  (let ((length (length string)))
-    (char= (elt string (1- length)) #\!)))
-
-(defun strip-bang (string)
-  "Return a new string without the bang character."
-  (if (bangedp string)
-      (let ((length (length string)))
-        (subseq string 0 (1- length)))
-      string))
-
-(defun find-duplicate-entries-bang (volume constraints)
-  "Return a list of entries that have similar properties according to CONSTRAINTS."
-  (let* ((constraints (ensure-list constraints))
-         (constraints-stripped (mapcar #'strip-bang constraints)))
-    (loop :for constraint :in constraints
-          :when (bangedp constraint)
-            :do (volume-convert-fields volume (strip-bang constraint)))
-    (loop :for entry :in (walk-down volume :skip #'unitp)
-          :nconc (find-similar-entries volume entry constraints-stripped :entry-exclusive t))))
-
-(defun find-duplicate-entries (volume constraints &key type)
+;;; Note: should parallelism be triggered by TYPE?
+(defun find-duplicate-entries (volume constraints &key type parallel)
   "Return a list of entries that have similar properties according to CONSTRAINTS."
   (case type
     (volume (volume-convert-fields volume constraints))
     (blob (blob-convert-fields volume constraints))
     (t nil))
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :nconc (find-similar-entries volume entry constraints
-                                     :entry-exclusive t))
-  ;; (lparallel:pmapcan #'(lambda (entry)
-  ;;                        (find-similar-entries volume entry constraints :entry-exclusive t))
-  ;;                    (walk-down volume :skip #'unitp))
-  )
+  (if parallel
+      (let ((results (lparallel:pmapcan #'(lambda (entry)
+                                            (find-similar-entries volume entry constraints
+                                                                  :entry-exclusive t
+                                                                  :parallel parallel))
+                                        (walk-down volume :skip #'unitp))))
+        (remove-duplicates (lparallel:premove nil results)))
+      (let ((results (loop :for entry :in (walk-down volume :skip #'unitp)
+                           :nconc (find-similar-entries volume entry constraints
+                                                        :entry-exclusive t
+                                                        :parallel parallel))))
+        (remove-duplicates (remove nil results)))))
 
 (defun blobp (object)
   "Return true if OBJECT is a BLOB."

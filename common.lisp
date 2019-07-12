@@ -258,3 +258,15 @@
 (defun basedir (path)
   "Return the parent directory of PATH."
   (mof:last* (pathname-directory path)))
+
+(defun bangedp (string)
+  "Return true if STRING ends with a bang character."
+  (let ((length (length string)))
+    (char= (elt string (1- length)) #\!)))
+
+(defun strip-bang (string)
+  "Return a new string without the bang character."
+  (if (bangedp string)
+      (let ((length (length string)))
+        (subseq string 0 (1- length)))
+      string))

@@ -58,28 +58,3 @@
           :for unit = (link record volume registry position)
             :then (link unit volume registry position)
           :finally (return volume))))
-
-(defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
-  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
-  (when (linkedp volume)
-    (loop :for entry = (point origin volume) :then (prev entry)
-          :while entry
-          :collect (funcall fn entry))))
-
-(defun walk-down (volume &key (origin #'volume-start) (fn #'identity) (skip #'false))
-  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
-  (when (linkedp volume)
-    (loop :for entry = (point origin volume) :then (next entry)
-          :while entry
-          :unless (funcall skip entry)
-            :collect (funcall fn entry))))
-
-(defun walk-left (volume)
-  "Return records starting from VOLUME across all the other volumes, going left."
-  (declare (ignorable volume))
-  nil)
-
-(defun walk-right (volume)
-  "Return records starting from VOLUME across all the other volumes, going right."
-  (declare (ignorable volume))
-  nil)
