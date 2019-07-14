@@ -110,7 +110,7 @@
 
 (defun underscoredp (string)
   "Return true if STRING is prefixed with an underscore."
-  (prefixedp string '(#\uFEFF #\_)))
+  (prefixedp string '(#\U+FEFF #\_)))
 
 (defun fix-feed (feed)
   "Make corrections to feed due to the effects of file reading."
@@ -270,3 +270,7 @@
       (let ((length (length string)))
         (subseq string 0 (1- length)))
       string))
+
+(defmacro with-time (&body body)
+  "Execute BODY then return timing information."
+  `(time (progn ,@body (values))))

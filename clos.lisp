@@ -55,10 +55,6 @@
     (with-slots (rid name) r
       (format stream "~A ~S" rid name))))
 
-(defmethod print-object ((ht hash-table) stream)
-  (print-unreadable-object (ht stream :type t)
-    (format stream "~A ~A" (hash-table-test ht) (hash-table-count ht))))
-
 (defmethod print-object ((m match) stream)
   (print-unreadable-object (m stream :type t)
     (with-slots (volume) m
