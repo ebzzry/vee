@@ -116,7 +116,7 @@ This generic function is mainly used for matching against data that is already i
                                 :skip #'(lambda (rec)
                                           (or (unitp rec) (when entry-exclusive (eql rec e)))))))
       (loop :for record :in records
-            :when (everyp test e record constraints :test test)
+            :when (everyp e record constraints :test test)
               :collect record))))
 (defmethod find-similar-entries ((r registry) (e entry) constraints
                                  &key (origin #'volume-start)
@@ -285,6 +285,21 @@ This generic function is mainly used for matching againstn data that is provided
                                                               :entry-exclusive t))
                                     (walk-down volume :skip #'unitp))))
     (remove-duplicates (lparallel:premove nil results))))
+
+(defun find-duplicates (volume terms)
+  "Return a list of entries that have similar properties according to TERMS, where each term is either a constraint or a string that constains a meta-character that indicates additional operations to be done beforehand."
+  (let ((terms (ensure-list terms))
+        (constraints (mapcar #'strip-bang terms)))
+    (lparallel:pmapc #'(lambda (term)
+                         (cond ((bangedp term)
+                                (blob-convert-fields volume (strip-bang term)))
+                               (t nil)))
+                     terms)
+    (let ((results (lparallel:pmapcan #'(lambda (entry)
+                                          (find-similar-entries volume entry constraints
+                                                                :entry-exclusive t))
+                                      (walk-down volume :skip #'unitp))))
+      (remove-duplicates (lparallel:premove nil results)))))
 
 (defun blobp (object)
   "Return true if OBJECT is a BLOB."

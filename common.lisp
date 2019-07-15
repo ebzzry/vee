@@ -259,17 +259,24 @@
   "Return the parent directory of PATH."
   (mof:last* (pathname-directory path)))
 
+(defun string-end-p (string char)
+  "Return true if STRING ends with CHAR."
+  (let ((length (length string)))
+    (char= (elt string (1- length)) char)))
+
+(defun strip-end-char (string fn)
+  "Return a new string without the last character if FN satisfies STRING."
+  (if (funcall fn string)
+      (subseq string 0 (1- (length string)))
+      string))
+
 (defun bangedp (string)
   "Return true if STRING ends with a bang character."
-  (let ((length (length string)))
-    (char= (elt string (1- length)) #\!)))
+  (string-end-p string #\!))
 
 (defun strip-bang (string)
   "Return a new string without the bang character."
-  (if (bangedp string)
-      (let ((length (length string)))
-        (subseq string 0 (1- length)))
-      string))
+  (strip-end-char string #'bangedp))
 
 (defmacro with-time (&body body)
   "Execute BODY then return timing information."
