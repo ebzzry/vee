@@ -332,11 +332,11 @@
 
 (defun entryp (record)
   "Return true if RECORD is of type ENTRY."
-  (eql (type-of record) 'entry))
+  (typep record 'entry))
 
 (defun unitp (record)
   "Return true if RECORD is of type UNIT."
-  (eql (type-of record) 'unit))
+  (typep record 'unit))
 
 (defun entry-or-unit-p (record)
   "Return true if RECORD is an entry or unit."
@@ -444,10 +444,8 @@
 
 (defun volumep (object)
   "Return true if OBJECT is a volume."
-  (when (eql (type-of object) 'volume)
-    t))
+  (typep object 'volume))
 
 (defun registryp (object)
   "Return true if OBJECT is a registry."
-  (when (eql (type-of object) 'registry)
-    t))
+  (typep object 'registry))

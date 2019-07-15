@@ -152,22 +152,29 @@ This generic function is mainly used for matching againstn data that is provided
                         (list specifiers)
                         specifiers)))
     (loop :for entry :in entries
-          :nconc (ecase type
-                   ((:or) (loop :for field :in (fields entry)
-                                :nconc (loop :for specifier :in specifiers
-                                             :when (destructuring-bind (head value) specifier
-                                                     (and (funcall test (head field) head)
-                                                          (funcall test (value field) value)))
-                                               :collect entry)))
-                   ((:and) (destructuring-bind (heads values)
-                               (apply #'mapcar #'list specifiers)
-                             (let ((fields (apply-constraints entry heads :type :head)))
-                               (when (every test (mapcar #'value fields) values)
-                                 (list entry)))))))))
+          :nconc
+          (ecase type
+            (:or (lparallel:premove
+                  nil
+                  (lparallel:pmapcan #'(lambda (field)
+                                         (lparallel:pmapcar
+                                          #'(lambda (specifier)
+                                              (when (destructuring-bind (head value) specifier
+                                                      (and (funcall test (head field) head)
+                                                           (funcall test (value field) value)))
+                                                entry))
+                                          specifiers))
+                                     (fields entry))))
+            (:and (destructuring-bind (heads values)
+                      (apply #'mapcar #'list specifiers)
+                    (let ((fields (apply-constraints entry heads :type :head)))
+                      (when (every test (mapcar #'value fields) values)
+                        (list entry)))))))))
 (defmethod find-matching-entries ((r registry) specifiers &rest args)
   (let ((volumes (find-volumes r)))
-    (loop :for volume :in volumes
-          :nconc (apply #'find-matching-entries volume specifiers args))))
+    (lparallel:mapcan #'(lambda (volume)
+                          (apply #'find-matching-entries volume specifiers args))
+                      volumes)))
 
 (defun bind-matches (store entry constraints &rest args)
   "Bind matching records of ENTRY in STORE."
@@ -303,7 +310,7 @@ This generic function is mainly used for matching againstn data that is provided
 
 (defun blobp (object)
   "Return true if OBJECT is a BLOB."
-  (when (eql (type-of object) 'blob)
+  (when (typep object 'blob)
     t))
 
 (defun make-blob (field)
