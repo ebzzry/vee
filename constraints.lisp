@@ -172,7 +172,7 @@ This generic function is mainly used for matching againstn data that is provided
                         (list entry)))))))))
 (defmethod find-matching-entries ((r registry) specifiers &rest args)
   (let ((volumes (find-volumes r)))
-    (lparallel:mapcan #'(lambda (volume)
+    (lparallel:pmapcan #'(lambda (volume)
                           (apply #'find-matching-entries volume specifiers args))
                       volumes)))
 

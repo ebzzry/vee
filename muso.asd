@@ -32,6 +32,7 @@
                (:file "void")
                (:file "unit")
                (:file "constraints")
+               (:file "levenshtein")
                (:file "import")
                (:file "startup")
                (:file "tests")))
