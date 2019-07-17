@@ -22,8 +22,7 @@
                #:lparallel)
   :serial t
   :components ((:file "packages")
-               (:file "preload")
-               (:file "globals")
+               (:file "initialize")
                (:file "classes")
                (:file "common")
                (:file "world")
@@ -32,7 +31,6 @@
                (:file "void")
                (:file "unit")
                (:file "constraints")
-               (:file "levenshtein")
                (:file "import")
-               (:file "startup")
+               (:file "boot")
                (:file "tests")))

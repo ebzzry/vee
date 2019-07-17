@@ -317,7 +317,7 @@ This generic function is mainly used for matching againstn data that is provided
   "Return a BLOB instance from field data."
   (if (blobp (value field))
       (value field)
-      (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal)
+      (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal-p)
                         #'string<)))
         (make-instance 'blob :fid (id field) :value text :source (value field)))))
 

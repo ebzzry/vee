@@ -1,4 +1,4 @@
-;;;; startup.lisp
+;;;; boot.lisp
 
 (in-package #:muso/core)
 
