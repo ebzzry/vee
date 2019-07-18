@@ -15,7 +15,6 @@
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
   :depends-on (#:uiop
                #:cl-ppcre
-               #:fare-csv
                #:cl-csv
                #:mof
                #:closer-mop

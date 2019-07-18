@@ -23,16 +23,11 @@
 
 (defun read-csv-file (file &key (delimiter *default-delimiter*))
   "Read CSV data from FILE."
-  ;; (fare-csv:with-rfc4180-csv-syntax ()
-  ;;   (let ((fare-csv:*separator* delimiter))
-  ;;     (fare-csv:read-csv-file file)))
   (cl-csv:read-csv file :separator delimiter))
 
 (defun read-csv-stream (stream &key (delimiter *default-delimiter*))
   "Read CSV data from STREAM."
-  (fare-csv:with-rfc4180-csv-syntax ()
-    (let ((fare-csv:*separator* delimiter))
-      (fare-csv:read-csv-stream stream))))
+  (cl-csv:read-csv stream :separator delimiter))
 
 (defun read-csv-string (string &rest args)
   "Read CSV data from STRING."
