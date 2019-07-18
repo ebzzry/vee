@@ -23,6 +23,8 @@
                #:lparallel)
   :serial t
   :components ((:file "packages")
+               (:file "globals")
+               (:file "nlp")
                (:file "initialize")
                (:file "classes")
                (:file "common")

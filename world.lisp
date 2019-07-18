@@ -44,6 +44,7 @@
   "Reset the whole world."
   (setf (rcounter *world*) *initial-rcounter*)
   (setf (rtable *world*) (make-hash-table))
+  (initialize-lparallel)
   (values))
 (mof:defalias reset reset-world)
 
