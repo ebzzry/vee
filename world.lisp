@@ -214,10 +214,9 @@
   "Create an instance of the world class."
   (make-instance 'world))
 
-(defun boot-world ()
+(defun initialize-world ()
   "Initialize the world."
   (setf *world* (make-world)))
-(mof:defalias boot boot-world)
 
 (defun forge-entries (volume registry &optional feed)
   "Forge unlinked entries in VOLUME under REGISTRY. If FEED is true, use it to seed values."

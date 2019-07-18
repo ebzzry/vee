@@ -2,4 +2,6 @@
 
 (in-package #:muso/core)
 
-(boot-world)
+(initialize-lparallel)
+(initialize-dictionary)
+(initialize-world)

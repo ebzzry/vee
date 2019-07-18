@@ -277,3 +277,7 @@
 (defmacro with-time (&body body)
   "Execute BODY then return timing information."
   `(time (progn ,@body (values))))
+
+(defun system-relative-pathname (system filename)
+  "Return a pathname relative to SYSTEM and FILENAME."
+  (asdf:system-relative-pathname system filename))

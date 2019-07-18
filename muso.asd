@@ -16,6 +16,7 @@
   :depends-on (#:uiop
                #:cl-ppcre
                #:cl-csv
+               #:cl-nlp
                #:mof
                #:closer-mop
                #:cl-cpus

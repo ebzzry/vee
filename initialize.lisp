@@ -115,4 +115,16 @@
   "Initialize the lparallel kernel and set the number of workers."
   (let ((cpus (cpus:get-number-of-processors)))
     (setf lparallel:*kernel* (lparallel:make-kernel cpus))))
-(initialize-lparallel)
+
+(defvar *base-path* (asdf:system-relative-pathname :muso nil)
+  "The filesystem path upon which this system resides in.")
+
+(defvar *mem-dict* nil
+  "The memory dictionary to use for lemmatization.")
+
+(defvar *default-dictionary* (uiop:subpathname *base-path* "dicts/wikt-dict.txt")
+  "The default dictionary to use for lemmatization.")
+
+(defun initialize-dictionary ()
+  "Set an appropriate value for the lemmatization dictionary."
+  (setf *mem-dict* (nlp.lexics:load-mem-dict *default-dictionary*)))

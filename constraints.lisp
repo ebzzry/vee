@@ -338,3 +338,11 @@ This generic function is mainly used for matching againstn data that is provided
                      (length (union value-1 value-2 :test test)))
                   100))
         *matching-threshold*)))
+
+(defun stem-word (word)
+  "Return a stemmed version of WORD."
+  (nlp.lexics:stem nlp.lexics:<porter-stemmer> word))
+
+(defun lemmatize-word (word)
+  "Return a lemmatized version of WORD."
+  (nlp.lexics:lemmatize *mem-dict* word))
