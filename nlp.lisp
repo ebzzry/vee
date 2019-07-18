@@ -39,10 +39,9 @@
 (defvar *mem-dict* nil
   "The memory dictionary to use for lemmatization.")
 
-(defvar *base-path* (asdf:system-relative-pathname :muso nil)
-  "The filesystem path upon which this system resides in.")
-
-(defvar *default-dictionary* (uiop:subpathname *base-path* "dicts/wikt-dict.txt")
+(defvar *default-dictionary*
+  (uiop:subpathname (asdf:system-relative-pathname :muso nil)
+                    "dicts/wikt-dict.txt")
   "The default dictionary to use for lemmatization.")
 
 (defun initialize-dictionary ()
