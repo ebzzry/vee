@@ -113,6 +113,7 @@
   "Create an instance of the field class."
   (make-instance 'field :value value :volume volume))
 
+;;; Note: rename these
 (defgeneric fields-values (object)
   (:documentation "Return the values contained inside ENTRY."))
 (defmethod fields-values ((e entry))
