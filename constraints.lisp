@@ -338,3 +338,25 @@ This generic function is mainly used for matching againstn data that is provided
                      (length (union value-1 value-2 :test test)))
                   100))
         *matching-threshold*)))
+
+(defun expunge-duplicates (volume terms)
+  "Remove duplicate entries in VOLUME under TERMS."
+  (let ((duplicates (with-levenshtein (find-duplicates volume terms)))
+        (registry (find-registry (rid volume))))
+    (loop :for entry :in duplicates
+          :do (banish entry registry))))
+
+(defun filter-file (infile outfile terms)
+  "Remove duplicates in INFILE under TERMS then save the changes to OUTFILE."
+  (let* ((volume-name (basename infile))
+         (registry-name (basedir infile))
+         (volume (import-file infile :extract-header t
+                                     :volume-name volume-name
+                                     :registry-name registry-name)))
+    (expunge-duplicates volume terms)
+    (with-open-file (out (mof:expand-pathname outfile)
+                         :direction :output
+                         :if-exists :supersede
+                         :if-does-not-exist :create)
+      (loop :for entry :in (walk-down volume :skip #'unitp)
+            :do (format out "~{~S~^,~}~%" (fields-values entry :deblob t))))))

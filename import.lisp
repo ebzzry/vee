@@ -29,11 +29,12 @@
                    (make-volume-name)
                    volume-name)))
     (import-feed feed :volume-name name :registry-name registry-name
-                      :extract-header extract-header :header header)))
+                      :extract-header extract-header :header header)
+    (find-volume name (find-registry registry-name))))
 
 (defun split-field (field &optional (regex "\\s+"))
   "Split a field into components."
-  (split-text (value field) regex))
+  (normalize-words (split-text (value field) regex)))
 
 (defun make-feed (field)
   "Create a feed from the text value stored in FIELD using predefined rules."

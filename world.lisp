@@ -114,12 +114,15 @@
   "Create an instance of the field class."
   (make-instance 'field :value value :volume volume))
 
-;;; Note: rename these
-(defgeneric fields-values (object)
+(defgeneric fields-values (object &key &allow-other-keys)
   (:documentation "Return the values contained inside ENTRY."))
-(defmethod fields-values ((e entry))
-  (mapcar #'value (fields e)))
-(defmethod fields-values ((l list))
+(defmethod fields-values ((e entry) &key deblob)
+  (mapcar #'(lambda (field)
+              (if deblob
+                  (if (blobp (value field)) (source (value field)) (value field))
+                  (value field)))
+          (fields e)))
+(defmethod fields-values ((l list) &key)
   (mapcar #'fields-values l))
 
 (defmethod prev ((o null)) "Return nil on null entries." nil)
@@ -314,8 +317,8 @@
 (defmethod find-volumes ((s string) &rest args)
   (apply #'find-volumes (find-registry s) args))
 
-(defgeneric find-record (query registry)
-  (:documentation "Return an entry which matches QUERY in VOLUME."))
+(defgeneric find-record (query store)
+  (:documentation "Return an entry which matches QUERY in STORE."))
 (defmethod find-record ((query integer) (r registry))
   (multiple-value-bind (value present)
       (gethash query (etable r))

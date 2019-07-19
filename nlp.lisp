@@ -3,7 +3,7 @@
 (in-package #:muso/core)
 
 (defvar *levenshtein* nil
-  "Whether to use the Levenshtein distance algorithm for computing sttring similarity.")
+  "Whether to use the Levenshtein distance algorithm for computing string similarity.")
 
 (defvar *levenshtein-threshold* 1
   "The maximum Levenstein distance to use.")
@@ -39,14 +39,9 @@
 (defvar *mem-dict* nil
   "The memory dictionary to use for lemmatization.")
 
-(defvar *default-dictionary*
-  (uiop:subpathname (asdf:system-relative-pathname :muso nil)
-                    "dicts/wikt-dict.txt")
-  "The default dictionary to use for lemmatization.")
-
 (defun initialize-dictionary ()
   "Set an appropriate value for the lemmatization dictionary."
-  (setf *mem-dict* (nlp.lexics:load-mem-dict *default-dictionary*)))
+  (setf *mem-dict* (nlp.lexics:load-mem-dict (nlp.util:lang-file :en "wikt-dict.txt"))))
 
 (defun stem-word (word)
   "Return a stemmed version of WORD."
@@ -55,3 +50,12 @@
 (defun lemmatize-word (word)
   "Return a lemmatized version of WORD."
   (nlp.lexics:lemmatize *mem-dict* word))
+
+(defun normalize-word (word)
+  "Return a normalized version of WORD."
+  (stem-word (lemmatize-word word)))
+
+(defun normalize-words (words)
+  "Return a normalized version of WORDS."
+  (loop :for word :in words
+        :collect (normalize-word word)))
