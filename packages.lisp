@@ -4,7 +4,8 @@
 
 (uiop:define-package #:muso/core
     (:use #:cl)
-  (:nicknames #:muso))
+  (:nicknames #:muso)
+  (:export #:filter-file))
 
 (uiop:define-package #:muso/tests
     (:use #:cl
