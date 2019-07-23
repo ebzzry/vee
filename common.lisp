@@ -260,19 +260,28 @@
   (let ((length (length string)))
     (char= (elt string (1- length)) char)))
 
-(defun strip-end-char (string fn)
+(defvar *meta-chars* '(#\! #\@)
+  "A list of meta characters to be used for special operations.")
+
+(defun string-end-meta-p (string)
+  "Return true if STRING ends with a meta characacter."
+  (loop :for char :in *meta-chars*
+        :when (string-end-p string char)
+        :return t))
+
+(defun strip-end-char (string)
   "Return a new string without the last character if FN satisfies STRING."
-  (if (funcall fn string)
-      (subseq string 0 (1- (length string)))
+  (subseq string 0 (1- (length string))))
+
+(defun strip-meta-char (string)
+  "Remove the trailing meta character from STRING."
+  (if (string-end-meta-p string)
+      (strip-end-char string)
       string))
 
-(defun bangedp (string)
-  "Return true if STRING ends with a bang character."
-  (string-end-p string #\!))
-
-(defun strip-bang (string)
-  "Return a new string without the bang character."
-  (strip-end-char string #'bangedp))
+(defun strip-meta-chars (list)
+  "Remove the trailing meta characters from LIST."
+  (mapcar #'strip-meta-char list))
 
 (defmacro with-time (&body body)
   "Execute BODY then return timing information."

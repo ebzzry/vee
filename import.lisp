@@ -32,15 +32,20 @@
                       :extract-header extract-header :header header)
     (find-volume name (find-registry registry-name))))
 
+(defun filter-text (text &optional (regex "\\s+"))
+  "Run TEXT through a pre-defined filter."
+  (sort (remove-duplicates (mapcar #'string-downcase (normalize-words (split-text text regex)))
+                           :test #'string-equal)
+        #'string<))
+
 (defun split-field (field &optional (regex "\\s+"))
   "Split a field into components."
   (normalize-words (split-text (value field) regex)))
 
 (defun make-feed (field)
   "Create a feed from the text value stored in FIELD using predefined rules."
-  (let* ((items (split-field field))
-         (list (sort (remove-duplicates items :test #'string-equal) #'string<)))
-    (mapcar #'list list)))
+  (let ((items (filter-text (value field))))
+    (mapcar #'list items)))
 
 (defun import-field (field &key (volume-name (make-volume-name))
                                 registry-name
@@ -53,4 +58,3 @@
                  :registry-name registry-name
                  :header header
                  :return return)))
-

@@ -20,8 +20,8 @@
   "Return true if OBJECT-1 and OBJECT-2 are equal to one another."
   (cond ((every #'stringp args) (apply #'string-equal-p args))
         ((every #'blobp args) (apply #'blob-equal-p args))
-        ((every #'volumep args) (apply #'simple-volume-matching-p args))
-        ;; ((every #'volumep args) (apply #'extended-volume-matching-p args))
+        ;; ((every #'volumep args) (apply #'simple-volume-matching-p args))
+        ((every #'volumep args) (apply #'extended-volume-matching-p args))
         (t (apply #'eql args))))
 
 (defvar *field-test* #'field-equal-p

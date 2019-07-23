@@ -15,7 +15,7 @@
     (loop :for entry = (point origin volume) :then (next entry)
           :while entry
           :unless (funcall skip entry)
-            :collect (funcall fn entry))))
+          :collect (funcall fn entry))))
 
 (defun walk-left (volume)
   "Return records starting from VOLUME across all the other volumes, going left."
@@ -40,46 +40,45 @@
        (loop :for constraint :in constraints
              :nconc (loop :for field :in fields
                           :when (funcall test constraint (funcall func field))
-                            :collect field))))))
+                          :collect field))))))
 
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
-  (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes."))
-(defmethod apply-constraints ((o entry) constraints &key (type :head) (test *field-test*))
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :nconc (etypecase constraint
-                   (string (dispatch-fields o (list constraint) :type type :test test))
-                   (integer (list (nth constraint (fields o))))))))
-(defmethod apply-constraints ((o list) constraints &key (fallback ""))
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-              :collect (etypecase constraint
-                         (function (funcall constraint o))
-                         (integer (nth constraint o))
-                         (t fallback)))))
-(defmethod apply-constraints ((o volume) constraints &key (test *field-test*) merge)
-  "Extract the fields from VOLUME that satisfy CONSTRAINTS."
-  (let* ((constraints (ensure-list constraints))
-         (entries (loop :for entry :in (walk-down o :skip #'unitp)
-                        :collect (apply-constraints entry constraints :type :head :test test))))
-    (if merge
-        (reduce #'nconc entries)
-        entries)))
+  (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
+  (:method ((o entry) constraints &key (type :head) (test *field-test*))
+    (let ((constraints (ensure-list constraints)))
+      (loop :for constraint :in constraints
+            :nconc (etypecase constraint
+                     (string (dispatch-fields o (list constraint) :type type :test test))
+                     (integer (list (nth constraint (fields o))))))))
+  (:method ((o list) constraints &key (fallback ""))
+    (let ((constraints (ensure-list constraints)))
+      (loop :for constraint :in constraints
+            :collect (etypecase constraint
+                       (function (funcall constraint o))
+                       (integer (nth constraint o))
+                       (t fallback)))))
+  (:method ((o volume) constraints &key (test *field-test*) merge)
+    (let* ((constraints (ensure-list constraints))
+           (entries (loop :for entry :in (walk-down o :skip #'unitp)
+                          :collect (apply-constraints entry constraints :type :head :test test))))
+      (if merge
+          (reduce #'nconc entries)
+          entries))))
 
 (defun resolve-constraints (entry constraints)
   "Return the value of constraints application. This is primarily used to extract the values of fields, whether it is a BLOB or VOLUME object."
   (mapcar #'value (apply-constraints entry constraints)))
 
 (defgeneric everyp (object entry constraints &key &allow-other-keys)
-  (:documentation "Return true if OBJECT matches the applied version of ENTRY. TEST should invoke the correct function to check for equality."))
-(defmethod everyp ((o list) (e entry) constraints &key (test *field-test*))
-  (every test
-         (apply-constraints o constraints)
-         (resolve-constraints e constraints)))
-(defmethod everyp ((o entry) (e entry) constraints &key (test *field-test*))
-  (every test
-         (resolve-constraints o constraints)
-         (resolve-constraints e constraints)))
+  (:documentation "Return true if OBJECT matches the applied version of ENTRY. TEST should invoke the correct function to check for equality.")
+  (:method ((o list) (e entry) constraints &key (test *field-test*))
+    (every test
+           (apply-constraints o constraints)
+           (resolve-constraints e constraints)))
+  (:method ((o entry) (e entry) constraints &key (test *field-test*))
+    (every test
+           (resolve-constraints o constraints)
+           (resolve-constraints e constraints))))
 
 (defun find-other-volumes (volume registry)
   "Find the other volumes in REGISTRY."
@@ -106,31 +105,31 @@ returns entries from VOLUME wherein the 'country' field is the same as that of E
 returns entries from VOLUME wherein the 'country' and 'gender' fields are the same as those of ENTRY.
 
 This generic function is mainly used for matching against data that is already inside a registry.
-"))
-(defmethod find-similar-entries ((v volume) (e entry) constraints
-                                 &key (origin #'volume-start)
-                                   (test *field-test*)
-                                   entry-exclusive)
-  (when (linkedp v)
-    (let ((records (walk-down v :origin origin
-                                :skip #'(lambda (rec)
-                                          (or (unitp rec) (when entry-exclusive (eql rec e)))))))
-      (loop :for record :in records
-            :when (everyp e record constraints :test test)
+")
+  (:method ((v volume) (e entry) constraints
+            &key (origin #'volume-start)
+                 (test *field-test*)
+                 entry-exclusive)
+    (when (linkedp v)
+      (let ((records (walk-down v :origin origin
+                                  :skip #'(lambda (rec)
+                                            (or (unitp rec) (when entry-exclusive (eql rec e)))))))
+        (loop :for record :in records
+              :when (everyp e record constraints :test test)
               :collect record))))
-(defmethod find-similar-entries ((r registry) (e entry) constraints
-                                 &key (origin #'volume-start)
-                                   (test *field-test*)
-                                   volume-exclusive
-                                   entry-exclusive)
-  (let ((volumes (if volume-exclusive
-                     (find-other-volumes (find-volume (vid e) r) r)
-                     (find-volumes r))))
-    (loop :for volume :in volumes
-          :nconc (find-similar-entries volume e constraints
-                                       :origin origin
-                                       :test test
-                                       :entry-exclusive entry-exclusive))))
+  (:method ((r registry) (e entry) constraints
+            &key (origin #'volume-start)
+                 (test *field-test*)
+                 volume-exclusive
+                 entry-exclusive)
+    (let ((volumes (if volume-exclusive
+                       (find-other-volumes (find-volume (vid e) r) r)
+                       (find-volumes r))))
+      (loop :for volume :in volumes
+            :nconc (find-similar-entries volume e constraints
+                                         :origin origin
+                                         :test test
+                                         :entry-exclusive entry-exclusive)))))
 
 (defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
   (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
@@ -144,37 +143,37 @@ returns entries that have set either the email to sstanleynh@wp.com or the count
 returns entries that have set both the email to pwagner1x@gravatar.com and the country to Italy.
 
 This generic function is mainly used for matching againstn data that is provided by the user, which may or may not exist inside a registry.
-"))
-(defmethod find-matching-entries ((v volume) specifiers &key (type :or) (test *field-test*))
-  (let ((entries (walk-down v :skip #'unitp))
-        (specifiers (if (and (every-string-p specifiers)
-                             (not (every-list-p specifiers)))
-                        (list specifiers)
-                        specifiers)))
-    (loop :for entry :in entries
-          :nconc
-          (ecase type
-            (:or (lparallel:premove
-                  nil
-                  (lparallel:pmapcan #'(lambda (field)
-                                         (lparallel:pmapcar
-                                          #'(lambda (specifier)
-                                              (when (destructuring-bind (head value) specifier
-                                                      (and (funcall test (head field) head)
-                                                           (funcall test (value field) value)))
-                                                entry))
-                                          specifiers))
-                                     (fields entry))))
-            (:and (destructuring-bind (heads values)
-                      (apply #'mapcar #'list specifiers)
-                    (let ((fields (apply-constraints entry heads :type :head)))
-                      (when (every test (mapcar #'value fields) values)
-                        (list entry)))))))))
-(defmethod find-matching-entries ((r registry) specifiers &rest args)
-  (let ((volumes (find-volumes r)))
-    (lparallel:pmapcan #'(lambda (volume)
-                          (apply #'find-matching-entries volume specifiers args))
-                      volumes)))
+")
+  (:method ((v volume) specifiers &key (type :or) (test *field-test*))
+    (let ((entries (walk-down v :skip #'unitp))
+          (specifiers (if (and (every-string-p specifiers)
+                               (not (every-list-p specifiers)))
+                          (list specifiers)
+                          specifiers)))
+      (loop :for entry :in entries
+            :nconc
+               (ecase type
+                 (:or (lparallel:premove
+                       nil
+                       (lparallel:pmapcan #'(lambda (field)
+                                              (lparallel:pmapcar
+                                               #'(lambda (specifier)
+                                                   (when (destructuring-bind (head value) specifier
+                                                           (and (funcall test (head field) head)
+                                                                (funcall test (value field) value)))
+                                                     entry))
+                                               specifiers))
+                                          (fields entry))))
+                 (:and (destructuring-bind (heads values)
+                           (apply #'mapcar #'list specifiers)
+                         (let ((fields (apply-constraints entry heads :type :head)))
+                           (when (every test (mapcar #'value fields) values)
+                             (list entry)))))))))
+  (:method ((r registry) specifiers &rest args)
+            (let ((volumes (find-volumes r)))
+              (lparallel:pmapcan #'(lambda (volume)
+                                     (apply #'find-matching-entries volume specifiers args))
+                                 volumes))))
 
 (defun bind-matches (store entry constraints &rest args)
   "Bind matching records of ENTRY in STORE."
@@ -188,6 +187,16 @@ This generic function is mainly used for matching againstn data that is provided
         :do (apply #'bind-matches volume-2 entry constraints
                    :entry-exclusive t
                    args)))
+
+(defun bind-volumes (volume-1 volume-2 constraints)
+  "Bind VOLUME-1 to VOLUME-2 with ORIGIN modifications."
+  (let ((origin #'volume-start))
+    (dolist (entry (walk-down volume-1 :skip #'unitp))
+      (when origin
+        (let ((matches (find-similar-entries volume-2 entry constraints :origin origin)))
+          (when matches
+            (setf (gethash constraints (matches entry)) matches)
+            (setf origin (next (first (gethash constraints (matches entry)))))))))))
 
 (defun bind-volume-registry (volume registry constraints &rest args)
   "Bind VOLUME to the other volumes in REGISTRY. If there is only one volume inside a registry the volume will only be bound to itself."
@@ -215,17 +224,17 @@ This generic function is mainly used for matching againstn data that is provided
   "Extract a field from ENTRY specified by HEAD."
   (loop :for field :in (fields entry)
         :when (string-equal (head field) head)
-          :return (value field)))
+        :return (value field)))
 
 (defgeneric volume-convert-field (entry constraint volume)
-  (:documentation "Replace a FIELD in ENTRY specified by CONSTRAINT with VOLUME."))
-(defmethod volume-convert-field ((e entry) (h string) (v volume))
-  (loop :for field :in (fields e)
-        :for count = 0 :then (1+ count)
-        :when (string-equal (head field) h)
+  (:documentation "Replace a FIELD in ENTRY specified by CONSTRAINT with VOLUME.")
+  (:method ((e entry) (h string) (v volume))
+    (loop :for field :in (fields e)
+          :for count = 0 :then (1+ count)
+          :when (string-equal (head field) h)
           :do (setf (value (nth count (fields e))) v)))
-(defmethod volume-convert-field ((e entry) (i integer) (v volume))
-  (setf (value (nth i (fields e))) v))
+  (:method ((e entry) (i integer) (v volume))
+    (setf (value (nth i (fields e))) v)))
 
 (defun volume-convert-fields (volume constraints)
   "Replace the fields in VOLUME specified by CONSTRAINT, to VOLUME objects."
@@ -239,7 +248,7 @@ This generic function is mainly used for matching againstn data that is provided
                                                       :header '("element")
                                                       :return 'volume)
                     :when volume
-                      :do (volume-convert-field entry constraint volume)))))
+                    :do (volume-convert-field entry constraint volume)))))
 
 (defun contains-matches-p (entry constraints)
   "Return true if ENTRY has matches under CONSTRAINTS."
@@ -257,51 +266,59 @@ This generic function is mainly used for matching againstn data that is provided
           :finally (return (* 100 (/ matching count))))))
 
 (defgeneric simple-volume-matching-p (volume-1 volume-2)
-  (:documentation "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS."))
-(defmethod simple-volume-matching-p ((volume-1 volume) (volume-2 volume))
-  (bind-volume-volume volume-1 volume-2 '(0))
-  (let ((percentage (match-percentage volume-1 '(0))))
-    (if (>= percentage *matching-threshold*)
-        (values t percentage)
-        (values nil percentage))))
-(defmethod simple-volume-matching-p ((volume-1 string) (volume-2 string))
-  (simple-volume-matching-p (search-volume volume-1) (search-volume volume-2)))
+  (:documentation "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS.")
+  (:method ((volume-1 volume) (volume-2 volume))
+    (bind-volume-volume volume-1 volume-2 '(0))
+    (let ((percentage (match-percentage volume-1 '(0))))
+      (if (>= percentage *matching-threshold*)
+          (values t percentage)
+          (values nil percentage))))
+  (:method ((volume-1 string) (volume-2 string))
+    (simple-volume-matching-p (search-volume volume-1) (search-volume volume-2))))
 
 (defgeneric extended-volume-matching-p (volume-1 volume-2)
-  (:documentation "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS."))
-(defmethod extended-volume-matching-p ((volume-1 volume) (volume-2 volume))
-  (bind-volume-volume volume-1 volume-2 '(0))
-  (bind-volume-volume volume-2 volume-1 '(0))
-  (let* ((percentage-1 (match-percentage volume-1 '(0)))
-         (percentage-2 (match-percentage volume-2 '(0)))
-         (mean (/ (+ percentage-1 percentage-2) 2.0)))
-    (if (>= mean *matching-threshold*)
-        (values t mean)
-        (values nil mean))))
-(defmethod extended-volume-matching-p ((volume-1 string) (volume-2 string))
-  (extended-volume-matching-p (search-volume volume-1) (search-volume volume-2)))
+  (:documentation "Return true if VOLUME-1 and VOLUME-2 are matching according to CONSTRAINTS.")
+  (:method ((volume-1 volume) (volume-2 volume))
+    (bind-volumes volume-1 volume-2 '(0))
+    (bind-volumes volume-2 volume-1 '(0))
+    (let* ((percentage-1 (match-percentage volume-1 '(0)))
+           (percentage-2 (match-percentage volume-2 '(0)))
+           (mean (/ (+ percentage-1 percentage-2) 2.0)))
+      (if (>= mean *matching-threshold*)
+          (values t mean)
+          (values nil mean))))
+  (:method ((volume-1 string) (volume-2 string))
+    (extended-volume-matching-p (search-volume volume-1) (search-volume volume-2))))
 
-(defun find-duplicate-entries (volume constraints &key type)
-  "Return a list of entries that have similar properties according to CONSTRAINTS."
-  (case type
-    (volume (volume-convert-fields volume constraints))
-    (blob (blob-convert-fields volume constraints))
-    (t nil))
-  (let ((results (lparallel:pmapcan #'(lambda (entry)
-                                        (find-similar-entries volume entry constraints
-                                                              :entry-exclusive t))
-                                    (walk-down volume :skip #'unitp))))
-    (remove-duplicates (lparallel:premove nil results))))
+(defun headp (head volume)
+  "Return true if HEAD is a header in VOLUME."
+  (when (member head (header volume) :test #'string-equal)
+    t))
 
+(defun collect-operators (terms volume)
+  "Return the operators from TERMS. Operators are constraints that are not part of a volume header."
+  (loop :for term :in terms
+        :unless (headp term volume)
+        :collect term))
+
+(defun flatten-constraints (terms volume)
+  "Return a list containing only items that match the header of VOLUME. This strips the meta characters from the constraints."
+  (loop :for term :in terms
+        :collect (if (headp term volume) term (strip-meta-char term))))
+
+;;; Note: can :ORIGIN be used here?
 (defun find-duplicates (volume terms)
   "Return a list of entries that have similar properties according to TERMS, where each term is either a constraint or a string that constains a meta-character that indicates additional operations to be done beforehand."
-  (let ((terms (ensure-list terms))
-        (constraints (mapcar #'strip-bang terms)))
-    (lparallel:pmapc #'(lambda (term)
-                         (cond ((bangedp term)
-                                (blob-convert-fields volume (strip-bang term)))
+  (let ((operators (collect-operators terms volume))
+        (constraints (flatten-constraints terms volume)))
+    (lparallel:pmapc #'(lambda (operator)
+                         (cond ((string-end-p operator #\!)
+                                (blob-convert-fields volume (strip-end-char operator)))
+                               ((string-end-p operator #\@)
+                                (print "@")
+                                (volume-convert-fields volume (strip-end-char operator)))
                                (t nil)))
-                     terms)
+                     operators)
     (let ((results (lparallel:pmapcan #'(lambda (entry)
                                           (find-similar-entries volume entry constraints
                                                                 :entry-exclusive t))
@@ -317,8 +334,7 @@ This generic function is mainly used for matching againstn data that is provided
   "Return a BLOB instance from field data."
   (if (blobp (value field))
       (value field)
-      (let ((text (sort (remove-duplicates (split-field field) :test #'string-equal-p)
-                        #'string<)))
+      (let ((text (filter-text (value field))))
         (make-instance 'blob :fid (id field) :value text :source (value field)))))
 
 (defun blob-convert-fields (volume constraints)
@@ -342,9 +358,12 @@ This generic function is mainly used for matching againstn data that is provided
 (defun expunge-duplicates (volume terms)
   "Remove duplicate entries in VOLUME under TERMS."
   (let ((duplicates (with-levenshtein (find-duplicates volume terms)))
+        ;; (duplicates (find-duplicates volume terms))
         (registry (find-registry (rid volume))))
-    (loop :for entry :in duplicates
-          :do (banish entry registry))))
+    ;; (loop :for entry :in duplicates
+    ;;       :do (banish entry registry))
+    (lparallel:pmapc #'(lambda (entry) (banish entry registry))
+                     duplicates)))
 
 (defun filter-file (infile outfile terms)
   "Remove duplicates in INFILE under TERMS then save the changes to OUTFILE."
@@ -358,5 +377,6 @@ This generic function is mainly used for matching againstn data that is provided
                          :direction :output
                          :if-exists :supersede
                          :if-does-not-exist :create)
+      (format out "~&~{~S~^,~}" (header volume))
       (loop :for entry :in (walk-down volume :skip #'unitp)
-            :do (format out "~{~S~^,~}~%" (fields-values entry :deblob t))))))
+            :do (format out "~&~{~S~^,~}" (fields-values entry :deblob t))))))

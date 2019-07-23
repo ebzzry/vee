@@ -1,4 +1,4 @@
-;;;; dump.lisp
+;;; dump.lisp
 
 (in-package #:muso/core)
 
@@ -40,23 +40,21 @@
       (dump-registries))
     (values)))
 
-(defgeneric dump-volume (volume &key &allow-other-keys)
-  (:documentation "Print information about VOLUME."))
-(defmethod dump-volume ((v volume) &key complete)
-  (let ((registry (find-registry (rid v))))
-    (with-slots (rid vid name table prev next) v
+(defun dump-volume (volume &key complete)
+  "Print information about VOLUME."
+  (let ((registry (find-registry (rid volume))))
+    (with-slots (rid vid name table prev next) volume
       (if complete
-          (loop :for k :being :the :hash-keys :in (table v)
+          (loop :for k :being :the :hash-keys :in (table volume)
                 :for entry = (find-record k registry)
                 :do (format t "~&~A => ~S~%" k (fields-values entry)))
           (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
                   rid vid name table prev next))
       (values))))
 
-(defgeneric dump-entry (entry &key &allow-other-keys)
-  (:documentation "Print information about an entry."))
-(defmethod dump-entry ((e entry) &key complete)
-  (with-slots (vid id prev next fields buriedp) e
+(defun dump-entry (entry &key complete)
+  "Print information about an entry."
+  (with-slots (vid id prev next fields buriedp) entry
     (if complete
         (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
                 vid id prev next (mapcar #'value fields) buriedp)
