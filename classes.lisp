@@ -116,7 +116,6 @@
          :initform nil
          :accessor next
          :documentation "The next field in a record")
-   ;; Note: should the default value be NIL, instead?
    (value :initarg :value
           :initform ""
           :accessor value
@@ -135,7 +134,7 @@
          :initform nil
          :accessor next
          :documentation "The ID of the next record in a volume")
-   ;; Note: is this for linear bindings?
+   ;; Note: this can be used for linear bindings
    (left :initarg :left
          :initform nil
          :accessor left
@@ -177,7 +176,7 @@
            :initform nil
            :accessor record
            :documentation "The matching record")
-   ;; Note: can this be easily inferred from the record?
+   ;; Note: this can be easily inferred from the record
    (volume :initarg :volume
            :initform nil
            :accessor volume

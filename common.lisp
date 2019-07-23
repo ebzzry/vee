@@ -125,7 +125,6 @@
                  (some #'mof:empty-string-p item))
              feed))
 
-;;; Note: generalize to streams
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
   (fix-feed (read-csv-file (mof:expand-pathname file) :delimiter delimiter)))
@@ -286,6 +285,11 @@
 (defmacro with-time (&body body)
   "Execute BODY then return timing information."
   `(time (progn ,@body (values))))
+
+(defmacro with-profiling (&body body)
+  "Run the profiler with BODY."
+  #+sbcl
+  `(sb-sprof:with-profiling (:report :graph :show-progress t) ,@body))
 
 (defun system-relative-pathname (system filename)
   "Return a pathname relative to SYSTEM and FILENAME."

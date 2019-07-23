@@ -116,9 +116,9 @@
 
 (defgeneric fields-values (object &key &allow-other-keys)
   (:documentation "Return the values contained inside ENTRY.")
-  (:method ((e entry) &key deblob)
+  (:method ((e entry) &key expand)
     (mapcar #'(lambda (field)
-                (if deblob
+                (if expand
                     (if (blobp (value field)) (source (value field)) (value field))
                     (value field)))
             (fields e)))

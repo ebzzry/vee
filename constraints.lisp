@@ -2,6 +2,12 @@
 
 (in-package #:muso/core)
 
+(defun point (origin volume)
+  "Return starting point based on the type of origin."
+  (etypecase origin
+    (function (funcall origin volume))
+    (entry origin)))
+
 (defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
   "Return records from VOLUME starting from record ORIGIN applying FN to each record."
   (when (linkedp volume)
@@ -106,10 +112,9 @@ returns entries from VOLUME wherein the 'country' and 'gender' fields are the sa
 
 This generic function is mainly used for matching against data that is already inside a registry.
 ")
-  (:method ((v volume) (e entry) constraints
-            &key (origin #'volume-start)
-                 (test *field-test*)
-                 entry-exclusive)
+  (:method ((v volume) (e entry) constraints &key (origin #'volume-start)
+                                                  (test *field-test*)
+                                                  entry-exclusive)
     (when (linkedp v)
       (let ((records (walk-down v :origin origin
                                   :skip #'(lambda (rec)
@@ -117,11 +122,10 @@ This generic function is mainly used for matching against data that is already i
         (loop :for record :in records
               :when (everyp e record constraints :test test)
               :collect record))))
-  (:method ((r registry) (e entry) constraints
-            &key (origin #'volume-start)
-                 (test *field-test*)
-                 volume-exclusive
-                 entry-exclusive)
+  (:method ((r registry) (e entry) constraints &key (origin #'volume-start)
+                                                    (test *field-test*)
+                                                    volume-exclusive
+                                                    entry-exclusive)
     (let ((volumes (if volume-exclusive
                        (find-other-volumes (find-volume (vid e) r) r)
                        (find-volumes r))))
@@ -306,24 +310,27 @@ This generic function is mainly used for matching againstn data that is provided
   (loop :for term :in terms
         :collect (if (headp term volume) term (strip-meta-char term))))
 
-;;; Note: can :ORIGIN be used here?
+(defun dispatch-operators (volume operators)
+  "Process the operators on VOLUME, handling ! and @ meta characters."
+  (lparallel:pmapc #'(lambda (operator)
+                       (cond ((string-end-p operator #\!)
+                              (blob-convert-fields volume (strip-end-char operator)))
+                             ((string-end-p operator #\@)
+                              (volume-convert-fields volume (strip-end-char operator)))
+                             (t nil)))
+                   operators))
+
 (defun find-duplicates (volume terms)
   "Return a list of entries that have similar properties according to TERMS, where each term is either a constraint or a string that constains a meta-character that indicates additional operations to be done beforehand."
   (let ((operators (collect-operators terms volume))
         (constraints (flatten-constraints terms volume)))
-    (lparallel:pmapc #'(lambda (operator)
-                         (cond ((string-end-p operator #\!)
-                                (blob-convert-fields volume (strip-end-char operator)))
-                               ((string-end-p operator #\@)
-                                (print "@")
-                                (volume-convert-fields volume (strip-end-char operator)))
-                               (t nil)))
-                     operators)
-    (let ((results (lparallel:pmapcan #'(lambda (entry)
-                                          (find-similar-entries volume entry constraints
-                                                                :entry-exclusive t))
-                                      (walk-down volume :skip #'unitp))))
-      (remove-duplicates (lparallel:premove nil results)))))
+    (dispatch-operators volume operators)
+    (let ((results (loop :for entry :in (walk-down volume :skip #'unitp)
+                         :for offset = (volume-start volume) :then (next offset)
+                         :while offset
+                         :nconc (find-similar-entries volume entry constraints
+                                                      :origin offset :entry-exclusive t))))
+      (remove-duplicates results))))
 
 (defun blobp (object)
   "Return true if OBJECT is a BLOB."
@@ -358,10 +365,7 @@ This generic function is mainly used for matching againstn data that is provided
 (defun expunge-duplicates (volume terms)
   "Remove duplicate entries in VOLUME under TERMS."
   (let ((duplicates (with-levenshtein (find-duplicates volume terms)))
-        ;; (duplicates (find-duplicates volume terms))
         (registry (find-registry (rid volume))))
-    ;; (loop :for entry :in duplicates
-    ;;       :do (banish entry registry))
     (lparallel:pmapc #'(lambda (entry) (banish entry registry))
                      duplicates)))
 
@@ -379,4 +383,4 @@ This generic function is mainly used for matching againstn data that is provided
                          :if-does-not-exist :create)
       (format out "~&~{~S~^,~}" (header volume))
       (loop :for entry :in (walk-down volume :skip #'unitp)
-            :do (format out "~&~{~S~^,~}" (fields-values entry :deblob t))))))
+            :do (format out "~&~{~S~^,~}" (fields-values entry :expand t))))))
