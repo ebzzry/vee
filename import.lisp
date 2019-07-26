@@ -42,19 +42,26 @@
   "Split a field into components."
   (normalize-words (split-text (value field) regex)))
 
-(defun make-feed (field)
+(defun make-feed (field &key transform)
   "Create a feed from the text value stored in FIELD using predefined rules."
-  (let ((items (filter-text (value field))))
-    (mapcar #'list items)))
+  (if transform
+      (mapcar #'list (filter-text (value field)))
+      (mapcar #'list (split-text (value field)))))
 
 (defun import-field (field &key (volume-name (make-volume-name))
                                 registry-name
                                 header
+                                transform
                                 (return 'REGISTRY))
   "Import a single FIELD to a new volume VOLUME-NAME and registry REGISTRY-NAME."
   (when (stringp (value field))
-    (import-feed (make-feed field)
+    (import-feed (make-feed field :transform transform)
                  :volume-name volume-name
                  :registry-name registry-name
                  :header header
                  :return return)))
+
+(defun field-text (entry constraints)
+  "Return processed text from ENTRY under CONSTRAINTS."
+  (let ((text (value (first (apply-constraints entry constraints)))))
+    (split-text text "\\s+")))

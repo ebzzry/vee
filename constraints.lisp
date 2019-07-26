@@ -202,6 +202,11 @@ This generic function is mainly used for matching againstn data that is provided
             (setf (gethash constraints (matches entry)) matches)
             (setf origin (next (first (gethash constraints (matches entry)))))))))))
 
+(defun bind-volumes-mutually (volume-1 volume-2 constraints)
+  "Bind VOLUME-1 and VOLUME-2 to each other under CONSTRAINTS."
+  (bind-volumes volume-1 volume-2 constraints)
+  (bind-volumes volume-2 volume-1 constraints))
+
 (defun bind-volume-registry (volume registry constraints &rest args)
   "Bind VOLUME to the other volumes in REGISTRY. If there is only one volume inside a registry the volume will only be bound to itself."
   (loop :for entry :in (walk-down volume :skip #'unitp)
@@ -240,7 +245,7 @@ This generic function is mainly used for matching againstn data that is provided
   (:method ((e entry) (i integer) (v volume))
     (setf (value (nth i (fields e))) v)))
 
-(defun volume-convert-fields (volume constraints)
+(defun volume-convert-fields (volume constraints &key transform)
   "Replace the fields in VOLUME specified by CONSTRAINT, to VOLUME objects."
   (let ((registry-name (mof:cat (name (find-registry (rid volume)))
                                 (genstring "/")))
@@ -250,6 +255,7 @@ This generic function is mainly used for matching againstn data that is provided
                     :for field = (first (apply-constraints entry constraint))
                     :for volume = (import-field field :registry-name registry-name
                                                       :header '("element")
+                                                      :transform transform
                                                       :return 'volume)
                     :when volume
                     :do (volume-convert-field entry constraint volume)))))

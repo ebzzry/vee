@@ -40,14 +40,20 @@
       (dump-registries))
     (values)))
 
-(defun dump-volume (volume &key complete)
+(defun dump-volume (volume &key complete (constraint '(0)))
   "Print information about VOLUME."
   (let ((registry (find-registry (rid volume))))
     (with-slots (rid vid name table prev next) volume
       (if complete
           (loop :for k :being :the :hash-keys :in (table volume)
                 :for entry = (find-record k registry)
-                :do (format t "~&~A => ~S~%" k (fields-values entry)))
+                :do (let ((match (first (gethash '(0) (matches entry))))
+                          (values (fields-values (first (gethash constraint (matches entry))))))
+                      (if match
+                          (format t "~&~5A => ~20S = ~5A => ~20S ~%" k (fields-values entry)
+                                  (id match)
+                                  values)
+                          (format t "~&~A => ~S~%" k (fields-values entry)))))
           (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
                   rid vid name table prev next))
       (values))))
