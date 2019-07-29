@@ -385,11 +385,11 @@ This generic function is mainly used for matching againstn data that is provided
     (loop :for entry :in (walk-down volume :skip #'unitp)
           :do (format out "~&~{~S~^,~}" (fields-values entry :expand expand)))))
 
-(defun filter-file (infile outfile terms)
+(defun filter-csv-file (infile outfile terms)
   "Remove duplicates in INFILE under TERMS then save the changes to OUTFILE."
   (let* ((volume-name (basename infile))
          (registry-name (basedir infile))
-         (volume (import-file infile :extract-header t
+         (volume (import-csv-file infile :extract-header t
                                      :volume-name volume-name
                                      :registry-name registry-name)))
     (expunge-duplicates volume terms)

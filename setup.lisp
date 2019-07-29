@@ -2,13 +2,13 @@
 
 (in-package #:muso/core)
 
-(defmacro defselectors (limit)
-  "Define selectors."
+(defmacro defselectors (prefix count)
+  "Define list selectors prefixed with PREFIX that will act as sequence accessors."
   `(progn
-     ,@(loop :for n :from 0 :to limit
-             :for name = (read-from-string (mof:cat "elt" (write-to-string n)))
+     ,@(loop :for n :from 0 :to count
+             :for name = (read-from-string (mof:cat prefix (write-to-string n)))
              :collect `(defun ,name (list) (elt list ,n)))))
-(defselectors 100)
+(defselectors "elt" 100)
 
 (defun string-equal-p (string-1 string-2)
   "Return true if STRING-1 and STRING-2 are equal either by strict strict matching or by Levenshtein distance."

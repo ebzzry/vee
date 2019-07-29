@@ -3,8 +3,8 @@
 (in-package #:muso/core)
 
 (defun slurp-file (path)
-  "Read entire file as lines."
-  (uiop:read-file-lines path))
+  "Read entire file as string."
+  (uiop:read-file-string path))
 
 (defun file-string (path)
   "Read entire file as byte sequence."

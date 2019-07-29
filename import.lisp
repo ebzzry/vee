@@ -16,11 +16,11 @@
       ((volume) volume)
       ((registry) registry))))
 
-(defun import-file (path &key (volume-name (basename path))
-                              (registry-name (basedir path))
-                              (delimiter *default-delimiter*)
-                              extract-header
-                              header)
+(defun import-csv-file (path &key (volume-name (basename path))
+                                  (registry-name (basedir path))
+                                  (delimiter *default-delimiter*)
+                                  extract-header
+                                  header)
   "Import a disk file into the registry."
   (let* ((file (mof:expand-pathname path))
          (feed (read-file file :delimiter delimiter))
@@ -65,3 +65,25 @@
   "Return processed text from ENTRY under CONSTRAINTS."
   (let ((text (value (first (apply-constraints entry constraints)))))
     (split-text text "\\s+")))
+
+(defun import-flat-file (path &key (volume-name (basename path))
+                                   (registry-name (basedir path))
+                                   (header '("element")))
+  "Import a plain text file containing prose text into the registry."
+  (let* ((data (slurp-file path))
+         (items (split-text data))
+         (feed (mapcar #'list items))
+         (registry (find-registry registry-name))
+         (name (if (find-volume volume-name registry)
+                   (make-volume-name)
+                   volume-name)))
+    (import-feed feed :volume-name name :registry-name registry-name :header header)
+    (find-volume name (find-registry registry-name))))
+
+(defun filter-flat-file ()
+  "Perform filtering on plain file."
+  nil)
+
+(defun stats ()
+  ""
+  nil)

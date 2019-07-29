@@ -9,7 +9,7 @@
 
 (defsystem :muso
   :name "muso"
-  :version "0.0.1"
+  :version "0.0.2"
   :description ""
   :license ""
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"

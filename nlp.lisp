@@ -8,6 +8,9 @@
 (defvar *levenshtein-threshold* 1
   "The maximum Levenstein distance to use.")
 
+(defvar *mem-dict* nil
+  "The memory dictionary to use for lemmatization.")
+
 (defun levenshtein (a b)
   "Return the Levenshtein distance between A and B."
   (let* ((la (length a))
@@ -36,19 +39,16 @@
   `(let ((*levenshtein* t))
      (progn ,@body)))
 
-(defvar *mem-dict* nil
-  "The memory dictionary to use for lemmatization.")
-
 (defun initialize-dictionary ()
   "Set an appropriate value for the lemmatization dictionary."
   (setf *mem-dict* (nlp.lexics:load-mem-dict (nlp.util:lang-file :en "wikt-dict.txt"))))
 
 (defun stem-word (word)
-  "Return a stemmed version of WORD."
+  "Return the stemmed version of WORD."
   (nlp.lexics:stem nlp.lexics:<porter-stemmer> word))
 
 (defun lemmatize-word (word)
-  "Return a lemmatized version of WORD."
+  "Return the lemmatized version of WORD."
   (nlp.lexics:lemmatize *mem-dict* word))
 
 (defun normalize-word (word)

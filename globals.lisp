@@ -12,7 +12,7 @@
   "The amount of lines forward to join.")
 
 (defvar *pad* nil
-  "Padding data for items.")
+  "The default padding data for items.")
 
 (defvar *similarity-threshold* 40.0
   "The minimum amount of similarity between sets so that they can be considered similar.")
