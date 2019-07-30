@@ -414,15 +414,16 @@ This generic function is mainly used for matching againstn data that is provided
         :do (loop :for entry :in (rest matches) :do (unbury entry))))
 
 (defun make-bow (text)
-  "Return a BOW object."
+  "Return a BOW object from TEXT, creating and deleting temporary stores."
   (let* ((bow (make-instance 'bow :source text))
          (volume (import-flat-text text))
          (registry (find-registry (rid volume))))
     (bind-self volume)
     (bury-duplicates volume)
-    (loop :for entry :in (walk-down volume :skip #'unitp)
-          :do (setf (gethash (first (fields-values entry)) (table bow))
-                    (length (gethash '(0) (matches entry)))))
+    (lparallel:pmapc #'(lambda (entry)
+                         (setf (gethash (first (fields-values entry)) (table bow))
+                               (length (gethash '(0) (matches entry)))))
+                     (walk-down volume :skip #'unitp))
     (delete-volume volume registry)
     (delete-registry registry)
     bow))
@@ -432,3 +433,14 @@ This generic function is mainly used for matching againstn data that is provided
   (maphash #'(lambda (k v)
                (format t "~&~10S => ~S" k v ))
            (table bow)))
+
+(defun bow-get (entry bow)
+  "Retrieve BOW count from BOW under ENTRY."
+  (gethash entry (table bow)))
+
+(defun bow-count (item text)
+  "Retrieve the number of times ITEM appears in TEXT."
+  (let ((count (bow-get item (make-bow text))))
+    (if count
+        count
+        0)))
