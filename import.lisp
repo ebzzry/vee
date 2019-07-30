@@ -84,6 +84,39 @@
   "Perform filtering on plain file."
   nil)
 
+(defvar *punctuations* '(#\. #\? #\! #\, #\: #\;)
+  "List of common punctuations marks.")
+
+(defun depunctuate (string)
+  "Remove trailing punctuation mark from string."
+  (let* ((length (length string))
+         (last (aref string (- length 1))))
+    (if (member last *punctuations*)
+        (subseq string 0 (- length 1))
+        string)))
+
+(defun depunctuate-strings (strings)
+  "Remove trailing punctuation marks from strings."
+  (mapcar #'depunctuate strings))
+
+(defun filter-flat-text (text &optional (regex "\\s+"))
+  "Run TEXT through a pre-defined filter."
+  (sort (mapcar #'string-downcase (depunctuate-strings (split-text text regex)))
+        #'string<))
+
+(defun import-flat-text (text &key volume-name
+                                   registry-name
+                                   (header '("element")))
+  "Import a plain text containing prose text into the registry."
+  (let* ((items (filter-flat-text text))
+         (feed (mapcar #'list items))
+         (registry (or (find-registry registry-name) (build-registry)))
+         (rname (name registry))
+         (vname (handler-case (find-volume volume-name registry)
+                  (error () (make-volume-name)))))
+    (import-feed feed :volume-name vname :registry-name rname :header header)
+    (find-volume vname (find-registry rname))))
+
 (defun stats ()
   ""
   nil)

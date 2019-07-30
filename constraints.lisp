@@ -202,6 +202,10 @@ This generic function is mainly used for matching againstn data that is provided
             (setf (gethash constraints (matches entry)) matches)
             (setf origin (next (first (gethash constraints (matches entry)))))))))))
 
+(defun bind-self (volume &key (constraints '(0)))
+  "Bind VOLUME to itself."
+  (bind-volumes volume volume constraints))
+
 (defun bind-volumes-mutually (volume-1 volume-2 constraints)
   "Bind VOLUME-1 and VOLUME-2 to each other under CONSTRAINTS."
   (bind-volumes volume-1 volume-2 constraints)
@@ -394,3 +398,37 @@ This generic function is mainly used for matching againstn data that is provided
                                      :registry-name registry-name)))
     (expunge-duplicates volume terms)
     (write-file volume outfile :expand t)))
+
+(defun bury-duplicates (volume)
+  "Bury the duplicate entries found in VOLUME."
+  (loop :for entry :in (walk-down volume :skip #'unitp)
+        :for matches = (gethash '(0) (matches entry))
+        :when (> (length matches) 1)
+        :do (loop :for entry :in (rest matches) :do (bury entry))))
+
+(defun unbury-duplicates (volume)
+  "Unbury the duplicate entries found in VOLUME."
+  (loop :for entry :in (walk-down volume :skip #'unitp)
+        :for matches = (gethash '(0) (matches entry))
+        :when (> (length matches) 1)
+        :do (loop :for entry :in (rest matches) :do (unbury entry))))
+
+(defun make-bow (text)
+  "Return a BOW object."
+  (let* ((bow (make-instance 'bow :source text))
+         (volume (import-flat-text text))
+         (registry (find-registry (rid volume))))
+    (bind-self volume)
+    (bury-duplicates volume)
+    (loop :for entry :in (walk-down volume :skip #'unitp)
+          :do (setf (gethash (first (fields-values entry)) (table bow))
+                    (length (gethash '(0) (matches entry)))))
+    (delete-volume volume registry)
+    (delete-registry registry)
+    bow))
+
+(defun dump-bow (bow)
+  "Print information about a BOW."
+  (maphash #'(lambda (k v)
+               (format t "~&~10S => ~S" k v ))
+           (table bow)))

@@ -453,3 +453,21 @@
 (defun registryp (object)
   "Return true if OBJECT is a registry."
   (typep object 'registry))
+
+(defgeneric delete-volume (volume registry)
+  (:documentation "Delete VOLUME in REGISTRY.")
+  (:method ((vid integer) (r registry))
+    (remhash vid (vtable r)))
+  (:method ((vname string) (r registry))
+    (delete-volume (vid (find-volume vname r)) r))
+  (:method ((v volume) (r registry))
+    (delete-volume (vid v) r)))
+
+(defgeneric delete-registry (registry)
+  (:documentation "Delete REGISTRY in world.")
+  (:method ((rid integer))
+    (remhash rid (rtable *world*)))
+  (:method ((rname string))
+    (delete-registry (rid (find-registry rname))))
+  (:method ((r registry))
+    (delete-registry (rid (find-registry r)))))

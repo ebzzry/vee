@@ -201,3 +201,14 @@
            :accessor source
            :documentation "The original raw text of a field"))
   (:documentation "The summary of a text body"))
+
+(defclass bow ()
+  ((source :initarg :source
+           :initform nil
+           :accessor source
+           :documentation "The original raw text of the input.")
+   (table :initarg :table
+          :initform (make-hash-table :test #'equal)
+          :accessor table
+          :documentation "Table for bag-of-words, wherein the key is a word and the value is the occurence count."))
+  (:documentation "Information about a text passage and its corresponding bag-of-words."))

@@ -77,3 +77,8 @@
       (format t "~&~{~A~^~%~}" (find-volumes (find-registry registry)))
       (loop :for registry :in (find-registries)
             :do (list-volumes registry))))
+
+(defun list-stores ()
+  "List all the registries and volumes."
+  (list-registries)
+  (list-volumes))
