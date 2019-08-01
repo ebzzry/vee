@@ -1,6 +1,6 @@
 ;;;; void.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defun void-name (template)
   "Return the void name of TEMPLATE."

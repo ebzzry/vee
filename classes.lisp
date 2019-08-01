@@ -1,6 +1,6 @@
 ;;;; classes.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defclass world ()
   ((rcounter :initarg :rcounter

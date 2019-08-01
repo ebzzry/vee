@@ -1,6 +1,6 @@
 ;;;; clos.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defmethod initialize-instance :after ((e entry) &key registry)
   "Initialize entry E in REGISTRY."

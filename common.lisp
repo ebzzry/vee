@@ -1,6 +1,6 @@
 ;;;; common.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defun slurp-file (path)
   "Read entire file as string."

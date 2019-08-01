@@ -1,6 +1,6 @@
 ;;;; setup.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defmacro defselectors (prefix count)
   "Define list selectors prefixed with PREFIX that will act as sequence accessors."

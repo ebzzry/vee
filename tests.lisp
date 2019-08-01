@@ -1,6 +1,6 @@
 ;;;; tests.lisp
 
-(in-package #:muso/tests)
+(in-package #:ujo/tests)
 
 (defun run-tests ()
   "Run the tests"

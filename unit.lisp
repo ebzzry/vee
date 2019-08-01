@@ -1,6 +1,6 @@
 ;;;; unit.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."

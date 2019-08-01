@@ -1,6 +1,6 @@
 ;;;; initialize.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (initialize-lparallel)
 (initialize-dictionary)

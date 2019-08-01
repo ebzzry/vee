@@ -1,6 +1,6 @@
 ;;;; nlp.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defvar *levenshtein* nil
   "Whether to use the Levenshtein distance algorithm for computing string similarity.")

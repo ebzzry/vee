@@ -1,6 +1,6 @@
 ;;;; globals.lisp
 
-(in-package #:muso/core)
+(in-package #:ujo/core)
 
 (defvar *default-delimiter* #\,
   "The default delimiter used to separate fields.")

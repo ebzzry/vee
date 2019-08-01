@@ -1,14 +1,14 @@
-;;;; muso.asd
+;;;; ujo.asd
 
 #-asdf3.1 (error "ASDF 3.1 or bust!")
 
-(defpackage #:muso-system
+(defpackage #:ujo-system
   (:use #:cl #:asdf))
 
-(in-package #:muso-system)
+(in-package #:ujo-system)
 
-(defsystem :muso
-  :name "muso"
+(defsystem :ujo
+  :name "ujo"
   :version "0.0.2"
   :description ""
   :license ""

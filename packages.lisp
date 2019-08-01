@@ -2,12 +2,12 @@
 
 (in-package #:cl-user)
 
-(uiop:define-package #:muso/core
+(uiop:define-package #:ujo/core
     (:use #:cl)
-  (:nicknames #:muso)
+  (:nicknames #:ujo)
   (:export #:import-csv-file
            #:filter-csv-file))
 
-(uiop:define-package #:muso/tests
+(uiop:define-package #:ujo/tests
     (:use #:cl
-          #:muso/core))
+          #:ujo/core))
