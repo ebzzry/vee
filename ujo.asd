@@ -10,8 +10,7 @@
 (defsystem :ujo
   :name "ujo"
   :version "0.0.2"
-  :description ""
-  :license ""
+  :license "MIT"
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
   :depends-on (#:uiop
                #:cl-ppcre
@@ -20,8 +19,7 @@
                #:mof
                #:closer-mop
                #:cl-cpus
-               #:lparallel
-               #:py4cl)
+               #:lparallel)
   :serial t
   :components ((:file "packages")
                (:file "globals")
