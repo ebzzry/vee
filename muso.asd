@@ -20,7 +20,8 @@
                #:mof
                #:closer-mop
                #:cl-cpus
-               #:lparallel)
+               #:lparallel
+               #:py4cl)
   :serial t
   :components ((:file "packages")
                (:file "globals")
