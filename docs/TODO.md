@@ -1,0 +1,87 @@
+TODO
+====
+
+
+NLP
+---
+
+- [x] Write word filters and transformers
+- [x] Separate stemming and lemmatization
+- [x] Implement bag-of-words using volumes and registries
+
+
+Contextualization
+-----------------
+
+- [x] Implement registry cloning
+- [x] Implement the constraints mechanism
+- [x] Implement volume and registry cleanups
+
+
+Bridge
+------
+
+- [x] Explore options for connecting Lisp to Python
+- [x] Write a simple Python bridge
+- [ ] Write a Python script to access the exported functions of ujo
+- [ ] Read and write XLSX files
+- [ ] Read and write JSON files
+
+
+Parallelism
+-----------
+
+- [x] Parallelize with bordeaux-threads and lparallel
+
+
+Comprehension
+-------------
+
+- [x] Implement linear mode
+- [x] Create a volume-friendly version of an arbitrary unstructured text
+- [x] Filter raw content into volume-friendly input
+- [ ] Extract URLs from feeds
+- [ ] Ingest arbitrary WWW article
+- [ ] Convert filtered content to volumes
+- [ ] Use Drakma for HTTP connections
+
+
+Model
+-----
+
+- [x] Design the registry system
+- [x] Implement light traversal
+- [x] Write feed importation
+- [x] Write displayer and locaters
+- [x] Implement registry wall copying
+- [x] Generalize spawners
+- [x] Factor out counter generators
+- [x] Define methods for auto updating of counters
+
+
+Void
+----
+
+- [x] Implement banish operations
+- [x] Implement bury operations
+- [x] Implement void registries
+
+
+Propagation
+-----------
+
+- [x] Implement match clustering
+- [x] Implement volume walking
+- [x] Implement units and unit linking
+- [ ] Implement propagation
+
+
+Miscellany
+----------
+
+- [x] Reimplement/ditch the walker
+- [x] Design the inheritence of the classes
+- [x] Implement inter-registry traversal
+- [x] Handle arbitrary delimiters
+- [x] Handle arbitrary amount of volumes
+- [ ] Use Wordnet to be able to connect “dogs” and “puppies”
