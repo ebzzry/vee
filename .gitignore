@@ -25,5 +25,5 @@
 
 *~
 
-#src/examples.lisp
+src/examples.lisp
 src/unused.lisp
