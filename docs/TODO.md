@@ -11,12 +11,6 @@ Text
 - [ ] Implement n-gram extraction
 
 
-Discovery
----------
-
-- [ ] 
-
-
 NLP
 ---
 

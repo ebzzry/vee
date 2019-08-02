@@ -36,5 +36,6 @@
                (:file "src/constraints")
                (:file "src/matching")
                (:file "src/import")
+               (:file "src/writers")
                (:file "src/initialize")
                (:file "src/tests")))

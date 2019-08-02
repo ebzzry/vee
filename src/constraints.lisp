@@ -224,22 +224,3 @@ This generic function is mainly used for matching againstn data that is provided
     (lparallel:pmapc #'(lambda (entry) (banish entry registry))
                      duplicates)))
 
-(defun write-file (volume file &key expand)
-  "Print the contents of VOLUME to FILE. If EXPAND is true, blobs and volumes will expand to their original forms."
-  (with-open-file (out (mof:expand-pathname file)
-                       :direction :output
-                       :if-exists :supersede
-                       :if-does-not-exist :create)
-    (format out "~&~{~S~^,~}" (header volume))
-    (loop :for entry :in (walk-down volume :skip #'unitp)
-          :do (format out "~&~{~S~^,~}" (fields-values entry :expand expand)))))
-
-(defun filter-csv-file (infile outfile terms)
-  "Remove duplicates in INFILE under TERMS then save the changes to OUTFILE."
-  (let* ((volume-name (basename infile))
-         (registry-name (basedir infile))
-         (volume (import-csv-file infile :extract-header t
-                                     :volume-name volume-name
-                                     :registry-name registry-name)))
-    (expunge-duplicates volume terms)
-    (write-file volume outfile :expand t)))
