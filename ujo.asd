@@ -34,6 +34,7 @@
                (:file "src/void")
                (:file "src/unit")
                (:file "src/constraints")
+               (:file "src/matching")
                (:file "src/import")
                (:file "src/initialize")
                (:file "src/tests")))

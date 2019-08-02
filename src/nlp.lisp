@@ -58,36 +58,6 @@
         :when (> (length matches) 1)
         :do (loop :for entry :in (rest matches) :do (bury entry))))
 
-(defun blobp (object)
-  "Return true if OBJECT is a BLOB."
-  (when (typep object 'blob)
-    t))
-
-(defun make-blob (field)
-  "Return a BLOB instance from field data."
-  (if (blobp (value field))
-      (value field)
-      (let ((text (filter-text (value field))))
-        (make-instance 'blob :fid (id field) :value text :source (value field)))))
-
-(defun blob-convert-fields (volume constraints)
-  "Replace the fields in VOLUME specified by CONSTRAINT, to BLOB objects."
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :do (loop :for entry :in (walk-down volume :skip #'unitp)
-                    :for field = (first (apply-constraints entry constraint))
-                    :for value = (value field)
-                    :do (setf (value field) (make-blob field))))))
-
-(defun blob-equal-p (field-1 field-2 &key (test #'string-equal))
-  "Return true if two BLOB objects are considered equal to one another, by computing its Jaccard similarity."
-  (let ((value-1 (value field-1))
-        (value-2 (value field-2)))
-    (>= (float (* (/ (length (intersection value-1 value-2 :test test))
-                     (length (union value-1 value-2 :test test)))
-                  100))
-        *matching-threshold*)))
-
 (defun unbury-duplicates (volume)
   "Unbury the duplicate entries found in VOLUME."
   (loop :for entry :in (walk-down volume :skip #'unitp)
