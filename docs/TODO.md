@@ -2,12 +2,26 @@ TODO
 ====
 
 
+Discovery
+---------
+
+- [ ] 
+
+
+Text
+----
+
+- [x] Implement text similarity using Jaccard indexing
+- [ ] Implement text similarity using cosine similarity
+- [ ] Implement date matching
+
+
 NLP
 ---
 
 - [x] Write word filters and transformers
 - [x] Separate stemming and lemmatization
-- [x] Implement bag-of-words using volumes and registries
+- [x] Implement bag-of-words using stores
 
 
 Contextualization
@@ -57,6 +71,8 @@ Model
 - [x] Generalize spawners
 - [x] Factor out counter generators
 - [x] Define methods for auto updating of counters
+- [x] Implement volume deletion
+- [x] Implement registry deletion
 
 
 Void
@@ -73,7 +89,7 @@ Propagation
 - [x] Implement match clustering
 - [x] Implement volume walking
 - [x] Implement units and unit linking
-- [ ] Implement propagation
+- [ ] Implement linear propagation
 
 
 Miscellany

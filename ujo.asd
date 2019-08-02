@@ -11,6 +11,7 @@
   :name "ujo"
   :version "0.0.2"
   :license "MIT"
+  :description "An experimental graph system"
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
   :depends-on (#:uiop
                #:cl-ppcre
@@ -23,9 +24,9 @@
   :serial t
   :components ((:file "src/packages")
                (:file "src/globals")
+               (:file "src/classes")
                (:file "src/nlp")
                (:file "src/setup")
-               (:file "src/classes")
                (:file "src/common")
                (:file "src/world")
                (:file "src/clos")

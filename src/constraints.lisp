@@ -342,36 +342,6 @@ This generic function is mainly used for matching againstn data that is provided
                                                       :origin offset :entry-exclusive t))))
       (remove-duplicates results))))
 
-(defun blobp (object)
-  "Return true if OBJECT is a BLOB."
-  (when (typep object 'blob)
-    t))
-
-(defun make-blob (field)
-  "Return a BLOB instance from field data."
-  (if (blobp (value field))
-      (value field)
-      (let ((text (filter-text (value field))))
-        (make-instance 'blob :fid (id field) :value text :source (value field)))))
-
-(defun blob-convert-fields (volume constraints)
-  "Replace the fields in VOLUME specified by CONSTRAINT, to BLOB objects."
-  (let ((constraints (ensure-list constraints)))
-    (loop :for constraint :in constraints
-          :do (loop :for entry :in (walk-down volume :skip #'unitp)
-                    :for field = (first (apply-constraints entry constraint))
-                    :for value = (value field)
-                    :do (setf (value field) (make-blob field))))))
-
-(defun blob-equal-p (field-1 field-2 &key (test #'string-equal))
-  "Return true if two BLOB objects are considered equal to one another."
-  (let ((value-1 (value field-1))
-        (value-2 (value field-2)))
-    (>= (float (* (/ (length (intersection value-1 value-2 :test test))
-                     (length (union value-1 value-2 :test test)))
-                  100))
-        *matching-threshold*)))
-
 (defun expunge-duplicates (volume terms)
   "Remove duplicate entries in VOLUME under TERMS, creating void registries as necessary."
   (let ((duplicates (with-levenshtein (find-duplicates volume terms)))
@@ -398,49 +368,3 @@ This generic function is mainly used for matching againstn data that is provided
                                      :registry-name registry-name)))
     (expunge-duplicates volume terms)
     (write-file volume outfile :expand t)))
-
-(defun bury-duplicates (volume)
-  "Bury the duplicate entries found in VOLUME."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :for matches = (gethash '(0) (matches entry))
-        :when (> (length matches) 1)
-        :do (loop :for entry :in (rest matches) :do (bury entry))))
-
-(defun unbury-duplicates (volume)
-  "Unbury the duplicate entries found in VOLUME."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :for matches = (gethash '(0) (matches entry))
-        :when (> (length matches) 1)
-        :do (loop :for entry :in (rest matches) :do (unbury entry))))
-
-(defun make-bow (text)
-  "Return a BOW object from TEXT, creating and deleting temporary stores."
-  (let* ((bow (make-instance 'bow :source text))
-         (volume (import-flat-text text))
-         (registry (find-registry (rid volume))))
-    (bind-self volume)
-    (bury-duplicates volume)
-    (lparallel:pmapc #'(lambda (entry)
-                         (setf (gethash (first (fields-values entry)) (table bow))
-                               (length (gethash '(0) (matches entry)))))
-                     (walk-down volume :skip #'unitp))
-    (delete-volume volume registry)
-    (delete-registry registry)
-    bow))
-
-(defun dump-bow (bow)
-  "Print information about a BOW."
-  (maphash #'(lambda (k v)
-               (format t "~&~10S => ~S" k v ))
-           (table bow)))
-
-(defun bow-get (entry bow)
-  "Retrieve BOW count from BOW under ENTRY."
-  (gethash entry (table bow)))
-
-(defun bow-count (item text)
-  "Retrieve the number of times ITEM appears in TEXT."
-  (let ((count (bow-get item (make-bow text))))
-    (if count
-        count
-        0)))

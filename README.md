@@ -1,5 +1,5 @@
-Ujo
-===
+Ujo 🏺
+=====
 
 Ujo _(oo·yoh)_ is an experimental graph system written in Common Lisp.
 

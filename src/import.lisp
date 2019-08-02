@@ -117,6 +117,7 @@
     (import-feed feed :volume-name vname :registry-name rname :header header)
     (find-volume vname (find-registry rname))))
 
+;;; Note: display stats about the matches
 (defun stats ()
   ""
   nil)

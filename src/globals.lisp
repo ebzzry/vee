@@ -43,3 +43,12 @@
 
 (defvar *matching-threshold* 75.0
   "A percentage value of what is considered matching volumes.")
+
+(defvar *levenshtein* nil
+  "Whether to use the Levenshtein distance algorithm for computing string similarity.")
+
+(defvar *levenshtein-threshold* 1
+  "The maximum Levenstein distance to use.")
+
+(defvar *mem-dict* nil
+  "The memory dictionary to use for lemmatization.")
