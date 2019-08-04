@@ -97,13 +97,18 @@
         count
         0)))
 
-;;; Note: find ways to use BOW for phrasal similarity
+(defun make-n-gram (text size &key (regex "\\s+"))
+  "Build an n-gram sequence from TEXT, as collection of entry groups. SIZE is the size of the grouping, while REGEX is the separator between the items inside TEXT."
+  (let* ((volume (import-flat-text text :regex regex))
+         (registry (find-registry (rid volume))))
+    (prog1 (when (> size 0)
+             (let ((value (loop :for entry :in (walk-down volume :skip #'unitp)
+                                :collect (range entry size))))
+               (remove nil value)))
+      (delete-volume volume registry)
+      (delete-registry registry))))
 
-(defun chop (volume origin count)
-  "Return a section of VOLUME starting from ORIGIN that is COUNT length."
-  nil)
-
-;;; Note: approach using traditional algorithms
-;;; Note: approach using the stores
-(defun make-n-gram (items size)
-  nil)
+(defun make-n-gram-text (&rest args)
+  "Apply MAKE-N-GRAM to TEXT and return string groups."
+  (loop :for group :in (apply #'make-n-gram args)
+        :collect (mapcan #'fields-values group)))

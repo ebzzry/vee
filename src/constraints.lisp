@@ -15,19 +15,48 @@
           :while entry
           :collect (funcall fn entry))))
 
-(defun entry-limit-p (volume entry destination &key (test #'<=))
+(defun plus (entry count)
+  "Return a new entry based from ENTRY and AMOUNT based on volume addition."
+  (cond ((zerop count) entry)
+        (t (plus (next entry) (1- count)))))
+
+(defun range-0 (entry count)
+  "Return entries starting from ENTRY with COUNT steps."
+  (labels ((fn (entry count acc)
+               (if (null entry)
+                   (error "NULL encountered.")
+                   (cond
+                     ((zerop count) (nreverse acc))
+                     (t (fn (next entry) (1- count) (cons entry acc)))))))
+    (handler-case (fn entry count nil)
+      (error () nil))))
+
+(defun range (entry count)
+  "Return entries starting from ENTRY with COUNT steps."
+  (labels ((fn (entry count acc)
+               (cond ((zerop count) (nreverse acc))
+                     (t (fn (next entry) (1- count) (cons entry acc))))))
+    (let ((values (fn entry count nil)))
+      (unless (member nil values)
+        values))))
+
+(defun entry-limit-p (volume entry destination &key test)
   "Return true if ENTRY reached the limit of, or the concept of, DESTINATION."
   (and entry (etypecase destination
                (function (funcall test (id entry) (id (funcall destination volume))))
-               (entry (funcall test (id entry) (id destination))))))
+               (entry (funcall test (id entry) (id destination)))
+               (t nil))))
 
-(defun walk-down (volume &key (origin #'volume-start) (destination #'volume-end) (skip #'false))
+(defun walk-down (volume &key (origin #'volume-start)
+                           (destination #'volume-end)
+                           (skip #'false)
+                           (fn #'identity))
   "Return records from VOLUME starting from record ORIGIN applying FN to each record."
   (when (linkedp volume)
     (loop :for entry = (point origin volume) :then (next entry)
-          :while (entry-limit-p volume entry destination)
+          :while (entry-limit-p volume entry destination :test #'<=)
           :unless (funcall skip entry)
-          :collect entry)))
+          :collect (funcall fn entry))))
 
 (defun walk-left (volume)
   "Return records starting from VOLUME across all the other volumes, going left."

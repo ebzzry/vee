@@ -101,20 +101,17 @@
 
 (defun filter-flat-text (text &optional (regex "\\s+"))
   "Run TEXT through a pre-defined filter."
-  ;; (sort (mapcar #'string-downcase (depunctuate-strings (split-text text regex)))
-  ;;       #'string<)
   (depunctuate-strings (split-text text regex)))
 
 (defun import-flat-text (text &key volume-name
                                    registry-name
-                                   (header '("element")))
+                                   (header '("element"))
+                                   (regex "\\s+"))
   "Import a plain text containing prose text into the registry."
-  (let* ((items (filter-flat-text text))
+  (let* ((items (filter-flat-text text regex))
          (feed (mapcar #'list items))
          (registry (or (find-registry registry-name) (build-registry)))
          (rname (name registry))
-         ;; (vname (handler-case (find-volume volume-name registry)
-         ;;          (error () (make-volume-name))))
          (vname (or volume-name (make-volume-name))))
     (import-feed feed :volume-name vname :registry-name rname :header header)
     (find-volume vname (find-registry rname))))
