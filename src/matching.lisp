@@ -156,4 +156,3 @@
                      (length (union value-1 value-2 :test test)))
                   100))
         *matching-threshold*)))
-

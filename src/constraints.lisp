@@ -15,13 +15,19 @@
           :while entry
           :collect (funcall fn entry))))
 
-(defun walk-down (volume &key (origin #'volume-start) (fn #'identity) (skip #'false))
+(defun entry-limit-p (volume entry destination &key (test #'<=))
+  "Return true if ENTRY reached the limit of, or the concept of, DESTINATION."
+  (and entry (etypecase destination
+               (function (funcall test (id entry) (id (funcall destination volume))))
+               (entry (funcall test (id entry) (id destination))))))
+
+(defun walk-down (volume &key (origin #'volume-start) (destination #'volume-end) (skip #'false))
   "Return records from VOLUME starting from record ORIGIN applying FN to each record."
   (when (linkedp volume)
     (loop :for entry = (point origin volume) :then (next entry)
-          :while entry
+          :while (entry-limit-p volume entry destination)
           :unless (funcall skip entry)
-          :collect (funcall fn entry))))
+          :collect entry)))
 
 (defun walk-left (volume)
   "Return records starting from VOLUME across all the other volumes, going left."

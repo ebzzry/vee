@@ -1,5 +1,7 @@
 ;;;; writers.lisp
 
+(in-package #:ujo/core)
+
 (defun write-file (volume file &key expand)
   "Print the contents of VOLUME to FILE. If EXPAND is true, blobs and volumes will expand to their original forms."
   (with-open-file (out (mof:expand-pathname file)
@@ -15,7 +17,7 @@
   (let* ((volume-name (basename infile))
          (registry-name (basedir infile))
          (volume (import-csv-file infile :extract-header t
-                                     :volume-name volume-name
-                                     :registry-name registry-name)))
+                                         :volume-name volume-name
+                                         :registry-name registry-name)))
     (expunge-duplicates volume terms)
     (write-file volume outfile :expand t)))

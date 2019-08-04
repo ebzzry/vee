@@ -98,4 +98,12 @@
         0)))
 
 ;;; Note: find ways to use BOW for phrasal similarity
-;;; Note: implement n-grams?
+
+(defun chop (volume origin count)
+  "Return a section of VOLUME starting from ORIGIN that is COUNT length."
+  nil)
+
+;;; Note: approach using traditional algorithms
+;;; Note: approach using the stores
+(defun make-n-gram (items size)
+  nil)

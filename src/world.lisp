@@ -306,7 +306,9 @@
   (:method ((query t) (n null))
     nil)
   (:method ((v volume) (r registry))
-    v))
+    v)
+  (:method ((n null) (r registry))
+    nil))
 
 (defgeneric find-volumes (registry &key &allow-other-keys)
   (:documentation "Return all volumes from REGISTRY, except SKIP")

@@ -33,7 +33,7 @@
    (ucounter :initarg :ucounter
              :initform *initial-ucounter*
              :accessor ucounter
-             :documentation "The entry counter")
+             :documentation "The unit counter")
    (utable :initarg :utable
            :initform (make-hash-table)
            :accessor utable
