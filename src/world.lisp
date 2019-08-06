@@ -153,7 +153,8 @@
                       (equalize-lists (header volume) fields)
                     (loop :for h :in header
                           :for f :in fields
-                          :do (setf (head f) h))))
+                          :do (when (or (fieldp f) (not (mof:empty-string-p f)))
+                                (setf (head f) h)))))
                 (add-record field volume)))
     (link-fields fields)
     fields))
@@ -447,6 +448,10 @@
           :for volume = (find-volume query registry)
           :when volume
           :return (values volume registry))))
+
+(defun fieldp (object)
+  "Return true if OBJECT is a field."
+  (typep object 'field))
 
 (defun volumep (object)
   "Return true if OBJECT is a volume."

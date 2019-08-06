@@ -47,7 +47,8 @@
                                    (format nil "~A#~A" volume-name count))))
                      (import-feed feed :volume-name name
                                        :registry-name registry-name
-                                       :extract-header extract-header :header header)
+                                       :extract-header extract-header
+                                       :header header)
                      (find-volume name (find-registry registry-name))))))
 
 (defun filter-text (text &optional (regex "\\s+"))
