@@ -21,9 +21,9 @@
                                   (delimiter *default-delimiter*)
                                   extract-header
                                   header)
-  "Import a disk file into the registry."
+  "Import a CSV file into the world."
   (let* ((file (mof:expand-pathname path))
-         (feed (read-file file :delimiter delimiter))
+         (feed (read-csv-file file :delimiter delimiter))
          (registry (find-registry registry-name))
          (name (if (find-volume volume-name registry)
                    (make-volume-name)
@@ -31,6 +31,24 @@
     (import-feed feed :volume-name name :registry-name registry-name
                       :extract-header extract-header :header header)
     (find-volume name (find-registry registry-name))))
+
+(defun import-xlsx-file (path &key (volume-name (basename path))
+                                   (registry-name (basedir path))
+                                   extract-header
+                                   header)
+  "Import an XLSX file into the world."
+  (let* ((file (mof:expand-pathname path))
+         (feeds (read-xlsx-file file))
+         (registry (find-registry registry-name)))
+    (loop :for feed :in feeds
+          :for count :from 1 :to (length feeds)
+          :collect (let ((name (if (find-volume volume-name registry)
+                                   (make-volume-name)
+                                   (format nil "~A#~A" volume-name count))))
+                     (import-feed feed :volume-name name
+                                       :registry-name registry-name
+                                       :extract-header extract-header :header header)
+                     (find-volume name (find-registry registry-name))))))
 
 (defun filter-text (text &optional (regex "\\s+"))
   "Run TEXT through a pre-defined filter."

@@ -85,7 +85,7 @@ Miscellany
 Interface
 ---------
 
-- [ ] Read XLSX files
+- [x] Read XLSX files
 - [ ] Write XLSX files
 - [ ] Read JSON files
 - [ ] Write JSON files

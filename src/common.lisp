@@ -23,7 +23,7 @@
 
 (defun read-csv-file (file &key (delimiter *default-delimiter*))
   "Read CSV data from FILE."
-  (cl-csv:read-csv file :separator delimiter))
+  (fix-feed (cl-csv:read-csv (mof:expand-pathname file) :separator delimiter)))
 
 (defun read-csv-stream (stream &key (delimiter *default-delimiter*))
   "Read CSV data from STREAM."
@@ -33,6 +33,10 @@
   "Read CSV data from STRING."
   (with-input-from-string (s string)
     (apply #'read-csv-stream s args)))
+
+(defun read-xlsx-file (file)
+  "Read XLSX data from FILE, returning a list of data from the sheets."
+  (cl-xlsx:read-xlsx (mof:expand-pathname file)))
 
 (defun delimit (list)
   "Returns items in LIST as tab-separated values."
@@ -128,7 +132,7 @@
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
   (fix-feed (read-csv-file (mof:expand-pathname file) :delimiter delimiter)))
-(mof:defalias read-file read-feed-file)
+;; (mof:defalias read-file read-feed-file)
 
 (defun separators (string)
   "Return the separator used in STRING."
