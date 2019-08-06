@@ -21,7 +21,8 @@
                #:closer-mop
                #:cl-cpus
                #:lparallel
-               #:cl-xlsx)
+               #:cl-xlsx
+               #+sbcl #:sb-sprof)
   :serial t
   :components ((:file "packages")
                (:file "globals")
