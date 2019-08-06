@@ -33,8 +33,10 @@ Bridge
 - [x] Explore options for connecting Lisp to Python
 - [x] Write a simple Python bridge
 - [ ] Write a Python script to access the exported functions of ujo
-- [ ] Read and write XLSX files
-- [ ] Read and write JSON files
+- [ ] Read XLSX files
+- [ ] Write XLSX files
+- [ ] Read JSON files
+- [ ] Write JSON files
 
 
 Parallelism
