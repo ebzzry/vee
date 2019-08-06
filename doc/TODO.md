@@ -8,7 +8,7 @@ Text
 - [x] Implement text similarity using Jaccard indexing
 - [ ] Implement text similarity using cosine similarity
 - [ ] Implement date matching
-- [ ] Implement n-gram extraction
+- [x] Implement n-gram creation
 
 
 NLP

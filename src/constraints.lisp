@@ -20,25 +20,13 @@
   (cond ((zerop count) entry)
         (t (plus (next entry) (1- count)))))
 
-(defun range-0 (entry count)
-  "Return entries starting from ENTRY with COUNT steps."
-  (labels ((fn (entry count acc)
-               (if (null entry)
-                   (error "NULL encountered.")
-                   (cond
-                     ((zerop count) (nreverse acc))
-                     (t (fn (next entry) (1- count) (cons entry acc)))))))
-    (handler-case (fn entry count nil)
-      (error () nil))))
-
 (defun range (entry count)
   "Return entries starting from ENTRY with COUNT steps."
   (labels ((fn (entry count acc)
                (cond ((zerop count) (nreverse acc))
+                     ((null entry) nil)
                      (t (fn (next entry) (1- count) (cons entry acc))))))
-    (let ((values (fn entry count nil)))
-      (unless (member nil values)
-        values))))
+    (fn entry count nil)))
 
 (defun entry-limit-p (volume entry destination &key test)
   "Return true if ENTRY reached the limit of, or the concept of, DESTINATION."
