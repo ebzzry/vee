@@ -2,18 +2,13 @@ TODO
 ====
 
 
-Text
-----
-
-- [x] Implement text similarity using Jaccard indexing
-- [ ] Implement text similarity using cosine similarity
-- [ ] Implement date matching
-- [x] Implement n-gram creation
-
-
 NLP
 ---
 
+- [ ] Implement text similarity using cosine similarity
+- [ ] Implement date matching
+- [x] Implement text similarity using Jaccard indexing
+- [x] Implement n-gram creation
 - [x] Write word filters and transformers
 - [x] Separate stemming and lemmatization
 - [x] Implement bag-of-words using stores
@@ -27,18 +22,6 @@ Contextualization
 - [x] Implement volume and registry cleanups
 
 
-Bridge
-------
-
-- [x] Explore options for connecting Lisp to Python
-- [x] Write a simple Python bridge
-- [ ] Write a Python script to access the exported functions of ujo
-- [ ] Read XLSX files
-- [ ] Write XLSX files
-- [ ] Read JSON files
-- [ ] Write JSON files
-
-
 Parallelism
 -----------
 
@@ -48,13 +31,13 @@ Parallelism
 Comprehension
 -------------
 
-- [x] Implement linear mode
-- [x] Create a volume-friendly version of an arbitrary unstructured text
-- [x] Filter raw content into volume-friendly input
-- [ ] Extract URLs from feeds
+- [ ] Implement linear propagation
 - [ ] Ingest arbitrary WWW article
 - [ ] Convert filtered content to volumes
+- [ ] Extract URLs from feeds
 - [ ] Use Drakma for HTTP connections
+- [x] Create a volume-friendly version of an arbitrary unstructured text
+- [x] Filter raw content into volume-friendly input
 
 
 Model
@@ -86,7 +69,6 @@ Propagation
 - [x] Implement match clustering
 - [x] Implement volume walking
 - [x] Implement units and unit linking
-- [ ] Implement linear propagation
 
 
 Miscellany
@@ -98,3 +80,12 @@ Miscellany
 - [x] Handle arbitrary delimiters
 - [x] Handle arbitrary amount of volumes
 - [ ] Use Wordnet to be able to connect “dogs” and “puppies”
+
+
+Interface
+---------
+
+- [ ] Read XLSX files
+- [ ] Write XLSX files
+- [ ] Read JSON files
+- [ ] Write JSON files
