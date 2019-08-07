@@ -30,6 +30,74 @@
   `(let ((*levenshtein* t))
      (progn ,@body)))
 
+;; cosine similarity
+
+(defun magnitude (hash)
+  "Magnitude or `l2 norm` or a word hash vector (table bow)."
+  (let ((result 0))
+    (maphash (lambda (k v)
+	       (setq result (+ result (* v v))))
+	     hash)
+    (sqrt result)))
+
+(defun dot (hash1 hash2)
+  "Dot product of two word hash vectors (table bow)."
+  (let ((result 0))
+    (maphash (lambda (k v)
+	       (setq result (+ result (* v (gethash k hash2 0)))))
+	     hash1)
+    result))
+
+(defun cosine-similarity (hash1 has2)
+  "Cosine similary of two word hash vectors (table bow)."
+  (lparallel:plet ((product    (dot hash1 hash2))
+		   (magnitude1 (magnitude hash1))
+		   (magnitude2 (magnitude hash2)))
+    (/ product (* magnitude1 magnitude2))))
+
+(defun cosine-similarity-of-strings (string-1 string-2)
+  "Return cosine similarity of two strings."
+  (lparallel:pfuncall #'cosine-similarity
+		      (table (make-bow string-1))
+		      (table (make-bow string-2))))
+
+(defun cosine-similarity-of-bows (bow-1 bow-2)
+  "Return cosine similarity of two bows."
+  (lparallel:pfuncall #'cosine-similarity
+		      (table bow-1)
+		      (table bow-2)))
+
+;; euclidean-similarity
+
+(defun hash- (hash1 hash2)
+  "Give value/count difference between hash1 and has2."
+  (lparallel:plet ((in-h1-or-diff (maphash (lambda (k v)
+					     (- v (gethash k hash2 0)))
+					   hash1))
+		   (only-in-h2    (loop for k being the hash-keys in hash2
+					  using (hash-value v)
+					appending (if (gethash k hash1)
+						      nil
+						      (list (- v))))))
+    (append in-h1-or-diff only-in-h2)))
+
+(defun euclidean-similarity (hash1 hash2)
+  "Euclidean similarity between to hashes (table bow)."
+  (/ 1 (1+ (magnitude (hash- hash1 hash2)))))
+
+;; euclidean-cosine-similarity
+
+(defun euclidean-cosine-similarity (hash1 hash2)
+  "Geometric mean of euclidean and cosine similarity."
+  (lparallel:plet ((cos-sim (cosine-similarity hash1 hash2))
+		   (euc-sim (euclidean-similarity hash1 hash2)))
+    (sqrt (* cos-sim euc-sim))))
+
+
+
+
+
+
 (defun initialize-dictionary ()
   "Set an appropriate value for the lemmatization dictionary."
   (setf *mem-dict* (nlp.lexics:load-mem-dict (nlp.util:lang-file :en "wikt-dict.txt"))))
