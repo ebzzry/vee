@@ -10,14 +10,14 @@
              :collect `(defun ,name (list) (elt list ,n)))))
 (defselectors "elt" 100)
 
-(defun string-equal-p (string-1 string-2)
-  "Return true if STRING-1 and STRING-2 are equal either by strict strict matching or by Levenshtein distance."
-  (or (string-equal string-1 string-2)
+(defun string-equal-p (string1 string2)
+  "Return true if STRING1 and STRING2 are equal either by strict strict matching or by Levenshtein distance."
+  (or (string-equal string1 string2)
       (and *levenshtein*
-           (levenshtein-equal-p string-1 string-2))))
+           (levenshtein-equal-p string1 string2))))
 
 (defun field-equal-p (&rest args)
-  "Return true if OBJECT-1 and OBJECT-2 are equal to one another."
+  "Return true if OBJECT1 and OBJECT2 are equal to one another."
   (cond ((every #'stringp args) (apply #'string-equal-p args))
         ((every #'blobp args) (apply #'blob-matching-p args))
         ;; ((every #'volumep args) (apply #'simple-volume-matching-p args))

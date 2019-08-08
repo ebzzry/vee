@@ -65,13 +65,13 @@
           :while line
           :count line)))
 
-(defun max-feed (feed-1 feed-2)
-  "Return the bigger feed between FEED-1 and FEED-2."
-  (let ((size-1 (count-entries feed-1))
-        (size-2 (count-entries feed-2)))
-    (cond ((= size-1 size-2) feed-1)
-          ((> size-1 size-2) feed-1)
-          (t feed-2))))
+(defun max-feed (feed1 feed2)
+  "Return the bigger feed between FEED1 and FEED2."
+  (let ((size1 (count-entries feed1))
+        (size2 (count-entries feed2)))
+    (cond ((= size1 size2) feed1)
+          ((> size1 size2) feed1)
+          (t feed2))))
 
 (defun read-tsv-string (string)
   "Read a TSV string and return lists from it."
@@ -147,13 +147,13 @@
          (when val
            (zerop val)))))
 
-(defun map-append (fn sequence-1 sequence-2)
-  "Apply APPEND to the result of applying FN to sequence-1 and sequence-2."
-  (append (mapcar fn sequence-1) (mapcar fn sequence-2)))
+(defun map-append (fn sequence1 sequence2)
+  "Apply APPEND to the result of applying FN to sequence1 and sequence2."
+  (append (mapcar fn sequence1) (mapcar fn sequence2)))
 
-(defun map-nappend (fn sequence-1 sequence-2)
-  "Apply NCONC to the result of applying FN to sequence-1 and sequence-2."
-  (nconc (mapcar fn sequence-1) (mapcar fn sequence-2)))
+(defun map-nappend (fn sequence1 sequence2)
+  "Apply NCONC to the result of applying FN to sequence1 and sequence2."
+  (nconc (mapcar fn sequence1) (mapcar fn sequence2)))
 
 (defun genstring (string)
   "Return a GENSYM’d string."
@@ -208,17 +208,17 @@
   "Add NIL items in the start and end of LIST."
   (append (list nil) list (list nil)))
 
-(defun equalize-lists (list-1 list-2 &optional (padding ""))
-  "Make LIST-1 and LIST-2 of the same length by adding PADDING."
-  (let ((length-1 (length list-1))
-        (length-2 (length list-2)))
+(defun equalize-lists (list1 list2 &optional (padding ""))
+  "Make LIST1 and LIST2 of the same length by adding PADDING."
+  (let ((length1 (length list1))
+        (length2 (length list2)))
     (flet ((fn (x y)
              (make-list (- x y) :initial-element padding)))
-      (cond ((= length-1 length-2) (list list-1 list-2))
-            ((> length-1 length-2) (list list-1
-                                         (append list-2 (fn length-1 length-2))))
-            ((< length-1 length-2) (list (append list-1 (fn length-2 length-1))
-                                         list-2))))))
+      (cond ((= length1 length2) (list list1 list2))
+            ((> length1 length2) (list list1
+                                         (append list2 (fn length1 length2))))
+            ((< length1 length2) (list (append list1 (fn length2 length1))
+                                         list2))))))
 
 (defun function-integer-p (object)
   "Return true if OBJECT is either a function or integer."
