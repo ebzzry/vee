@@ -14,6 +14,14 @@ NLP
 - [x] Implement bag-of-words using stores
 
 
+Predictive analysis
+-------------------
+
+- [ ] Create probability submodels
+- [ ] Design symbolic model
+- [ ] Design statistical model
+
+
 Contextualization
 -----------------
 
