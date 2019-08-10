@@ -1,7 +1,7 @@
 Ujo 🏺
 =====
 
-Ujo (oo·yoh) is an experimental platform which borrows ideas frow knowledge
-graphs, databases, and frame networks.
+Ujo (oo·yoh) is an experimental platform for analysis and discovery. It borrows ideas frow knowledge
+graphs, databases, and frames.
 
 This is a work-in-progress (WIP).
