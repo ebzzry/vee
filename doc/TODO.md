@@ -9,6 +9,7 @@ Stores
 - [ ] Implement store overlays
 - [ ] Implement `+` and `-` operations on stores
 - [ ] Implement destructuring and reassembly of stores
+- [ ] Implement volume groups
 
 
 NLP
