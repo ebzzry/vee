@@ -2,6 +2,15 @@ TODO
 ====
 
 
+Stores
+------
+
+- [ ] Implement store layers
+- [ ] Implement store overlays
+- [ ] Implement `+` and `-` operations on stores
+- [ ] Implement destructuring and reassembly of stores
+
+
 NLP
 ---
 
