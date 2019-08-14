@@ -15,7 +15,7 @@ Stores
 NLP
 ---
 
-- [ ] Implement text similarity using cosine similarity
+- [x] Implement text similarity using cosine similarity
 - [ ] Implement date matching
 - [x] Implement text similarity using Jaccard indexing
 - [x] Implement n-gram creation
