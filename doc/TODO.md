@@ -35,6 +35,7 @@ Predictive analysis
 Contextualization
 -----------------
 
+- [ ] Implement linear matching
 - [x] Implement registry cloning
 - [x] Implement the constraints mechanism
 - [x] Implement volume and registry cleanups
@@ -49,7 +50,6 @@ Parallelism
 Comprehension
 -------------
 
-- [ ] Implement linear propagation
 - [ ] Ingest arbitrary WWW article
 - [ ] Convert filtered content to volumes
 - [ ] Extract URLs from feeds
