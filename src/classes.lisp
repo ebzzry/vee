@@ -99,28 +99,6 @@
            :documentation "The volume table"))
   (:documentation "Pointer class for the entries. It may also contain links to other volumes inside a registry"))
 
-(defclass field ()
-  ((id :initarg :id
-       :initform -1
-       :accessor id
-       :documentation "The unique numeric ID of a field in a volume")
-   (head :initarg :head
-         :initform nil
-         :accessor head
-         :documentation "The header field to which this field belongs to")
-   (prev :initarg :prev
-         :initform nil
-         :accessor prev
-         :documentation "The previous field in a record")
-   (next :initarg :next
-         :initform nil
-         :accessor next
-         :documentation "The next field in a record")
-   (value :initarg :value
-          :initform ""
-          :accessor value
-          :documentation "The text or volume value of a field")))
-
 (defclass record ()
   ((vid :initarg :vid
         :initform nil
@@ -170,6 +148,29 @@
        :reader id
        :documentation "The unique numeric ID of a unit in a registry"))
   (:documentation "An empty record"))
+
+
+(defclass field ()
+  ((id :initarg :id
+       :initform -1
+       :accessor id
+       :documentation "The unique numeric ID of a field in a record.")
+   (head :initarg :head
+         :initform nil
+         :accessor head
+         :documentation "The header field to which this field belongs to")
+   (prev :initarg :prev
+         :initform nil
+         :accessor prev
+         :documentation "The previous field in a record")
+   (next :initarg :next
+         :initform nil
+         :accessor next
+         :documentation "The next field in a record")
+   (value :initarg :value
+          :initform ""
+          :accessor value
+          :documentation "The text or volume value of a field")))
 
 (defclass match ()
   ((record :initarg :record

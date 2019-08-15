@@ -12,6 +12,12 @@ Stores
 - [ ] Implement volume groups
 
 
+Reactivity
+----------
+
+- [ ] Implement change propagation
+
+
 NLP
 ---
 
