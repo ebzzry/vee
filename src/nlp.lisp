@@ -6,12 +6,12 @@
   "Return the Levenshtein distance between A and B."
   (let* ((la (length a))
          (lb (length b))
-         (rec (make-array (list (1+ la) (1+ lb)) :initial-element nil)))
+         (frm (make-array (list (1+ la) (1+ lb)) :initial-element nil)))
     (labels ((fn (x y)
                  (cond ((zerop x) y)
                        ((zerop y) x)
-                       ((aref rec x y) (aref rec x y))
-                       (t (setf (aref rec x y)
+                       ((aref frm x y) (aref frm x y))
+                       (t (setf (aref frm x y)
                                 (+ (if (char= (char a (- la x)) (char b (- lb y))) 0 1)
                                    (min (fn (1- x) y)
                                         (fn x (1- y))
@@ -112,18 +112,18 @@
         :collect (normalize-word word)))
 
 (defun bury-duplicates (volume)
-  "Bury the duplicate entries found in VOLUME."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :for matches = (gethash '(0) (matches entry))
+  "Bury the duplicate pools found in VOLUME."
+  (loop :for pool :in (walk-down volume :skip #'unitp)
+        :for matches = (gethash '(0) (matches pool))
         :when (> (length matches) 1)
-        :do (loop :for entry :in (rest matches) :do (bury entry))))
+        :do (loop :for pool :in (rest matches) :do (bury pool))))
 
 (defun unbury-duplicates (volume)
-  "Unbury the duplicate entries found in VOLUME."
-  (loop :for entry :in (walk-down volume :skip #'unitp)
-        :for matches = (gethash '(0) (matches entry))
+  "Unbury the duplicate pools found in VOLUME."
+  (loop :for pool :in (walk-down volume :skip #'unitp)
+        :for matches = (gethash '(0) (matches pool))
         :when (> (length matches) 1)
-        :do (loop :for entry :in (rest matches) :do (unbury entry))))
+        :do (loop :for pool :in (rest matches) :do (unbury pool))))
 
 (defun make-bow (text)
   "Return a BOW object from TEXT, creating and deleting temporary stores."
@@ -132,9 +132,9 @@
          (registry (find-registry (rid volume))))
     (bind-self volume)
     (bury-duplicates volume)
-    (lparallel:pmapc #'(lambda (entry)
-                         (setf (gethash (first (fields-values entry)) (table bow))
-                               (length (gethash '(0) (matches entry)))))
+    (lparallel:pmapc #'(lambda (pool)
+                         (setf (gethash (first (nodes-values pool)) (table bow))
+                               (length (gethash '(0) (matches pool)))))
                      (walk-down volume :skip #'unitp))
     (delete-volume volume registry)
     (delete-registry registry)
@@ -146,9 +146,9 @@
                (format t "~&~10S => ~S" k v ))
            (table bow)))
 
-(defun bow-get (entry bow)
-  "Retrieve BOW count from BOW under ENTRY."
-  (gethash entry (table bow)))
+(defun bow-get (pool bow)
+  "Retrieve BOW count from BOW under POOL."
+  (gethash pool (table bow)))
 
 (defun bow-count (item text)
   "Retrieve the number of times ITEM appears in TEXT."
@@ -158,12 +158,12 @@
         0)))
 
 (defun make-n-gram (text size &optional (regex "\\s+"))
-  "Build an n-gram sequence from TEXT, as collection of entry groups. SIZE is the size of the grouping, while REGEX is the separator between the items inside TEXT."
+  "Build an n-gram sequence from TEXT, as collection of pool groups. SIZE is the size of the grouping, while REGEX is the separator between the items inside TEXT."
   (let* ((volume (import-flat-text text :regex regex))
          (registry (find-registry (rid volume))))
     (prog1 (when (> size 0)
-             (let ((value (loop :for entry :in (walk-down volume :skip #'unitp)
-                                :when (range entry size)
+             (let ((value (loop :for pool :in (walk-down volume :skip #'unitp)
+                                :when (range pool size)
                                 :collect it)))
                (remove nil value)))
       (delete-volume volume registry)
@@ -172,4 +172,4 @@
 (defun make-n-gram-text (&rest args)
   "Apply MAKE-N-GRAM to TEXT and return string groups."
   (loop :for group :in (apply #'make-n-gram args)
-        :collect (mapcan #'fields-values group)))
+        :collect (mapcan #'nodes-values group)))

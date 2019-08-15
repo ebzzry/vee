@@ -58,45 +58,45 @@
   (setf (vtable registry) (make-hash-table))
   (values))
 
-(defun yield-id (entry)
-  "Return ID of ENTRY."
-  (when entry
-    (id entry)))
+(defun yield-id (pool)
+  "Return ID of POOL."
+  (when pool
+    (id pool)))
 
 (defun add-registry (registry)
   "Add REGISTRY to WORLD."
   (setf (gethash (rcounter *world*) (rtable *world*)) registry)
   registry)
 
-(defgeneric add-record (record store)
-  (:documentation "Add RECORD to REGISTRY.")
+(defgeneric add-frame (frame store)
+  (:documentation "Add FRAME to REGISTRY.")
   (:method ((v volume) (r registry))
     (setf (gethash (vcounter r) (vtable r)) v)
     v)
-  (:method ((e entry) (r registry))
-    (setf (gethash (ecounter r) (etable r)) e)
-    e)
-  (:method ((e entry) (v volume))
-    (setf (gethash (id e) (table v)) e)
-    e)
+  (:method ((p pool) (r registry))
+    (setf (gethash (ecounter r) (etable r)) p)
+    p)
+  (:method ((p pool) (v volume))
+    (setf (gethash (id p) (table v)) p)
+    p)
   (:method ((u unit) (r registry))
     (setf (gethash (ucounter r) (utable r)) u)
     u)
   (:method ((u unit) (v volume))
     (setf (gethash (id u) (table v)) u)
     u)
-  (:method ((f field) (v volume))
+  (:method ((f node) (v volume))
     (setf (gethash (id f) (ftable v)) f)
     f))
 
-(defgeneric delete-record (record store)
-  (:documentation "Remove RECORD from STORE.")
-  (:method ((e entry) (r registry))
-    (let ((id (id e)))
+(defgeneric delete-frame (frame store)
+  (:documentation "Remove FRAME from STORE.")
+  (:method ((p pool) (r registry))
+    (let ((id (id p)))
       (remhash id (etable r))
       (decf (ecounter r))))
-  (:method ((e entry) (v volume))
-    (let ((id (id e)))
+  (:method ((p pool) (v volume))
+    (let ((id (id p)))
       (remhash id (table v))))
   (:method ((u unit) (r registry))
     (let ((id (id u)))
@@ -106,66 +106,66 @@
     (let ((id (id u)))
       (remhash id (table v)))))
 
-(defun make-entry (vid registry &optional prev next fields)
-  "Create an instance of the entry class."
-  (make-instance 'entry :vid vid :prev prev :next next :fields fields :registry registry))
+(defun make-pool (vid registry &optional prev next nodes)
+  "Create an instance of the pool class."
+  (make-instance 'pool :vid vid :prev prev :next next :nodes nodes :registry registry))
 
-(defun make-field (volume value)
-  "Create an instance of the field class."
-  (make-instance 'field :value value :volume volume))
+(defun make-node (volume value)
+  "Create an instance of the node class."
+  (make-instance 'node :value value :volume volume))
 
-(defgeneric fields-values (object &key &allow-other-keys)
-  (:documentation "Return the values contained inside ENTRY.")
-  (:method ((e entry) &key expand)
-    (mapcar #'(lambda (field)
+(defgeneric nodes-values (object &key &allow-other-keys)
+  (:documentation "Return the values contained inside POOL.")
+  (:method ((p pool) &key expand)
+    (mapcar #'(lambda (node)
                 (if expand
-                    (if (blobp (value field)) (source (value field)) (value field))
-                    (value field)))
-            (fields e)))
+                    (if (blobp (value node)) (source (value node)) (value node))
+                    (value node)))
+            (nodes p)))
   (:method ((l list) &key)
-    (mapcar #'fields-values l)))
+    (mapcar #'nodes-values l)))
 
-(defmethod prev ((o null)) "Return NIL on null entries." nil)
-(defmethod next ((o null)) "Return NIL on null entries." nil)
+(defmethod prev ((o null)) "Return NIL on null pools." nil)
+(defmethod next ((o null)) "Return NIL on null pools." nil)
 
-(defun link-fields (fields)
-  "Link FIELDS to each other."
-  (let ((start (first fields))
-        (end (mof:last* fields))
-        (fields (nil-wrap fields)))
-    (loop :for field-left :in fields
-          :for field-mid :in (rest fields)
-          :for field-right :in (rest (rest fields))
-          :do (cond ((eql field-mid start) (setf (next field-mid) field-right))
-                    ((eql field-mid end) (setf (prev field-mid) field-left))
+(defun link-nodes (nodes)
+  "Link NODES to each other."
+  (let ((start (first nodes))
+        (end (mof:last* nodes))
+        (nodes (nil-wrap nodes)))
+    (loop :for node-left :in nodes
+          :for node-mid :in (rest nodes)
+          :for node-right :in (rest (rest nodes))
+          :do (cond ((eql node-mid start) (setf (next node-mid) node-right))
+                    ((eql node-mid end) (setf (prev node-mid) node-left))
                     (t (progn
-                         (setf (prev field-mid) field-left)
-                         (setf (next field-mid) field-right)))))))
+                         (setf (prev node-mid) node-left)
+                         (setf (next node-mid) node-right)))))))
 
-(defun forge-fields (values volume)
-  "Create fields from a list of values."
-  (let ((fields (loop :for value :in values
-                      :collect (make-field volume value))))
-    (loop :for field :in fields
+(defun forge-nodes (values volume)
+  "Create nodes from a list of values."
+  (let ((nodes (loop :for value :in values
+                      :collect (make-node volume value))))
+    (loop :for node :in nodes
           :do (progn
                 (when (header volume)
-                  (destructuring-bind (header fields)
-                      (equalize-lists (header volume) fields)
+                  (destructuring-bind (header nodes)
+                      (equalize-lists (header volume) nodes)
                     (loop :for h :in header
-                          :for f :in fields
-                          :do (when (or (fieldp f) (not (mof:empty-string-p f)))
+                          :for f :in nodes
+                          :do (when (or (nodep f) (not (mof:empty-string-p f)))
                                 (setf (head f) h)))))
-                (add-record field volume)))
-    (link-fields fields)
-    fields))
+                (add-frame node volume)))
+    (link-nodes nodes)
+    nodes))
 
-(defun forge-entry (volume registry &optional prev next values)
-  "Create an entry under VOLUME in REGISTRY."
+(defun forge-pool (volume registry &optional prev next values)
+  "Create an pool under VOLUME in REGISTRY."
   (let* ((vid (vid volume))
-         (fields (forge-fields values volume))
-         (entry (make-entry vid registry prev next fields)))
-    (add-record entry registry)
-    (add-record entry volume)))
+         (nodes (forge-nodes values volume))
+         (pool (make-pool vid registry prev next nodes)))
+    (add-frame pool registry)
+    (add-frame pool volume)))
 
 (defun make-volume (registry name &optional (prev -1) (next -1))
   "Create an instance of the volume class."
@@ -177,7 +177,7 @@
 (defun forge-volume (registry name &optional (prev -1) (next -1))
   "Create a volume under registry RID in REGISTRY."
   (let ((volume (make-volume registry name prev next)))
-    (add-record volume registry)))
+    (add-frame volume registry)))
 
 (defun make-registry (&optional (name (make-registry-name)))
   "Create an instance of the registry class."
@@ -223,53 +223,53 @@
   "Initialize the world."
   (setf *world* (make-world)))
 
-(defun forge-entries (volume registry &optional feed)
-  "Forge unlinked entries in VOLUME under REGISTRY. If FEED is true, use it to seed values."
+(defun forge-pools (volume registry &optional feed)
+  "Forge unlinked pools in VOLUME under REGISTRY. If FEED is true, use it to seed values."
   (if feed
-      (loop :for item :in feed :do (forge-entry volume registry nil nil item))
+      (loop :for item :in feed :do (forge-pool volume registry nil nil item))
       nil))
 
-(defun find-next (entry volume)
-  "Return the closest next entry in VOLUME from ENTRY."
-  (let* ((id (id entry))
+(defun find-next (pool volume)
+  "Return the closest next pool in VOLUME from POOL."
+  (let* ((id (id pool))
          (table (table volume))
-         (entry (gethash (1+ id) table)))
-    (if entry
-        entry
-        (let* ((entries (find-records volume))
-               (mem (member entry entries))
+         (pool (gethash (1+ id) table)))
+    (if pool
+        pool
+        (let* ((pools (find-frames volume))
+               (mem (member pool pools))
                (next (second mem)))
           (when next
             next)))))
 
-(defun find-prev (entry volume)
-  "Return the closest previous entry in VOLUME from ENTRY"
-  (let* ((id (id entry))
+(defun find-prev (pool volume)
+  "Return the closest previous pool in VOLUME from POOL"
+  (let* ((id (id pool))
          (table (table volume))
-         (entry (gethash (1- id) table)))
-    (if entry
-        entry
-        (let* ((entries (nreverse (find-records volume)))
-               (mem (member entry entries))
+         (pool (gethash (1- id) table)))
+    (if pool
+        pool
+        (let* ((pools (nreverse (find-frames volume)))
+               (mem (member pool pools))
                (prev (second mem)))
           (when prev
             prev)))))
 
-(defun link-records (volume)
-  "Link the records in VOLUME to one another."
-  (let* ((records (find-records volume))
-         (cstart (id (first records)))
-         (cend (id (mof:last* records))))
-    (when records
-      (loop :for record :in records
-            :for id = (id record)
+(defun link-frames (volume)
+  "Link the frames in VOLUME to one another."
+  (let* ((frames (find-frames volume))
+         (cstart (id (first frames)))
+         (cend (id (mof:last* frames))))
+    (when frames
+      (loop :for frame :in frames
+            :for id = (id frame)
             :do (cond ((= id cstart)
-                       (setf (next record) (find-next record volume)))
+                       (setf (next frame) (find-next frame volume)))
                       ((= id cend)
-                       (setf (prev record) (find-prev record volume)))
+                       (setf (prev frame) (find-prev frame volume)))
                       (t (progn
-                           (setf (prev record) (find-record (1- id) volume))
-                           (setf (next record) (find-record (1+ id) volume))))))
+                           (setf (prev frame) (find-frame (1- id) volume))
+                           (setf (next frame) (find-frame (1+ id) volume))))))
       (setf (linkedp volume) t))))
 
 (defgeneric find-registry (query)
@@ -320,8 +320,8 @@
   (:method ((s string) &rest args)
     (apply #'find-volumes (find-registry s) args)))
 
-(defgeneric find-record (query store)
-  (:documentation "Return an entry which matches QUERY in STORE.")
+(defgeneric find-frame (query store)
+  (:documentation "Return an pool which matches QUERY in STORE.")
   (:method ((query integer) (r registry))
     (multiple-value-bind (value present)
         (gethash query (etable r))
@@ -333,60 +333,60 @@
       (when present
         value))))
 
-(defun sort-records (records &key (key #'id))
-  "Sort records numerically."
-  (sort records #'< :key key))
+(defun sort-frames (frames &key (key #'id))
+  "Sort frames numerically."
+  (sort frames #'< :key key))
 
-(defun entryp (record)
-  "Return true if RECORD is of type ENTRY."
-  (typep record 'entry))
+(defun poolp (frame)
+  "Return true if FRAME is of type POOL."
+  (typep frame 'pool))
 
-(defun unitp (record)
-  "Return true if RECORD is of type UNIT."
-  (typep record 'unit))
+(defun unitp (frame)
+  "Return true if FRAME is of type UNIT."
+  (typep frame 'unit))
 
-(defun entry-or-unit-p (record)
-  "Return true if RECORD is an entry or unit."
-  (or (entryp record)
-      (unitp record)))
+(defun pool-or-unit-p (frame)
+  "Return true if FRAME is an pool or unit."
+  (or (poolp frame)
+      (unitp frame)))
 
-(defun volume-start-p (entry)
-  "Return true if entry is found at the start of a volume."
-  (when (and (null (prev entry))
-             (next entry))
+(defun volume-start-p (pool)
+  "Return true if pool is found at the start of a volume."
+  (when (and (null (prev pool))
+             (next pool))
     t))
 
-(defun volume-end-p (entry)
-  "Return true if entry is found at the end of a volume."
-  (when (and (prev entry)
-             (null (next entry)))
+(defun volume-end-p (pool)
+  "Return true if pool is found at the end of a volume."
+  (when (and (prev pool)
+             (null (next pool)))
     t))
 
 (defun volume-start (volume)
-  "Return the first entry in VOLUME."
-  (let ((records (find-records volume)))
-    (loop :for record :in records
-          :when (and (null (prev record))
-                     (next record))
-          :return record)))
+  "Return the first pool in VOLUME."
+  (let ((frames (find-frames volume)))
+    (loop :for frame :in frames
+          :when (and (null (prev frame))
+                     (next frame))
+          :return frame)))
 
 (defun volume-end (volume)
-  "Return the last entry in VOLUME."
-  (let ((records (nreverse (find-records volume))))
-    (loop :for record :in records
-          :when (and (prev record)
-                     (null (next record)))
-            :return record)))
+  "Return the last pool in VOLUME."
+  (let ((frames (nreverse (find-frames volume))))
+    (loop :for frame :in frames
+          :when (and (prev frame)
+                     (null (next frame)))
+            :return frame)))
 
-(defgeneric find-entries (store)
-  (:documentation "Return entries from STORE.")
+(defgeneric find-pools (store)
+  (:documentation "Return pools from STORE.")
   (:method ((r registry))
-    (loop :for entry :being :the :hash-values :in (etable r)
-          :collect entry))
+    (loop :for pool :being :the :hash-values :in (etable r)
+          :collect pool))
   (:method ((v volume))
-    (loop :for record :being :the :hash-values :in (table v)
-          :when (entryp record)
-          :collect record)))
+    (loop :for frame :being :the :hash-values :in (table v)
+          :when (poolp frame)
+          :collect frame)))
 
 (defgeneric table-count (store)
   (:documentation "Return the size of the hash table stored in STORE.")
@@ -399,47 +399,47 @@
     (loop :for unit :being :the :hash-values :in (utable r)
           :collect unit))
   (:method ((v volume))
-    (loop :for record :being :the :hash-values :in (table v)
-          :when (unitp record)
-          :collect record)))
+    (loop :for frame :being :the :hash-values :in (table v)
+          :when (unitp frame)
+          :collect frame)))
 
-(defgeneric find-records (store &key &allow-other-keys)
-  (:documentation "Return all records from STORE.")
+(defgeneric find-frames (store &key &allow-other-keys)
+  (:documentation "Return all frames from STORE.")
   (:method ((r registry) &key sort)
-    (let* ((entries (find-entries r))
+    (let* ((pools (find-pools r))
            (units (loop :for unit :being :the :hash-values :in (utable r)
                         :collect unit))
-           (records (nconc entries units)))
+           (frames (nconc pools units)))
       (if sort
-          (sort-records records)
-          records)))
+          (sort-frames frames)
+          frames)))
   (:method ((v volume) &key sort)
-    (loop :for record :being :the :hash-values :in (table v)
-          :collect record :into records
+    (loop :for frame :being :the :hash-values :in (table v)
+          :collect frame :into frames
           :finally (return (if sort
-                               (sort-records records)
-                               records)))))
+                               (sort-frames frames)
+                               frames)))))
 
 (defun max-volume (registry)
-  "Return the biggest volume in REGISTRY. Size is determined by the number of records."
+  "Return the biggest volume in REGISTRY. Size is determined by the number of frames."
   (first (sort (find-volumes registry) #'> :key #'(lambda (v) (hash-table-size (table v))))))
 (mof:defalias wall max-volume)
 
-(defun forge-record (&optional prev next left right buriedp)
-  "Return a record instance."
-  (make-instance 'record :prev prev :next next :left left :right right :buriedp buriedp))
+(defun forge-frame (&optional prev next left right buriedp)
+  "Return a frame instance."
+  (make-instance 'frame :prev prev :next next :left left :right right :buriedp buriedp))
 
-(defun make-match (record volume offset)
+(defun make-match (frame volume offset)
   "Return a MATCH object."
-  (make-instance 'match :record record :volume volume :offset offset))
+  (make-instance 'match :frame frame :volume volume :offset offset))
 
 (defmethod value ((m match))
-  "Return record value from M."
-  (fields-values (record m)))
+  "Return frame value from M."
+  (nodes-values (frame m)))
 
 (defmethod id ((m match))
-  "Retturn record id from M."
-  (id (record m)))
+  "Retturn frame id from M."
+  (id (frame m)))
 
 (defun search-volume (query)
   "Return the first volume that that matches QUERY in all the registries."
@@ -449,9 +449,9 @@
           :when volume
           :return (values volume registry))))
 
-(defun fieldp (object)
-  "Return true if OBJECT is a field."
-  (typep object 'field))
+(defun nodep (object)
+  "Return true if OBJECT is a node."
+  (typep object 'node))
 
 (defun volumep (object)
   "Return true if OBJECT is a volume."

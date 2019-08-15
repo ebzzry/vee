@@ -10,8 +10,8 @@
          (volume (forge-volume registry volume-name))
          (body (if extract-header (rest feed) feed)))
     (setf (header volume) (if extract-header (first feed) header))
-    (forge-entries volume registry body)
-    (link-records volume)
+    (forge-pools volume registry body)
+    (link-frames volume)
     (ecase return
       ((volume) volume)
       ((registry) registry))))
@@ -57,32 +57,32 @@
                            :test #'string-equal)
         #'string<))
 
-(defun split-field (field &optional (regex "\\s+"))
-  "Split a field into components."
-  (normalize-words (split-text (value field) regex)))
+(defun split-node (node &optional (regex "\\s+"))
+  "Split a node into components."
+  (normalize-words (split-text (value node) regex)))
 
-(defun make-feed (field &key transform)
-  "Create a feed from the text value stored in FIELD using predefined rules."
+(defun make-feed (node &key transform)
+  "Create a feed from the text value stored in NODE using predefined rules."
   (if transform
-      (mapcar #'list (filter-text (value field)))
-      (mapcar #'list (split-text (value field)))))
+      (mapcar #'list (filter-text (value node)))
+      (mapcar #'list (split-text (value node)))))
 
-(defun import-field (field &key (volume-name (make-volume-name))
+(defun import-node (node &key (volume-name (make-volume-name))
                                 registry-name
                                 header
                                 transform
                                 (return 'REGISTRY))
-  "Import a single FIELD to a new volume VOLUME-NAME and registry REGISTRY-NAME."
-  (when (stringp (value field))
-    (import-feed (make-feed field :transform transform)
+  "Import a single NODE to a new volume VOLUME-NAME and registry REGISTRY-NAME."
+  (when (stringp (value node))
+    (import-feed (make-feed node :transform transform)
                  :volume-name volume-name
                  :registry-name registry-name
                  :header header
                  :return return)))
 
-(defun field-text (entry constraints)
-  "Return processed text from ENTRY under CONSTRAINTS."
-  (let ((text (value (first (apply-constraints entry constraints)))))
+(defun node-text (pool constraints)
+  "Return processed text from POOL under CONSTRAINTS."
+  (let ((text (value (first (apply-constraints pool constraints)))))
     (split-text text "\\s+")))
 
 (defun import-flat-file (path &key (volume-name (basename path))

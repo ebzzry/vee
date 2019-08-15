@@ -25,11 +25,11 @@
    (ecounter :initarg :ecounter
              :initform *initial-ecounter*
              :accessor ecounter
-             :documentation "The entry counter")
+             :documentation "The pool counter")
    (etable :initarg :etable
            :initform (make-hash-table)
            :accessor etable
-           :documentation "The entry table")
+           :documentation "The pool table")
    (ucounter :initarg :ucounter
              :initform *initial-ucounter*
              :accessor ucounter
@@ -37,7 +37,7 @@
    (utable :initarg :utable
            :initform (make-hash-table)
            :accessor utable
-           :documentation "The entry table")
+           :documentation "The pool table")
    (vcounter :initarg :vcounter
              :initform *initial-vcounter*
              :accessor vcounter
@@ -54,7 +54,7 @@
             :initform nil
             :accessor control
             :documentation "Whether a volume is a control value or not"))
-  (:documentation "Tables and counters about entries and volumes. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons"))
+  (:documentation "Tables and counters about pools and volumes. This class can be instantiated many times to contain different registries. Different registries can mean different dataset comparisons"))
 
 (defclass volume ()
   ((rid :initarg :rid
@@ -76,7 +76,7 @@
    (table :initarg :table
           :initform (make-hash-table)
           :accessor table
-          :documentation "The table for entry and unit indexing")
+          :documentation "The table for pool and unit indexing")
    (prev :initarg :prev
          :initform nil
          :accessor prev
@@ -92,92 +92,91 @@
    (fcounter :initarg :fcounter
              :initform *initial-fcounter*
              :accessor fcounter
-             :documentation "The field counter")
+             :documentation "The node counter")
    (ftable :initarg :ftable
            :initform (make-hash-table)
            :accessor ftable
            :documentation "The volume table"))
-  (:documentation "Pointer class for the entries. It may also contain links to other volumes inside a registry"))
+  (:documentation "Pointer class for the pools. It may also contain links to other volumes inside a registry"))
 
-(defclass record ()
+(defclass frame ()
   ((vid :initarg :vid
         :initform nil
         :reader vid
-        :documentation "The volume ID to which a record belongs to")
+        :documentation "The volume ID to which a frame belongs to")
    (prev :initarg :prev
          :initform nil
          :accessor prev
-         :documentation "The ID of the previous record in a volume")
+         :documentation "The ID of the previous frame in a volume")
    (next :initarg :next
          :initform nil
          :accessor next
-         :documentation "The ID of the next record in a volume")
+         :documentation "The ID of the next frame in a volume")
    ;; Note: this can be used for linear bindings
    (left :initarg :left
          :initform nil
          :accessor left
-         :documentation "The record on the left")
+         :documentation "The frame on the left")
    (right :initarg :right
           :initform nil
           :accessor right
-          :documentation "The record on the right")
+          :documentation "The frame on the right")
    (buriedp :initarg :buriedp
             :initform nil
             :accessor buriedp
-            :documentation "Whether a record is buried or not"))
-  (:documentation "An empty container which links to other records"))
+            :documentation "Whether a frame is buried or not"))
+  (:documentation "An empty container which links to other frames"))
 
-(defclass entry (record)
+(defclass pool (frame)
   ((id :initarg :id
        :initform -1
        :reader id
-       :documentation "The unique numeric ID of an entry in a registry")
-   (fields :initarg :fields
+       :documentation "The unique numeric ID of an pool in a registry")
+   (nodes :initarg :nodes
            :initform ()
-           :accessor fields
-           :documentation "The data fields of an entry")
+           :accessor nodes
+           :documentation "The data nodes of an pool")
    (matches :initarg :matches
             :initform (make-hash-table :test #'equalp)
             :accessor matches
             :documentation "Structure for the non-linear matches"))
-  (:documentation "A record that contains a value"))
+  (:documentation "A frame that contains a value"))
 
-(defclass unit (record)
+(defclass unit (frame)
   ((id :initarg :id
        :initform -1
        :reader id
        :documentation "The unique numeric ID of a unit in a registry"))
-  (:documentation "An empty record"))
+  (:documentation "An empty frame"))
 
-
-(defclass field ()
+(defclass node ()
   ((id :initarg :id
        :initform -1
        :accessor id
-       :documentation "The unique numeric ID of a field in a record.")
+       :documentation "The unique numeric ID of a node in a frame.")
    (head :initarg :head
          :initform nil
          :accessor head
-         :documentation "The header field to which this field belongs to")
+         :documentation "The header node to which this node belongs to")
    (prev :initarg :prev
          :initform nil
          :accessor prev
-         :documentation "The previous field in a record")
+         :documentation "The previous node in a frame")
    (next :initarg :next
          :initform nil
          :accessor next
-         :documentation "The next field in a record")
+         :documentation "The next node in a frame")
    (value :initarg :value
           :initform ""
           :accessor value
-          :documentation "The text or volume value of a field")))
+          :documentation "The text or volume value of a node")))
 
 (defclass match ()
-  ((record :initarg :record
+  ((frame :initarg :frame
            :initform nil
-           :accessor record
-           :documentation "The matching record")
-   ;; Note: this can be easily inferred from the record
+           :accessor frame
+           :documentation "The matching frame")
+   ;; Note: this can be easily inferred from the frame
    (volume :initarg :volume
            :initform nil
            :accessor volume
@@ -186,13 +185,13 @@
            :initarg nil
            :accessor offset
            :documentation "The index of a match relative to a volume"))
-  (:documentation "Information about matching records across volumes in a registry"))
+  (:documentation "Information about matching frames across volumes in a registry"))
 
 (defclass blob ()
-  ((fid :initarg :fid
+  ((nid :initarg :nid
         :initform -1
-        :accessor fid
-        :documentation "The field ID where this object belongs to")
+        :accessor nid
+        :documentation "The node ID where this object belongs to")
    (value :initarg :value
           :initform nil
           :accessor value
@@ -200,7 +199,7 @@
    (source :initarg :source
            :initform nil
            :accessor source
-           :documentation "The original raw text of a field"))
+           :documentation "The original raw text of a node"))
   (:documentation "The summary of a text body"))
 
 (defclass bow ()

@@ -6,79 +6,79 @@
   "Return starting point based on the type of origin."
   (etypecase origin
     (function (funcall origin volume))
-    (entry origin)))
+    (pool origin)))
 
 (defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
-  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
+  "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
   (when (linkedp volume)
-    (loop :for entry = (point origin volume) :then (prev entry)
-          :while entry
-          :collect (funcall fn entry))))
+    (loop :for pool = (point origin volume) :then (prev pool)
+          :while pool
+          :collect (funcall fn pool))))
 
-(defun plus (entry count)
-  "Return a new entry based from ENTRY and AMOUNT based on volume addition."
-  (cond ((zerop count) entry)
-        (t (plus (next entry) (1- count)))))
+(defun plus (pool count)
+  "Return a new pool based from POOL and AMOUNT based on volume addition."
+  (cond ((zerop count) pool)
+        (t (plus (next pool) (1- count)))))
 
-(defun range (entry count)
-  "Return entries starting from ENTRY with COUNT steps."
-  (labels ((fn (entry count acc)
+(defun range (pool count)
+  "Return pools starting from POOL with COUNT steps."
+  (labels ((fn (pool count acc)
                (cond ((zerop count) (nreverse acc))
-                     ((null entry) nil)
-                     (t (fn (next entry) (1- count) (cons entry acc))))))
-    (fn entry count nil)))
+                     ((null pool) nil)
+                     (t (fn (next pool) (1- count) (cons pool acc))))))
+    (fn pool count nil)))
 
-(defun entry-limit-p (volume entry destination &key test)
-  "Return true if ENTRY reached the limit of, or the concept of, DESTINATION."
-  (and entry (etypecase destination
-               (function (funcall test (id entry) (id (funcall destination volume))))
-               (entry (funcall test (id entry) (id destination)))
+(defun pool-limit-p (volume pool destination &key test)
+  "Return true if POOL reached the limit of, or the concept of, DESTINATION."
+  (and pool (etypecase destination
+               (function (funcall test (id pool) (id (funcall destination volume))))
+               (pool (funcall test (id pool) (id destination)))
                (t nil))))
 
 (defun walk-down (volume &key (origin #'volume-start)
                            (destination #'volume-end)
                            (skip #'false)
                            (fn #'identity))
-  "Return records from VOLUME starting from record ORIGIN applying FN to each record."
+  "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
   (when (linkedp volume)
-    (loop :for entry = (point origin volume) :then (next entry)
-          :while (entry-limit-p volume entry destination :test #'<=)
-          :unless (funcall skip entry)
-          :collect (funcall fn entry))))
+    (loop :for pool = (point origin volume) :then (next pool)
+          :while (pool-limit-p volume pool destination :test #'<=)
+          :unless (funcall skip pool)
+          :collect (funcall fn pool))))
 
 (defun walk-left (volume)
-  "Return records starting from VOLUME across all the other volumes, going left."
+  "Return frames starting from VOLUME across all the other volumes, going left."
   (declare (ignorable volume))
   nil)
 
 (defun walk-right (volume)
-  "Return records starting from VOLUME across all the other volumes, going right."
+  "Return frames starting from VOLUME across all the other volumes, going right."
   (declare (ignorable volume))
   nil)
 
-(defun dispatch-fields (entry constraints &key (type :head) (test *field-test*))
-  "Return fields from ENTRY that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
+(defun dispatch-nodes (pool constraints &key (type :head) (test *node-test*))
+  "Return nodes from POOL that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
   (let ((constraints (ensure-list constraints))
-        (fields (fields entry))
+        (nodes (nodes pool))
         (func (intern (string type))))
     (ecase type
       ((:index)
        (loop :for constraint :in constraints
-             :collect (nth constraint fields)))
+             :collect (nth constraint nodes)))
       ((:head :value)
        (loop :for constraint :in constraints
-             :nconc (loop :for field :in fields
-                          :when (funcall test constraint (funcall func field))
-                          :collect field))))))
+             :nconc (loop :for node :in nodes
+                          :when (funcall test constraint (funcall func node))
+                          :collect node))))))
 
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
-  (:documentation "Return fields from ENTRY that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
-  (:method ((o entry) constraints &key (type :head) (test *field-test*))
+  (:documentation "Return nodes from POOL that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
+  (:method ((o pool) constraints &key (type :head) (test *node-test*))
     (let ((constraints (ensure-list constraints)))
       (loop :for constraint :in constraints
             :nconc (etypecase constraint
-                     (string (dispatch-fields o (list constraint) :type type :test test))
-                     (integer (list (nth constraint (fields o))))))))
+                     (string (dispatch-nodes o (list constraint) :type type :test test))
+                     (integer (list (nth constraint (nodes o))))))))
   (:method ((o list) constraints &key (fallback ""))
     (let ((constraints (ensure-list constraints)))
       (loop :for constraint :in constraints
@@ -86,28 +86,28 @@
                        (function (funcall constraint o))
                        (integer (nth constraint o))
                        (t fallback)))))
-  (:method ((o volume) constraints &key (test *field-test*) merge)
+  (:method ((o volume) constraints &key (test *node-test*) merge)
     (let* ((constraints (ensure-list constraints))
-           (entries (loop :for entry :in (walk-down o :skip #'unitp)
-                          :collect (apply-constraints entry constraints :type :head :test test))))
+           (pools (loop :for pool :in (walk-down o :skip #'unitp)
+                          :collect (apply-constraints pool constraints :type :head :test test))))
       (if merge
-          (reduce #'nconc entries)
-          entries))))
+          (reduce #'nconc pools)
+          pools))))
 
-(defun resolve-constraints (entry constraints)
-  "Return the value of constraints application. This is primarily used to extract the values of fields, whether it is a BLOB or VOLUME object."
-  (mapcar #'value (apply-constraints entry constraints)))
+(defun resolve-constraints (pool constraints)
+  "Return the value of constraints application. This is primarily used to extract the values of nodes, whether it is a BLOB or VOLUME object."
+  (mapcar #'value (apply-constraints pool constraints)))
 
-(defgeneric everyp (object entry constraints &key &allow-other-keys)
-  (:documentation "Return true if OBJECT matches the applied version of ENTRY. TEST should invoke the correct function to check for equality.")
-  (:method ((o list) (e entry) constraints &key (test *field-test*))
+(defgeneric everyp (object pool constraints &key &allow-other-keys)
+  (:documentation "Return true if OBJECT matches the applied version of POOL. TEST should invoke the correct function to check for equality.")
+  (:method ((o list) (p pool) constraints &key (test *node-test*))
     (every test
            (apply-constraints o constraints)
-           (resolve-constraints e constraints)))
-  (:method ((o entry) (e entry) constraints &key (test *field-test*))
+           (resolve-constraints p constraints)))
+  (:method ((o pool) (p pool) constraints &key (test *node-test*))
     (every test
            (resolve-constraints o constraints)
-           (resolve-constraints e constraints))))
+           (resolve-constraints p constraints))))
 
 (defun find-other-volumes (volume registry)
   "Find the other volumes in REGISTRY."
@@ -122,84 +122,84 @@
         (first volumes)
         -1)))
 
-(defgeneric find-similar-entries (store entry constraints &key &allow-other-keys)
-  (:documentation "Return entries from VOLUME that satisfy CONSTRAINTS as applied to ENTRY, where CONSTRAINTS is a list of header-specifiers to match against. The function specified by TEST will determine equality.
+(defgeneric find-similar-pools (store pool constraints &key &allow-other-keys)
+  (:documentation "Return pools from VOLUME that satisfy CONSTRAINTS as applied to POOL, where CONSTRAINTS is a list of header-specifiers to match against. The function specified by TEST will determine equality.
 
-    (FIND-SIMILAR-ENTRIES VOLUME ENTRY '(\"country\"))
+    (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\"))
 
-returns entries from VOLUME wherein the 'country' field is the same as that of ENTRY.
+returns pools from VOLUME wherein the 'country' node is the same as that of POOL.
 
-    (FIND-SIMILAR-ENTRIES VOLUME ENTRY '(\"country\" \"gender\"))
+    (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\" \"gender\"))
 
-returns entries from VOLUME wherein the 'country' and 'gender' fields are the same as those of ENTRY.
+returns pools from VOLUME wherein the 'country' and 'gender' nodes are the same as those of POOL.
 
 This generic function is mainly used for matching against data that is already inside a registry.
 ")
-  (:method ((v volume) (e entry) constraints &key (origin #'volume-start)
-                                                  (test *field-test*)
-                                                  entry-exclusive)
+  (:method ((v volume) (p pool) constraints &key (origin #'volume-start)
+                                                  (test *node-test*)
+                                                  pool-exclusive)
     (when (linkedp v)
-      (let ((records (walk-down v :origin origin
-                                  :skip #'(lambda (rec)
-                                            (or (unitp rec) (when entry-exclusive (eql rec e)))))))
-        (loop :for record :in records
-              :when (everyp e record constraints :test test)
-              :collect record))))
-  (:method ((r registry) (e entry) constraints &key (origin #'volume-start)
-                                                    (test *field-test*)
+      (let ((frames (walk-down v :origin origin
+                                  :skip #'(lambda (frm)
+                                            (or (unitp frm) (when pool-exclusive (eql frm p)))))))
+        (loop :for frame :in frames
+              :when (everyp p frame constraints :test test)
+              :collect frame))))
+  (:method ((r registry) (p pool) constraints &key (origin #'volume-start)
+                                                    (test *node-test*)
                                                     volume-exclusive
-                                                    entry-exclusive)
+                                                    pool-exclusive)
     (let ((volumes (if volume-exclusive
-                       (find-other-volumes (find-volume (vid e) r) r)
+                       (find-other-volumes (find-volume (vid p) r) r)
                        (find-volumes r))))
       (loop :for volume :in volumes
-            :nconc (find-similar-entries volume e constraints
+            :nconc (find-similar-pools volume p constraints
                                          :origin origin
                                          :test test
-                                         :entry-exclusive entry-exclusive)))))
+                                         :pool-exclusive pool-exclusive)))))
 
-(defgeneric find-matching-entries (store specifiers &key &allow-other-keys)
-  (:documentation "Return entries from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
+(defgeneric find-matching-pools (store specifiers &key &allow-other-keys)
+  (:documentation "Return pools from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
 
-    (FIND-MATCHING-ENTRIES STORE '((\"email\" \"sstanleynh@wp.com\") (\"country\" \"Philippines\")) :TYPE :OR)
+    (FIND-MATCHING-POOLS STORE '((\"email\" \"sstanleynh@wp.com\") (\"country\" \"Philippines\")) :TYPE :OR)
 
-returns entries that have set either the email to sstanleynh@wp.com or the country to Philippines.
+returns pools that have set either the email to sstanleynh@wp.com or the country to Philippines.
 
-    (FIND-MATCHING-ENTRIES STORE '((\"email\" \"pwagner1x@gravatar.com\") (\"country\" \"Italy\")) :TYPE :AND)
+    (FIND-MATCHING-POOLS STORE '((\"email\" \"pwagner1x@gravatar.com\") (\"country\" \"Italy\")) :TYPE :AND)
 
-returns entries that have set both the email to pwagner1x@gravatar.com and the country to Italy.
+returns pools that have set both the email to pwagner1x@gravatar.com and the country to Italy.
 
 This generic function is mainly used for matching againstn data that is provided by the user, which may or may not exist inside a registry.
 ")
-  (:method ((v volume) specifiers &key (type :or) (test *field-test*))
-    (let ((entries (walk-down v :skip #'unitp))
+  (:method ((v volume) specifiers &key (type :or) (test *node-test*))
+    (let ((pools (walk-down v :skip #'unitp))
           (specifiers (if (and (every-string-p specifiers)
                                (not (every-list-p specifiers)))
                           (list specifiers)
                           specifiers)))
-      (loop :for entry :in entries
+      (loop :for pool :in pools
             :nconc
                (ecase type
                  (:or (lparallel:premove
                        nil
-                       (lparallel:pmapcan #'(lambda (field)
+                       (lparallel:pmapcan #'(lambda (node)
                                               (lparallel:pmapcar
                                                #'(lambda (specifier)
                                                    (when (destructuring-bind (head value) specifier
-                                                           (and (funcall test (head field) head)
-                                                                (funcall test (value field) value)))
-                                                     entry))
+                                                           (and (funcall test (head node) head)
+                                                                (funcall test (value node) value)))
+                                                     pool))
                                                specifiers))
-                                          (fields entry))))
+                                          (nodes pool))))
                  (:and (destructuring-bind (heads values)
                            (apply #'mapcar #'list specifiers)
-                         (let ((fields (apply-constraints entry heads :type :head)))
-                           (when (every test (mapcar #'value fields) values)
-                             (list entry)))))))))
+                         (let ((nodes (apply-constraints pool heads :type :head)))
+                           (when (every test (mapcar #'value nodes) values)
+                             (list pool)))))))))
   (:method ((r registry) specifiers &rest args)
             (let ((volumes (find-volumes r)))
               (lparallel:pmapcan #'(lambda (volume)
-                                     (apply #'find-matching-entries volume specifiers args))
+                                     (apply #'find-matching-pools volume specifiers args))
                                  volumes))))
 
 (defun headp (head volume)
@@ -222,28 +222,27 @@ This generic function is mainly used for matching againstn data that is provided
   "Process the operators on VOLUME, handling ! and @ meta characters."
   (lparallel:pmapc #'(lambda (operator)
                        (cond ((string-end-p operator #\!)
-                              (blob-convert-fields volume (strip-end-char operator)))
+                              (blob-convert-nodes volume (strip-end-char operator)))
                              ((string-end-p operator #\@)
-                              (volume-convert-fields volume (strip-end-char operator)))
+                              (volume-convert-nodes volume (strip-end-char operator)))
                              (t nil)))
                    operators))
 
 (defun find-duplicates (volume terms)
-  "Return a list of entries that have similar properties according to TERMS, where each term is either a constraint or a string that constains a meta-character that indicates additional operations to be done beforehand."
+  "Return a list of pools that have similar properties according to TERMS, where each term is either a constraint or a string that constains a meta-character that indicates additional operations to be done beforehand."
   (let ((operators (collect-operators terms volume))
         (constraints (flatten-constraints terms volume)))
     (dispatch-operators volume operators)
-    (let ((results (loop :for entry :in (walk-down volume :skip #'unitp)
+    (let ((results (loop :for pool :in (walk-down volume :skip #'unitp)
                          :for offset = (volume-start volume) :then (next offset)
                          :while offset
-                         :nconc (find-similar-entries volume entry constraints
-                                                      :origin offset :entry-exclusive t))))
+                         :nconc (find-similar-pools volume pool constraints
+                                                      :origin offset :pool-exclusive t))))
       (remove-duplicates results))))
 
 (defun expunge-duplicates (volume terms)
-  "Remove duplicate entries in VOLUME under TERMS, creating void registries as necessary."
+  "Remove duplicate pools in VOLUME under TERMS, creating void registries as necessary."
   (let ((duplicates (with-levenshtein (find-duplicates volume terms)))
         (registry (find-registry (rid volume))))
-    (lparallel:pmapc #'(lambda (entry) (banish entry registry))
+    (lparallel:pmapc #'(lambda (pool) (banish pool registry))
                      duplicates)))
-

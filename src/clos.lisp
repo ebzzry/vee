@@ -2,14 +2,14 @@
 
 (in-package #:ujo/core)
 
-(defmethod initialize-instance :after ((e entry) &key registry)
-  "Initialize entry E in REGISTRY."
+(defmethod initialize-instance :after ((p pool) &key registry)
+  "Initialize pool P in REGISTRY."
   (let ((counter (spawn-ecounter registry)))
-    (with-slots (id) e
+    (with-slots (id) p
       (setf id counter))))
 
-(defmethod initialize-instance :after ((f field) &key volume)
-  "Initialize field F in VOLUME."
+(defmethod initialize-instance :after ((f node) &key volume)
+  "Initialize node F in VOLUME."
   (let ((counter (spawn-fcounter volume)))
     (with-slots (id) f
       (setf id counter))))
@@ -30,9 +30,9 @@
     (with-slots (id) u
       (setf id counter))))
 
-(defmethod print-object ((e entry) stream)
-  (print-unreadable-object (e stream :type t)
-    (with-slots (id) e
+(defmethod print-object ((p pool) stream)
+  (print-unreadable-object (p stream :type t)
+    (with-slots (id) p
       (format stream "~A" id))))
 
 (defmethod print-object ((u unit) stream)
@@ -40,7 +40,7 @@
     (with-slots (id) u
       (format stream "~A" id))))
 
-(defmethod print-object ((f field) stream)
+(defmethod print-object ((f node) stream)
   (print-unreadable-object (f stream :type t)
     (with-slots (id) f
       (format stream "~A" id))))

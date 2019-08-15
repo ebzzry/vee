@@ -8,11 +8,11 @@
       (with-slots (rid name ecounter etable ucounter utable vcounter vtable xid control) registry
         (format t "~&RID: ~A~%NAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%UCOUNTER: ~A~%UTABLE: ~A~%VCOUNTER: ~A~%VTABLE: ~A~%XID: ~A~%CONTROL: ~A~%"
                 rid name ecounter etable ucounter utable vcounter vtable xid control))
-      (progn (format t "~&** ENTRIES~%")
+      (progn (format t "~&** POOLS~%")
              (maphash #'(lambda (k v)
-                          (with-slots (vid id prev next fields buriedp) v
+                          (with-slots (vid id prev next nodes buriedp) v
                             (let ((fmt "~S => ~S~%")
-                                  (slots (list vid id prev next fields buriedp)))
+                                  (slots (list vid id prev next nodes buriedp)))
                               (format t fmt k slots))))
                       (etable registry))
              (format t "~&** VOLUMES~%")
@@ -46,25 +46,25 @@
     (with-slots (rid vid name table prev next) volume
       (if complete
           (loop :for k :being :the :hash-keys :in (table volume)
-                :for entry = (find-record k registry)
-                :do (let ((match (first (gethash '(0) (matches entry))))
-                          (values (fields-values (first (gethash constraint (matches entry))))))
+                :for pool = (find-frame k registry)
+                :do (let ((match (first (gethash '(0) (matches pool))))
+                          (values (nodes-values (first (gethash constraint (matches pool))))))
                       (if match
-                          (format t "~&~5A => ~20S = ~5A => ~20S ~%" k (fields-values entry)
+                          (format t "~&~5A => ~20S = ~5A => ~20S ~%" k (nodes-values pool)
                                   (id match)
                                   values)
-                          (format t "~&~A => ~S~%" k (fields-values entry)))))
+                          (format t "~&~A => ~S~%" k (nodes-values pool)))))
           (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
                   rid vid name table prev next))
       (values))))
 
-(defun dump-entry (entry &key complete)
-  "Print information about an entry."
-  (with-slots (vid id prev next fields buriedp) entry
+(defun dump-pool (pool &key complete)
+  "Print information about an pool."
+  (with-slots (vid id prev next nodes buriedp) pool
     (if complete
-        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%FIELDS: ~S~%BURIEDP: ~S~%"
-                vid id prev next (mapcar #'value fields) buriedp)
-        (format t "~&~S~%" (mapcar #'value fields)))
+        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%NODES: ~S~%BURIEDP: ~S~%"
+                vid id prev next (mapcar #'value nodes) buriedp)
+        (format t "~&~S~%" (mapcar #'value nodes)))
     (values)))
 
 (defun list-registries ()

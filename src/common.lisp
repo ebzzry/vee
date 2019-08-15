@@ -54,12 +54,12 @@
   "Join with the next item."
   (join-n items *join-limit*))
 
-(defun count-entries (feed)
-  "Return the number of entries in feed."
+(defun count-pools (feed)
+  "Return the number of pools in feed."
   (length feed))
 
-(defun count-entries-file (file)
-  "Return the number of entries in FILE."
+(defun count-pools-file (file)
+  "Return the number of pools in FILE."
   (with-open-file (in file)
     (loop :for line = (read-line in nil)
           :while line
@@ -67,8 +67,8 @@
 
 (defun max-feed (feed1 feed2)
   "Return the bigger feed between FEED1 and FEED2."
-  (let ((size1 (count-entries feed1))
-        (size2 (count-entries feed2)))
+  (let ((size1 (count-pools feed1))
+        (size2 (count-pools feed2)))
     (cond ((= size1 size2) feed1)
           ((> size1 size2) feed1)
           (t feed2))))
@@ -96,7 +96,7 @@
         :collect (funcall fn s)))
 
 (defun peek (feed limit &key (selector #'elt0))
-  "Return a string formed by looking ahead LIMIT number of entries in FEED."
+  "Return a string formed by looking ahead LIMIT number of pools in FEED."
   (mof:join-strings (mapcar selector (take (read-tsv-string feed) limit))))
 
 (defun peek-file (file limit)
@@ -124,7 +124,7 @@
           feed))))
 
 (defun clean-feed (feed)
-  "Remove extraneous entries in FEED."
+  "Remove extraneous pools in FEED."
   (remove-if #'(lambda (item)
                  (some #'mof:empty-string-p item))
              feed))

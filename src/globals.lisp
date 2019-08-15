@@ -3,7 +3,7 @@
 (in-package #:ujo/core)
 
 (defvar *default-delimiter* #\,
-  "The default delimiter used to separate fields.")
+  "The default delimiter used to separate nodes.")
 
 (defvar *threshold* 5
   "The amount of lines to consider when trying to perform resoultion, backwards and forwards.")
@@ -24,13 +24,13 @@
   "The initial volume counter value")
 
 (defvar *initial-ecounter* 10000
-  "The initial entry counter value")
+  "The initial pool counter value")
 
 (defvar *initial-ucounter* (- *initial-ecounter*)
   "The initial unit counter value")
 
 (defvar *initial-fcounter* 1000000
-  "The initial field counter value.")
+  "The initial node counter value.")
 
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")
