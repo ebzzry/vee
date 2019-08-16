@@ -147,14 +147,6 @@
          (when val
            (zerop val)))))
 
-(defun map-append (fn sequence1 sequence2)
-  "Apply APPEND to the result of applying FN to sequence1 and sequence2."
-  (append (mapcar fn sequence1) (mapcar fn sequence2)))
-
-(defun map-nappend (fn sequence1 sequence2)
-  "Apply NCONC to the result of applying FN to sequence1 and sequence2."
-  (nconc (mapcar fn sequence1) (mapcar fn sequence2)))
-
 (defun genstring (string)
   "Return a GENSYM’d string."
   (string (gensym string)))
@@ -236,16 +228,6 @@
   (and (listp object)
        (every #'stringp object)))
 
-(defun true (arg)
-  "Return true for anything."
-  (declare (ignore arg))
-  t)
-
-(defun false (arg)
-  "Return false for anything."
-  (declare (ignore arg))
-  nil)
-
 (defun split-text (text &optional (regex "\\s+"))
   "Split text by REGEX."
   (cl-ppcre:split regex text))
@@ -285,15 +267,6 @@
 (defun strip-meta-chars (list)
   "Remove the trailing meta characters from LIST."
   (mapcar #'strip-meta-char list))
-
-(defmacro with-time (&body body)
-  "Execute BODY then return timing information."
-  `(time (progn ,@body (values))))
-
-(defmacro with-profiling (&body body)
-  "Run the profiler with BODY."
-  #+sbcl
-  `(sb-sprof:with-profiling (:report :graph :show-progress t) ,@body))
 
 (defun system-relative-pathname (system filename)
   "Return a pathname relative to SYSTEM and FILENAME."
