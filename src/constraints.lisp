@@ -31,14 +31,14 @@
 (defun pool-limit-p (volume pool destination &key test)
   "Return true if POOL reached the limit of, or the concept of, DESTINATION."
   (and pool (etypecase destination
-               (function (funcall test (id pool) (id (funcall destination volume))))
-               (pool (funcall test (id pool) (id destination)))
-               (t nil))))
+              (function (funcall test (id pool) (id (funcall destination volume))))
+              (pool (funcall test (id pool) (id destination)))
+              (t nil))))
 
 (defun walk-down (volume &key (origin #'volume-start)
-                           (destination #'volume-end)
-                           (skip #'false)
-                           (fn #'identity))
+                              (destination #'volume-end)
+                              (skip #'mof:false)
+                              (fn #'identity))
   "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
   (when (linkedp volume)
     (loop :for pool = (point origin volume) :then (next pool)
@@ -56,29 +56,29 @@
   (declare (ignorable volume))
   nil)
 
-(defun dispatch-nodes (pool constraints &key (type :head) (test *node-test*))
-  "Return nodes from POOL that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
+(defun dispatch-cells (pool constraints &key (type :head) (test *cell-test*))
+  "Return cells from POOL that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
   (let ((constraints (ensure-list constraints))
-        (nodes (nodes pool))
+        (cells (cells pool))
         (func (intern (string type))))
     (ecase type
       ((:index)
        (loop :for constraint :in constraints
-             :collect (nth constraint nodes)))
+             :collect (nth constraint cells)))
       ((:head :value)
        (loop :for constraint :in constraints
-             :nconc (loop :for node :in nodes
-                          :when (funcall test constraint (funcall func node))
-                          :collect node))))))
+             :nconc (loop :for cell :in cells
+                          :when (funcall test constraint (funcall func cell))
+                          :collect cell))))))
 
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
-  (:documentation "Return nodes from POOL that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
-  (:method ((o pool) constraints &key (type :head) (test *node-test*))
+  (:documentation "Return cells from POOL that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
+  (:method ((o pool) constraints &key (type :head) (test *cell-test*))
     (let ((constraints (ensure-list constraints)))
       (loop :for constraint :in constraints
             :nconc (etypecase constraint
-                     (string (dispatch-nodes o (list constraint) :type type :test test))
-                     (integer (list (nth constraint (nodes o))))))))
+                     (string (dispatch-cells o (list constraint) :type type :test test))
+                     (integer (list (nth constraint (cells o))))))))
   (:method ((o list) constraints &key (fallback ""))
     (let ((constraints (ensure-list constraints)))
       (loop :for constraint :in constraints
@@ -86,25 +86,25 @@
                        (function (funcall constraint o))
                        (integer (nth constraint o))
                        (t fallback)))))
-  (:method ((o volume) constraints &key (test *node-test*) merge)
+  (:method ((o volume) constraints &key (test *cell-test*) merge)
     (let* ((constraints (ensure-list constraints))
            (pools (loop :for pool :in (walk-down o :skip #'unitp)
-                          :collect (apply-constraints pool constraints :type :head :test test))))
+                        :collect (apply-constraints pool constraints :type :head :test test))))
       (if merge
           (reduce #'nconc pools)
           pools))))
 
 (defun resolve-constraints (pool constraints)
-  "Return the value of constraints application. This is primarily used to extract the values of nodes, whether it is a BLOB or VOLUME object."
+  "Return the value of constraints application. This is primarily used to extract the values of cells, whether it is a BLOB or VOLUME object."
   (mapcar #'value (apply-constraints pool constraints)))
 
 (defgeneric everyp (object pool constraints &key &allow-other-keys)
   (:documentation "Return true if OBJECT matches the applied version of POOL. TEST should invoke the correct function to check for equality.")
-  (:method ((o list) (p pool) constraints &key (test *node-test*))
+  (:method ((o list) (p pool) constraints &key (test *cell-test*))
     (every test
            (apply-constraints o constraints)
            (resolve-constraints p constraints)))
-  (:method ((o pool) (p pool) constraints &key (test *node-test*))
+  (:method ((o pool) (p pool) constraints &key (test *cell-test*))
     (every test
            (resolve-constraints o constraints)
            (resolve-constraints p constraints))))
@@ -127,36 +127,36 @@
 
     (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\"))
 
-returns pools from VOLUME wherein the 'country' node is the same as that of POOL.
+returns pools from VOLUME wherein the 'country' cell is the same as that of POOL.
 
     (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\" \"gender\"))
 
-returns pools from VOLUME wherein the 'country' and 'gender' nodes are the same as those of POOL.
+returns pools from VOLUME wherein the 'country' and 'gender' cells are the same as those of POOL.
 
 This generic function is mainly used for matching against data that is already inside a registry.
 ")
   (:method ((v volume) (p pool) constraints &key (origin #'volume-start)
-                                                  (test *node-test*)
-                                                  pool-exclusive)
+                                                 (test *cell-test*)
+                                                 pool-exclusive)
     (when (linkedp v)
       (let ((frames (walk-down v :origin origin
-                                  :skip #'(lambda (frm)
-                                            (or (unitp frm) (when pool-exclusive (eql frm p)))))))
+                                 :skip #'(lambda (frm)
+                                           (or (unitp frm) (when pool-exclusive (eql frm p)))))))
         (loop :for frame :in frames
               :when (everyp p frame constraints :test test)
               :collect frame))))
   (:method ((r registry) (p pool) constraints &key (origin #'volume-start)
-                                                    (test *node-test*)
-                                                    volume-exclusive
-                                                    pool-exclusive)
+                                                   (test *cell-test*)
+                                                   volume-exclusive
+                                                   pool-exclusive)
     (let ((volumes (if volume-exclusive
                        (find-other-volumes (find-volume (vid p) r) r)
                        (find-volumes r))))
       (loop :for volume :in volumes
             :nconc (find-similar-pools volume p constraints
-                                         :origin origin
-                                         :test test
-                                         :pool-exclusive pool-exclusive)))))
+                                       :origin origin
+                                       :test test
+                                       :pool-exclusive pool-exclusive)))))
 
 (defgeneric find-matching-pools (store specifiers &key &allow-other-keys)
   (:documentation "Return pools from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
@@ -171,7 +171,7 @@ returns pools that have set both the email to pwagner1x@gravatar.com and the cou
 
 This generic function is mainly used for matching againstn data that is provided by the user, which may or may not exist inside a registry.
 ")
-  (:method ((v volume) specifiers &key (type :or) (test *node-test*))
+  (:method ((v volume) specifiers &key (type :or) (test *cell-test*))
     (let ((pools (walk-down v :skip #'unitp))
           (specifiers (if (and (every-string-p specifiers)
                                (not (every-list-p specifiers)))
@@ -182,25 +182,25 @@ This generic function is mainly used for matching againstn data that is provided
                (ecase type
                  (:or (lparallel:premove
                        nil
-                       (lparallel:pmapcan #'(lambda (node)
+                       (lparallel:pmapcan #'(lambda (cell)
                                               (lparallel:pmapcar
                                                #'(lambda (specifier)
                                                    (when (destructuring-bind (head value) specifier
-                                                           (and (funcall test (head node) head)
-                                                                (funcall test (value node) value)))
+                                                           (and (funcall test (head cell) head)
+                                                                (funcall test (value cell) value)))
                                                      pool))
                                                specifiers))
-                                          (nodes pool))))
+                                          (cells pool))))
                  (:and (destructuring-bind (heads values)
                            (apply #'mapcar #'list specifiers)
-                         (let ((nodes (apply-constraints pool heads :type :head)))
-                           (when (every test (mapcar #'value nodes) values)
+                         (let ((cells (apply-constraints pool heads :type :head)))
+                           (when (every test (mapcar #'value cells) values)
                              (list pool)))))))))
   (:method ((r registry) specifiers &rest args)
-            (let ((volumes (find-volumes r)))
-              (lparallel:pmapcan #'(lambda (volume)
-                                     (apply #'find-matching-pools volume specifiers args))
-                                 volumes))))
+    (let ((volumes (find-volumes r)))
+      (lparallel:pmapcan #'(lambda (volume)
+                             (apply #'find-matching-pools volume specifiers args))
+                         volumes))))
 
 (defun headp (head volume)
   "Return true if HEAD is a header in VOLUME."
@@ -222,9 +222,9 @@ This generic function is mainly used for matching againstn data that is provided
   "Process the operators on VOLUME, handling ! and @ meta characters."
   (lparallel:pmapc #'(lambda (operator)
                        (cond ((string-end-p operator #\!)
-                              (blob-convert-nodes volume (strip-end-char operator)))
+                              (blob-convert-cells volume (strip-end-char operator)))
                              ((string-end-p operator #\@)
-                              (volume-convert-nodes volume (strip-end-char operator)))
+                              (volume-convert-cells volume (strip-end-char operator)))
                              (t nil)))
                    operators))
 
@@ -237,7 +237,7 @@ This generic function is mainly used for matching againstn data that is provided
                          :for offset = (volume-start volume) :then (next offset)
                          :while offset
                          :nconc (find-similar-pools volume pool constraints
-                                                      :origin offset :pool-exclusive t))))
+                                                    :origin offset :pool-exclusive t))))
       (remove-duplicates results))))
 
 (defun expunge-duplicates (volume terms)

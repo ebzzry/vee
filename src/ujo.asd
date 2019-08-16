@@ -11,7 +11,7 @@
   :name "ujo"
   :version "0.0.2"
   :license "MIT"
-  :description "An experimental graph system"
+  :description "An experimental hybrid knowledge system"
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
   :depends-on (#:uiop
                #:cl-ppcre

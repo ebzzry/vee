@@ -16,7 +16,7 @@
       (and *levenshtein*
            (levenshtein-equal-p string1 string2))))
 
-(defun node-equal-p (&rest args)
+(defun cell-equal-p (&rest args)
   "Return true if OBJECT1 and OBJECT2 are equal to one another."
   (cond ((every #'stringp args) (apply #'string-equal-p args))
         ((every #'blobp args) (apply #'blob-matching-p args))
@@ -24,8 +24,8 @@
         ((every #'volumep args) (apply #'extended-volume-matching-p args))
         (t (apply #'eql args))))
 
-(defvar *node-test* #'node-equal-p
-  "The test function that will be used to compare nodes.")
+(defvar *cell-test* #'cell-equal-p
+  "The test function that will be used to compare cells.")
 
 (defun initialize-lparallel ()
   "Initialize the lparallel kernel and set the number of workers."

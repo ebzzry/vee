@@ -14,10 +14,10 @@
   (decf (ucounter registry))
   (ucounter registry))
 
-(defun spawn-fcounter (volume)
-  "Update fcounter value."
-  (incf (fcounter volume))
-  (fcounter volume))
+(defun spawn-ccounter (volume)
+  "Update ccounter value."
+  (incf (ccounter volume))
+  (ccounter volume))
 
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
@@ -85,9 +85,9 @@
   (:method ((u unit) (v volume))
     (setf (gethash (id u) (table v)) u)
     u)
-  (:method ((f node) (v volume))
-    (setf (gethash (id f) (ftable v)) f)
-    f))
+  (:method ((c cell) (v volume))
+    (setf (gethash (id c) (ctable v)) c)
+    c))
 
 (defgeneric delete-frame (frame store)
   (:documentation "Remove FRAME from STORE.")
@@ -106,64 +106,64 @@
     (let ((id (id u)))
       (remhash id (table v)))))
 
-(defun make-pool (vid registry &optional prev next nodes)
+(defun make-pool (vid registry &optional prev next cells)
   "Create an instance of the pool class."
-  (make-instance 'pool :vid vid :prev prev :next next :nodes nodes :registry registry))
+  (make-instance 'pool :vid vid :prev prev :next next :cells cells :registry registry))
 
-(defun make-node (volume value)
-  "Create an instance of the node class."
-  (make-instance 'node :value value :volume volume))
+(defun make-cell (volume value)
+  "Create an instance of the cell class."
+  (make-instance 'cell :value value :volume volume))
 
-(defgeneric nodes-values (object &key &allow-other-keys)
+(defgeneric cells-values (object &key &allow-other-keys)
   (:documentation "Return the values contained inside POOL.")
   (:method ((p pool) &key expand)
-    (mapcar #'(lambda (node)
+    (mapcar #'(lambda (cell)
                 (if expand
-                    (if (blobp (value node)) (source (value node)) (value node))
-                    (value node)))
-            (nodes p)))
+                    (if (blobp (value cell)) (source (value cell)) (value cell))
+                    (value cell)))
+            (cells p)))
   (:method ((l list) &key)
-    (mapcar #'nodes-values l)))
+    (mapcar #'cells-values l)))
 
 (defmethod prev ((o null)) "Return NIL on null pools." nil)
 (defmethod next ((o null)) "Return NIL on null pools." nil)
 
-(defun link-nodes (nodes)
-  "Link NODES to each other."
-  (let ((start (first nodes))
-        (end (mof:last* nodes))
-        (nodes (nil-wrap nodes)))
-    (loop :for node-left :in nodes
-          :for node-mid :in (rest nodes)
-          :for node-right :in (rest (rest nodes))
-          :do (cond ((eql node-mid start) (setf (next node-mid) node-right))
-                    ((eql node-mid end) (setf (prev node-mid) node-left))
+(defun link-cells (cells)
+  "Link CELLS to each other."
+  (let ((start (first cells))
+        (end (mof:last* cells))
+        (cells (nil-wrap cells)))
+    (loop :for cell-left :in cells
+          :for cell-mid :in (rest cells)
+          :for cell-right :in (rest (rest cells))
+          :do (cond ((eql cell-mid start) (setf (next cell-mid) cell-right))
+                    ((eql cell-mid end) (setf (prev cell-mid) cell-left))
                     (t (progn
-                         (setf (prev node-mid) node-left)
-                         (setf (next node-mid) node-right)))))))
+                         (setf (prev cell-mid) cell-left)
+                         (setf (next cell-mid) cell-right)))))))
 
-(defun forge-nodes (values volume)
-  "Create nodes from a list of values."
-  (let ((nodes (loop :for value :in values
-                      :collect (make-node volume value))))
-    (loop :for node :in nodes
+(defun forge-cells (values volume)
+  "Create cells from a list of values."
+  (let ((cells (loop :for value :in values
+                     :collect (make-cell volume value))))
+    (loop :for cell :in cells
           :do (progn
                 (when (header volume)
-                  (destructuring-bind (header nodes)
-                      (equalize-lists (header volume) nodes)
+                  (destructuring-bind (header cells)
+                      (equalize-lists (header volume) cells)
                     (loop :for h :in header
-                          :for f :in nodes
-                          :do (when (or (nodep f) (not (mof:empty-string-p f)))
-                                (setf (head f) h)))))
-                (add-frame node volume)))
-    (link-nodes nodes)
-    nodes))
+                          :for c :in cells
+                          :do (when (or (cellp c) (not (mof:empty-string-p c)))
+                                (setf (head c) h)))))
+                (add-frame cell volume)))
+    (link-cells cells)
+    cells))
 
 (defun forge-pool (volume registry &optional prev next values)
   "Create an pool under VOLUME in REGISTRY."
   (let* ((vid (vid volume))
-         (nodes (forge-nodes values volume))
-         (pool (make-pool vid registry prev next nodes)))
+         (cells (forge-cells values volume))
+         (pool (make-pool vid registry prev next cells)))
     (add-frame pool registry)
     (add-frame pool volume)))
 
@@ -313,7 +313,7 @@
 
 (defgeneric find-volumes (registry &key &allow-other-keys)
   (:documentation "Return all volumes from REGISTRY, except SKIP")
-  (:method ((r registry) &key (skip #'false))
+  (:method ((r registry) &key (skip #'mof:false))
     (loop :for volume :being :the :hash-values :in (vtable r)
           :unless (funcall skip volume)
           :collect volume))
@@ -376,7 +376,7 @@
     (loop :for frame :in frames
           :when (and (prev frame)
                      (null (next frame)))
-            :return frame)))
+          :return frame)))
 
 (defgeneric find-pools (store)
   (:documentation "Return pools from STORE.")
@@ -435,7 +435,7 @@
 
 (defmethod value ((m match))
   "Return frame value from M."
-  (nodes-values (frame m)))
+  (cells-values (frame m)))
 
 (defmethod id ((m match))
   "Retturn frame id from M."
@@ -449,9 +449,9 @@
           :when volume
           :return (values volume registry))))
 
-(defun nodep (object)
-  "Return true if OBJECT is a node."
-  (typep object 'node))
+(defun cellp (object)
+  "Return true if OBJECT is a cell."
+  (typep object 'cell))
 
 (defun volumep (object)
   "Return true if OBJECT is a volume."

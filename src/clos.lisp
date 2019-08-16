@@ -8,10 +8,10 @@
     (with-slots (id) p
       (setf id counter))))
 
-(defmethod initialize-instance :after ((f node) &key volume)
-  "Initialize node F in VOLUME."
-  (let ((counter (spawn-fcounter volume)))
-    (with-slots (id) f
+(defmethod initialize-instance :after ((c cell) &key volume)
+  "Initialize cell F in VOLUME."
+  (let ((counter (spawn-ccounter volume)))
+    (with-slots (id) c
       (setf id counter))))
 
 (defmethod initialize-instance :after ((v volume) &key registry)
@@ -40,9 +40,9 @@
     (with-slots (id) u
       (format stream "~A" id))))
 
-(defmethod print-object ((f node) stream)
-  (print-unreadable-object (f stream :type t)
-    (with-slots (id) f
+(defmethod print-object ((c cell) stream)
+  (print-unreadable-object (c stream :type t)
+    (with-slots (id) c
       (format stream "~A" id))))
 
 (defmethod print-object ((v volume) stream)

@@ -10,7 +10,7 @@
                        :if-does-not-exist :create)
     (format out "~&~{~S~^,~}" (header volume))
     (loop :for pool :in (walk-down volume :skip #'unitp)
-          :do (format out "~&~{~S~^,~}" (nodes-values pool :expand expand)))))
+          :do (format out "~&~{~S~^,~}" (cells-values pool :expand expand)))))
 
 (defun filter-csv-file (infile outfile terms)
   "Remove duplicates in INFILE under TERMS then save the changes to OUTFILE."

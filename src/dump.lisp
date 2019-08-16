@@ -10,9 +10,9 @@
                 rid name ecounter etable ucounter utable vcounter vtable xid control))
       (progn (format t "~&** POOLS~%")
              (maphash #'(lambda (k v)
-                          (with-slots (vid id prev next nodes buriedp) v
+                          (with-slots (vid id prev next cells buriedp) v
                             (let ((fmt "~S => ~S~%")
-                                  (slots (list vid id prev next nodes buriedp)))
+                                  (slots (list vid id prev next cells buriedp)))
                               (format t fmt k slots))))
                       (etable registry))
              (format t "~&** VOLUMES~%")
@@ -48,23 +48,23 @@
           (loop :for k :being :the :hash-keys :in (table volume)
                 :for pool = (find-frame k registry)
                 :do (let ((match (first (gethash '(0) (matches pool))))
-                          (values (nodes-values (first (gethash constraint (matches pool))))))
+                          (values (cells-values (first (gethash constraint (matches pool))))))
                       (if match
-                          (format t "~&~5A => ~20S = ~5A => ~20S ~%" k (nodes-values pool)
+                          (format t "~&~5A => ~20S = ~5A => ~20S ~%" k (cells-values pool)
                                   (id match)
                                   values)
-                          (format t "~&~A => ~S~%" k (nodes-values pool)))))
+                          (format t "~&~A => ~S~%" k (cells-values pool)))))
           (format t "~&RID: ~A~%VID: ~A~%NAME: ~A~%TABLE: ~A~%PREV: ~A~%NEXT: ~A~%"
                   rid vid name table prev next))
       (values))))
 
 (defun dump-pool (pool &key complete)
   "Print information about an pool."
-  (with-slots (vid id prev next nodes buriedp) pool
+  (with-slots (vid id prev next cells buriedp) pool
     (if complete
-        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%NODES: ~S~%BURIEDP: ~S~%"
-                vid id prev next (mapcar #'value nodes) buriedp)
-        (format t "~&~S~%" (mapcar #'value nodes)))
+        (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%CELLS: ~S~%BURIEDP: ~S~%"
+                vid id prev next (mapcar #'value cells) buriedp)
+        (format t "~&~S~%" (mapcar #'value cells)))
     (values)))
 
 (defun list-registries ()

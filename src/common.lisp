@@ -205,12 +205,12 @@
   (let ((length1 (length list1))
         (length2 (length list2)))
     (flet ((fn (x y)
-             (make-list (- x y) :initial-element padding)))
+               (make-list (- x y) :initial-element padding)))
       (cond ((= length1 length2) (list list1 list2))
             ((> length1 length2) (list list1
-                                         (append list2 (fn length1 length2))))
+                                       (append list2 (fn length1 length2))))
             ((< length1 length2) (list (append list1 (fn length2 length1))
-                                         list2))))))
+                                       list2))))))
 
 (defun function-integer-p (object)
   "Return true if OBJECT is either a function or integer."

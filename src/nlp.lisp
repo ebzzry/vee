@@ -73,10 +73,10 @@
                                              (- v (gethash k hash2 0)))
                                            hash1))
                    (only-in-h2 (loop for k being the hash-keys in hash2
-                                        using (hash-value v)
-                                        appending (if (gethash k hash1)
-                                                      nil
-                                                      (list (- v))))))
+                                     using (hash-value v)
+                                     appending (if (gethash k hash1)
+                                                   nil
+                                                   (list (- v))))))
     (append in-h1-or-diff only-in-h2)))
 
 (defun euclidean-similarity (hash1 hash2)
@@ -133,7 +133,7 @@
     (bind-self volume)
     (bury-duplicates volume)
     (lparallel:pmapc #'(lambda (pool)
-                         (setf (gethash (first (nodes-values pool)) (table bow))
+                         (setf (gethash (first (cells-values pool)) (table bow))
                                (length (gethash '(0) (matches pool)))))
                      (walk-down volume :skip #'unitp))
     (delete-volume volume registry)
@@ -172,4 +172,4 @@
 (defun make-n-gram-text (&rest args)
   "Apply MAKE-N-GRAM to TEXT and return string groups."
   (loop :for group :in (apply #'make-n-gram args)
-        :collect (mapcan #'nodes-values group)))
+        :collect (mapcan #'cells-values group)))

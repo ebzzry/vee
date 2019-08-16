@@ -3,7 +3,7 @@
 (in-package #:ujo/core)
 
 (defvar *default-delimiter* #\,
-  "The default delimiter used to separate nodes.")
+  "The default delimiter used to separate cells.")
 
 (defvar *threshold* 5
   "The amount of lines to consider when trying to perform resoultion, backwards and forwards.")
@@ -29,8 +29,8 @@
 (defvar *initial-ucounter* (- *initial-ecounter*)
   "The initial unit counter value")
 
-(defvar *initial-fcounter* 1000000
-  "The initial node counter value.")
+(defvar *initial-ccounter* 1000000
+  "The initial cell counter value.")
 
 (defvar *selector-limit* 1000
   "The amount of ELT-selectors to define.")

@@ -18,8 +18,8 @@
 (defgeneric void-send (frame void)
   (:documentation "Add FRAME to VOID")
   (:method ((p pool) void)
-    (with-slots (prev next nodes) p
-      (let ((frame (make-instance 'pool :prev prev :next next :nodes nodes :registry void)))
+    (with-slots (prev next cells) p
+      (let ((frame (make-instance 'pool :prev prev :next next :cells cells :registry void)))
         (add-frame frame void))))
   (:method ((u unit) void)
     (with-slots (prev next) u
@@ -75,9 +75,9 @@
   (setf (next frame) nil))
 
 (defgeneric blank (frame)
-  (:documentation "Set a blank NODES value to FRAME, but keep it linked.")
+  (:documentation "Set a blank CELLS value to FRAME, but keep it linked.")
   (:method blank ((p pool))
-    (setf (nodes p) nil)))
+    (setf (cells p) nil)))
 
 (defun deregister (frame registry)
   "Remove FRAME from REGISTRY."

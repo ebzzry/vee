@@ -50,5 +50,5 @@
            (link-unit frm vol reg :position pos)))
     (loop :for count :from 1 :to count
           :for unit = (link frame volume registry position)
-            :then (link unit volume registry position)
+          :then (link unit volume registry position)
           :finally (return volume))))

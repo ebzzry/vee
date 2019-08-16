@@ -57,30 +57,30 @@
                            :test #'string-equal)
         #'string<))
 
-(defun split-node (node &optional (regex "\\s+"))
-  "Split a node into components."
-  (normalize-words (split-text (value node) regex)))
+(defun split-cell (cell &optional (regex "\\s+"))
+  "Split a cell into components."
+  (normalize-words (split-text (value cell) regex)))
 
-(defun make-feed (node &key transform)
-  "Create a feed from the text value stored in NODE using predefined rules."
+(defun make-feed (cell &key transform)
+  "Create a feed from the text value stored in CELL using predefined rules."
   (if transform
-      (mapcar #'list (filter-text (value node)))
-      (mapcar #'list (split-text (value node)))))
+      (mapcar #'list (filter-text (value cell)))
+      (mapcar #'list (split-text (value cell)))))
 
-(defun import-node (node &key (volume-name (make-volume-name))
-                                registry-name
-                                header
-                                transform
-                                (return 'REGISTRY))
-  "Import a single NODE to a new volume VOLUME-NAME and registry REGISTRY-NAME."
-  (when (stringp (value node))
-    (import-feed (make-feed node :transform transform)
+(defun import-cell (cell &key (volume-name (make-volume-name))
+                              registry-name
+                              header
+                              transform
+                              (return 'REGISTRY))
+  "Import a single CELL to a new volume VOLUME-NAME and registry REGISTRY-NAME."
+  (when (stringp (value cell))
+    (import-feed (make-feed cell :transform transform)
                  :volume-name volume-name
                  :registry-name registry-name
                  :header header
                  :return return)))
 
-(defun node-text (pool constraints)
+(defun cell-text (pool constraints)
   "Return processed text from POOL under CONSTRAINTS."
   (let ((text (value (first (apply-constraints pool constraints)))))
     (split-text text "\\s+")))

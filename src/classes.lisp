@@ -89,14 +89,14 @@
             :initform nil
             :accessor linkedp
             :documentation "Flag to indicate whether a volume is linked")
-   (fcounter :initarg :fcounter
-             :initform *initial-fcounter*
-             :accessor fcounter
-             :documentation "The node counter")
-   (ftable :initarg :ftable
+   (ccounter :initarg :ccounter
+             :initform *initial-ccounter*
+             :accessor ccounter
+             :documentation "The cell counter")
+   (ctable :initarg :ctable
            :initform (make-hash-table)
-           :accessor ftable
-           :documentation "The volume table"))
+           :accessor ctable
+           :documentation "The cell table"))
   (:documentation "Pointer class for the pools. It may also contain links to other volumes inside a registry"))
 
 (defclass frame ()
@@ -132,10 +132,10 @@
        :initform -1
        :reader id
        :documentation "The unique numeric ID of an pool in a registry")
-   (nodes :initarg :nodes
-           :initform ()
-           :accessor nodes
-           :documentation "The data nodes of an pool")
+   (cells :initarg :cells
+          :initform ()
+          :accessor cells
+          :documentation "The data cells of an pool")
    (matches :initarg :matches
             :initform (make-hash-table :test #'equalp)
             :accessor matches
@@ -149,33 +149,33 @@
        :documentation "The unique numeric ID of a unit in a registry"))
   (:documentation "An empty frame"))
 
-(defclass node ()
+(defclass cell ()
   ((id :initarg :id
        :initform -1
        :accessor id
-       :documentation "The unique numeric ID of a node in a frame.")
+       :documentation "The unique numeric ID of a cell in a frame.")
    (head :initarg :head
          :initform nil
          :accessor head
-         :documentation "The header node to which this node belongs to")
+         :documentation "The header cell to which this cell belongs to")
    (prev :initarg :prev
          :initform nil
          :accessor prev
-         :documentation "The previous node in a frame")
+         :documentation "The previous cell in a frame")
    (next :initarg :next
          :initform nil
          :accessor next
-         :documentation "The next node in a frame")
+         :documentation "The next cell in a frame")
    (value :initarg :value
           :initform ""
           :accessor value
-          :documentation "The text or volume value of a node")))
+          :documentation "The text or volume value of a cell")))
 
 (defclass match ()
   ((frame :initarg :frame
-           :initform nil
-           :accessor frame
-           :documentation "The matching frame")
+          :initform nil
+          :accessor frame
+          :documentation "The matching frame")
    ;; Note: this can be easily inferred from the frame
    (volume :initarg :volume
            :initform nil
@@ -191,7 +191,7 @@
   ((nid :initarg :nid
         :initform -1
         :accessor nid
-        :documentation "The node ID where this object belongs to")
+        :documentation "The cell ID where this object belongs to")
    (value :initarg :value
           :initform nil
           :accessor value
@@ -199,7 +199,7 @@
    (source :initarg :source
            :initform nil
            :accessor source
-           :documentation "The original raw text of a node"))
+           :documentation "The original raw text of a cell"))
   (:documentation "The summary of a text body"))
 
 (defclass bow ()

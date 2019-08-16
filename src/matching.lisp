@@ -52,40 +52,40 @@
   (let ((volumes (find-volumes registry)))
     (loop :for volume :in volumes :do (apply #'bind-volume-registry volume args))))
 
-(defun node-volume (node &rest args)
-  "Return a volume from the feed created from NODE."
-  (apply #'import-node node :return 'volume args))
+(defun cell-volume (cell &rest args)
+  "Return a volume from the feed created from CELL."
+  (apply #'import-cell cell :return 'volume args))
 
-(defun extract-node (pool head)
-  "Extract a node from POOL specified by HEAD."
-  (loop :for node :in (nodes pool)
-        :when (string-equal (head node) head)
-        :return (value node)))
+(defun extract-cell (pool head)
+  "Extract a cell from POOL specified by HEAD."
+  (loop :for cell :in (cells pool)
+        :when (string-equal (head cell) head)
+        :return (value cell)))
 
-(defgeneric volume-convert-node (pool constraint volume)
-  (:documentation "Replace a NODE in POOL specified by CONSTRAINT with VOLUME.")
+(defgeneric volume-convert-cell (pool constraint volume)
+  (:documentation "Replace a CELL in POOL specified by CONSTRAINT with VOLUME.")
   (:method ((p pool) (h string) (v volume))
-    (loop :for node :in (nodes p)
+    (loop :for cell :in (cells p)
           :for count = 0 :then (1+ count)
-          :when (string-equal (head node) h)
-          :do (setf (value (nth count (nodes p))) v)))
+          :when (string-equal (head cell) h)
+          :do (setf (value (nth count (cells p))) v)))
   (:method ((p pool) (i integer) (v volume))
-    (setf (value (nth i (nodes p))) v)))
+    (setf (value (nth i (cells p))) v)))
 
-(defun volume-convert-nodes (volume constraints &key transform)
-  "Replace the nodes in VOLUME specified by CONSTRAINT, to VOLUME objects."
+(defun volume-convert-cells (volume constraints &key transform)
+  "Replace the cells in VOLUME specified by CONSTRAINT, to VOLUME objects."
   (let ((registry-name (mof:cat (name (find-registry (rid volume)))
                                 (genstring "/")))
         (constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :do (loop :for pool :in (walk-down volume :skip #'unitp)
-                    :for node = (first (apply-constraints pool constraint))
-                    :for volume = (import-node node :registry-name registry-name
-                                                      :header '("element")
-                                                      :transform transform
-                                                      :return 'volume)
+                    :for cell = (first (apply-constraints pool constraint))
+                    :for volume = (import-cell cell :registry-name registry-name
+                                                    :header '("element")
+                                                    :transform transform
+                                                    :return 'volume)
                     :when volume
-                    :do (volume-convert-node pool constraint volume)))))
+                    :do (volume-convert-cell pool constraint volume)))))
 
 (defun contains-matches-p (pool constraints)
   "Return true if POOL has matches under CONSTRAINTS."
@@ -132,26 +132,26 @@
   (when (typep object 'blob)
     t))
 
-(defun make-blob (node)
-  "Return a BLOB instance from node data."
-  (if (blobp (value node))
-      (value node)
-      (let ((text (filter-text (value node))))
-        (make-instance 'blob :fid (id node) :value text :source (value node)))))
+(defun make-blob (cell)
+  "Return a BLOB instance from cell data."
+  (if (blobp (value cell))
+      (value cell)
+      (let ((text (filter-text (value cell))))
+        (make-instance 'blob :fid (id cell) :value text :source (value cell)))))
 
-(defun blob-convert-nodes (volume constraints)
-  "Replace the nodes in VOLUME specified by CONSTRAINT, to BLOB objects."
+(defun blob-convert-cells (volume constraints)
+  "Replace the cells in VOLUME specified by CONSTRAINT, to BLOB objects."
   (let ((constraints (ensure-list constraints)))
     (loop :for constraint :in constraints
           :do (loop :for pool :in (walk-down volume :skip #'unitp)
-                    :for node = (first (apply-constraints pool constraint))
-                    :for value = (value node)
-                    :do (setf (value node) (make-blob node))))))
+                    :for cell = (first (apply-constraints pool constraint))
+                    :for value = (value cell)
+                    :do (setf (value cell) (make-blob cell))))))
 
-(defun blob-matching-p (node1 node2 &key (test #'string-equal))
+(defun blob-matching-p (cell1 cell2 &key (test #'string-equal))
   "Return true if two BLOB objects are considered equal to one another, by computing its Jaccard similarity."
-  (let ((value1 (value node1))
-        (value2 (value node2)))
+  (let ((value1 (value cell1))
+        (value2 (value cell2)))
     (>= (float (* (/ (length (intersection value1 value2 :test test))
                      (length (union value1 value2 :test test)))
                   100))
