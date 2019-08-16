@@ -16,6 +16,8 @@ Reactivity
 ----------
 
 - [ ] Implement change propagation
+- [ ] Implement trigger-based mutations
+- [ ] Implement a subset of FRP for stores
 
 
 NLP
