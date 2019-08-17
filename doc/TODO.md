@@ -20,18 +20,6 @@ Reactivity
 - [ ] Implement a subset of functional reactive programming (FRP)
 
 
-NLP
----
-
-- [x] Implement text similarity using cosine similarity
-- [x] Implement text similarity using Jaccard indexing
-- [x] Implement n-gram creation
-- [x] Write word filters and transformers
-- [x] Separate stemming and lemmatization
-- [x] Implement bag-of-words using stores
-- [ ] Implement date matching
-
-
 Matching
 --------
 
@@ -45,6 +33,18 @@ Predictive analysis
 - [ ] Create probability submodels
 - [ ] Design symbolic model
 - [ ] Design statistical model
+
+
+NLP
+---
+
+- [x] Implement text similarity using cosine similarity
+- [x] Implement text similarity using Jaccard indexing
+- [x] Implement n-gram creation
+- [x] Write word filters and transformers
+- [x] Separate stemming and lemmatization
+- [x] Implement bag-of-words using stores
+- [ ] Implement date matching
 
 
 Contextualization
