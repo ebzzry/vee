@@ -119,6 +119,8 @@ Interface
 ---------
 
 - [x] Read XLSX files
+- [ ] Read XLS files
+- [ ] Read ODS files
 - [ ] Write XLSX files
 - [ ] Read JSON files
 - [ ] Write JSON files
