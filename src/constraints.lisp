@@ -37,7 +37,7 @@
 
 (defun walk-down (volume &key (origin #'volume-start)
                               (destination #'volume-end)
-                              (skip #'mof:false)
+                              (skip #'m:false)
                               (fn #'identity))
   "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
   (when (linkedp volume)

@@ -5,19 +5,22 @@
 (defun dump-registry (registry &key simple)
   "Dump the contents of the tables from REGISTRY."
   (if simple
-      (with-slots (rid name ecounter etable ucounter utable vcounter vtable xid control) registry
+      (with-slots (rid name ecounter etable ucounter utable vcounter vtable xid control)
+          registry
         (format t "~&RID: ~A~%NAME: ~S~%ECOUNTER: ~A~%ETABLE: ~A~%UCOUNTER: ~A~%UTABLE: ~A~%VCOUNTER: ~A~%VTABLE: ~A~%XID: ~A~%CONTROL: ~A~%"
                 rid name ecounter etable ucounter utable vcounter vtable xid control))
       (progn (format t "~&** POOLS~%")
              (maphash #'(lambda (k v)
-                          (with-slots (vid id prev next cells buriedp) v
+                          (with-slots (vid id prev next cells buriedp)
+                              v
                             (let ((fmt "~S => ~S~%")
                                   (slots (list vid id prev next cells buriedp)))
                               (format t fmt k slots))))
                       (etable registry))
              (format t "~&** VOLUMES~%")
              (maphash #'(lambda (k v)
-                          (with-slots (rid vid name table prev next) v
+                          (with-slots (rid vid name table prev next)
+                              v
                             (format t "~S => ~S~%" k
                                     (list rid vid name table prev next))))
                       (vtable registry)))))
@@ -26,7 +29,8 @@
   "Display inforamtion about the registries."
   (format t "~&** REGISTRIES~%")
   (maphash #'(lambda (k v)
-               (with-slots (rid name vcounter ecounter ucounter) v
+               (with-slots (rid name vcounter ecounter ucounter)
+                   v
                  (format t "~S => ~S~%" k (list rid name vcounter ecounter ucounter))))
            (rtable *world*)))
 
@@ -43,7 +47,8 @@
 (defun dump-volume (volume &key complete (constraint '(0)))
   "Print information about VOLUME."
   (let ((registry (find-registry (rid volume))))
-    (with-slots (rid vid name table prev next) volume
+    (with-slots (rid vid name table prev next)
+        volume
       (if complete
           (loop :for k :being :the :hash-keys :in (table volume)
                 :for pool = (find-frame k registry)
@@ -60,7 +65,8 @@
 
 (defun dump-pool (pool &key complete)
   "Print information about an pool."
-  (with-slots (vid id prev next cells buriedp) pool
+  (with-slots (vid id prev next cells buriedp)
+      pool
     (if complete
         (format t "~&VID: ~S~%ID: ~S~%PREV: ~S~%NEXT: ~S~%CELLS: ~S~%BURIEDP: ~S~%"
                 vid id prev next (mapcar #'value cells) buriedp)

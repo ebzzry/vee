@@ -22,7 +22,7 @@
                                   extract-header
                                   header)
   "Import a CSV file into the world."
-  (let* ((file (mof:expand-pathname path))
+  (let* ((file (m:expand-pathname path))
          (feed (read-csv-file file :delimiter delimiter))
          (registry (find-registry registry-name))
          (name (if (find-volume volume-name registry)
@@ -37,7 +37,7 @@
                                    extract-header
                                    header)
   "Import an XLSX file into the world."
-  (let* ((file (mof:expand-pathname path))
+  (let* ((file (m:expand-pathname path))
          (feeds (read-xlsx-file file))
          (registry (find-registry registry-name)))
     (loop :for feed :in feeds

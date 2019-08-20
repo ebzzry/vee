@@ -10,8 +10,8 @@
   "Create a unit under VOLUME within REGISTRY."
   (let* ((vid (vid volume))
          (unit (make-unit vid registry)))
-    (add-frame unit registry)
-    (add-frame unit volume)
+    (add-object unit registry)
+    (add-object unit volume)
     unit))
 
 (defun link-unit-before (frame volume registry)
@@ -41,7 +41,7 @@
 (defun link-unit (frame volume registry &key (position :after))
   "Link a unit POSITION FRAME in VOLUME within REGISTRY."
   (when (keywordp position)
-    (let ((fn (intern (mof:cat "LINK-UNIT-" (string position)))))
+    (let ((fn (intern (m:cat "LINK-UNIT-" (string position)))))
       (funcall fn frame volume registry))))
 
 (defun link-units (frame volume registry count &key (position :after))

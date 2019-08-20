@@ -74,7 +74,7 @@
 
 (defun volume-convert-cells (volume constraints &key transform)
   "Replace the cells in VOLUME specified by CONSTRAINT, to VOLUME objects."
-  (let ((registry-name (mof:cat (name (find-registry (rid volume)))
+  (let ((registry-name (m:cat (name (find-registry (rid volume)))
                                 (genstring "/")))
         (constraints (ensure-list constraints)))
     (loop :for constraint :in constraints

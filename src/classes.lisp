@@ -89,6 +89,7 @@
             :initform nil
             :accessor linkedp
             :documentation "Flag to indicate whether a volume is linked")
+   ;; Note: should these be moved to the pool level?
    (ccounter :initarg :ccounter
              :initform *initial-ccounter*
              :accessor ccounter
@@ -96,7 +97,15 @@
    (ctable :initarg :ctable
            :initform (make-hash-table)
            :accessor ctable
-           :documentation "The cell table"))
+           :documentation "The cell table")
+   (left :initarg :left
+         :initform nil
+         :accessor left
+         :documentation "The volume on the left.")
+   (right :initarg :right
+          :initform nil
+          :accessor right
+          :documentation "The volume on the right."))
   (:documentation "Pointer class for the pools. It may also contain links to other volumes inside a registry"))
 
 (defclass frame ()

@@ -5,7 +5,7 @@
 (defun void-name (template)
   "Return the void name of TEMPLATE."
   (let* ((name (name template))
-         (vname (mof:cat "%" name)))
+         (vname (m:cat "%" name)))
     vname))
 
 (defun void-create (template)
@@ -18,13 +18,15 @@
 (defgeneric void-send (frame void)
   (:documentation "Add FRAME to VOID")
   (:method ((p pool) void)
-    (with-slots (prev next cells) p
+    (with-slots (prev next cells)
+        p
       (let ((frame (make-instance 'pool :prev prev :next next :cells cells :registry void)))
-        (add-frame frame void))))
+        (add-object frame void))))
   (:method ((u unit) void)
-    (with-slots (prev next) u
+    (with-slots (prev next)
+        u
       (let ((frame (make-instance 'unit :prev prev :next next :registry void)))
-        (add-frame frame void)))))
+        (add-object frame void)))))
 
 (defun void-get (id void)
   "Return an item by ID from VOID"
@@ -83,8 +85,8 @@
   "Remove FRAME from REGISTRY."
   (let* ((vid (vid frame))
          (volume (find-volume vid registry)))
-    (delete-frame frame registry)
-    (delete-frame frame volume)
+    (delete-object frame registry)
+    (delete-object frame volume)
     (values)))
 
 (defun banish (frame registry)

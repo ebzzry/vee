@@ -5,6 +5,7 @@ TODO
 Stores
 ------
 
+- [x] Implement shallow copying of volumes and registries
 - [ ] Implement store layers
 - [ ] Implement store overlays
 - [ ] Implement `+` and `-` operations on stores

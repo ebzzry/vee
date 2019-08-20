@@ -21,8 +21,8 @@
 
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
-  (mof:with-gensyms (global)
-    `(let ((,global ,(intern (mof:cat "*INITIAL-" (string accessor) "*"))))
+  (m:with-gensyms (global)
+    `(let ((,global ,(intern (m:cat "*INITIAL-" (string accessor) "*"))))
        (progn
          (setf (,accessor ,registry) ,global)
          (values)))))
@@ -46,7 +46,7 @@
   (setf (rtable *world*) (make-hash-table))
   (initialize-lparallel)
   (values))
-(mof:defalias reset reset-world)
+(m:defalias reset reset-world)
 
 (defun reset-registry (registry)
   "Reset the contents of REGISTRY."
@@ -68,8 +68,8 @@
   (setf (gethash (rcounter *world*) (rtable *world*)) registry)
   registry)
 
-(defgeneric add-frame (frame store)
-  (:documentation "Add FRAME to REGISTRY.")
+(defgeneric add-object (object store)
+  (:documentation "Add OBJECT to STORE.")
   (:method ((v volume) (r registry))
     (setf (gethash (vcounter r) (vtable r)) v)
     v)
@@ -89,8 +89,8 @@
     (setf (gethash (id c) (ctable v)) c)
     c))
 
-(defgeneric delete-frame (frame store)
-  (:documentation "Remove FRAME from STORE.")
+(defgeneric delete-object (object store)
+  (:documentation "Remove OBJECT from STORE.")
   (:method ((p pool) (r registry))
     (let ((id (id p)))
       (remhash id (etable r))
@@ -131,7 +131,7 @@
 (defun link-cells (cells)
   "Link CELLS to each other."
   (let ((start (first cells))
-        (end (mof:last* cells))
+        (end (m:last* cells))
         (cells (nil-wrap cells)))
     (loop :for cell-left :in cells
           :for cell-mid :in (rest cells)
@@ -153,9 +153,9 @@
                       (equalize-lists (header volume) cells)
                     (loop :for h :in header
                           :for c :in cells
-                          :do (when (or (cellp c) (not (mof:empty-string-p c)))
+                          :do (when (or (cellp c) (not (m:empty-string-p c)))
                                 (setf (head c) h)))))
-                (add-frame cell volume)))
+                (add-object cell volume)))
     (link-cells cells)
     cells))
 
@@ -164,8 +164,8 @@
   (let* ((vid (vid volume))
          (cells (forge-cells values volume))
          (pool (make-pool vid registry prev next cells)))
-    (add-frame pool registry)
-    (add-frame pool volume)))
+    (add-object pool registry)
+    (add-object pool volume)))
 
 (defun make-volume (registry name &optional (prev -1) (next -1))
   "Create an instance of the volume class."
@@ -177,7 +177,7 @@
 (defun forge-volume (registry name &optional (prev -1) (next -1))
   "Create a volume under registry RID in REGISTRY."
   (let ((volume (make-volume registry name prev next)))
-    (add-frame volume registry)))
+    (add-object volume registry)))
 
 (defun make-registry (&optional (name (make-registry-name)))
   "Create an instance of the registry class."
@@ -198,17 +198,30 @@
             (add-registry r))
           registry))))
 
-(defun clone-registry (template)
-  "Create a selective copy of TEMPLATE."
-  (with-slots (name ecounter etable ucounter utable vcounter vtable) template
-    (let* ((cname (mof:cat name (genstring "/")))
-           (clone (make-instance 'registry
+(defun shallow-copy-registry (registry)
+  "Create a shallow copy of REGISTRY."
+  (with-slots (name ecounter etable ucounter utable vcounter vtable)
+      registry
+    (let* ((cname (m:cat name (genstring "/")))
+           (copy (make-instance 'registry
                                  :rid (spawn-rcounter) :name cname
                                  :ecounter ecounter :etable etable
                                  :ucounter ucounter :utable utable
                                  :vcounter vcounter :vtable vtable)))
-      (add-registry clone)
-      clone)))
+      (add-registry copy))))
+
+(defun shallow-copy-volume (volume)
+  "Create a shallow copy of VOLUME."
+  (with-slots (rid name prev next)
+      volume
+    (let* ((registry (find-registry rid))
+           (cname (m:cat name (genstring "/")))
+           (copy (make-instance 'volume
+                                :rid rid :name cname
+                                :prev prev :next next
+                                :registry (find-registry rid)
+                                :link nil)))
+      (add-object copy registry))))
 
 (defun build-registry ()
   "Return a new unique registry."
@@ -259,7 +272,7 @@
   "Link the frames in VOLUME to one another."
   (let* ((frames (find-frames volume))
          (cstart (id (first frames)))
-         (cend (id (mof:last* frames))))
+         (cend (id (m:last* frames))))
     (when frames
       (loop :for frame :in frames
             :for id = (id frame)
@@ -287,7 +300,7 @@
     nil)
   (:method ((r registry))
     r))
-(mof:defalias search-registry find-registry)
+(m:defalias search-registry find-registry)
 
 (defun find-registries ()
   "Return all registries from the world."
@@ -313,7 +326,7 @@
 
 (defgeneric find-volumes (registry &key &allow-other-keys)
   (:documentation "Return all volumes from REGISTRY, except SKIP")
-  (:method ((r registry) &key (skip #'mof:false))
+  (:method ((r registry) &key (skip #'m:false))
     (loop :for volume :being :the :hash-values :in (vtable r)
           :unless (funcall skip volume)
           :collect volume))
@@ -423,7 +436,7 @@
 (defun max-volume (registry)
   "Return the biggest volume in REGISTRY. Size is determined by the number of frames."
   (first (sort (find-volumes registry) #'> :key #'(lambda (v) (hash-table-size (table v))))))
-(mof:defalias wall max-volume)
+(m:defalias wall max-volume)
 
 (defun forge-frame (&optional prev next left right buriedp)
   "Return a frame instance."
