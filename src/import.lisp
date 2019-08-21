@@ -129,7 +129,7 @@
   "Import a plain text containing prose text into the registry."
   (let* ((items (filter-flat-text text regex))
          (feed (mapcar #'list items))
-         (registry (or (find-registry registry-name) (build-registry)))
+         (registry (or (find-registry registry-name) (spawn-registry registry-name)))
          (rname (name registry))
          (vname (or volume-name (make-volume-name))))
     (import-feed feed :volume-name vname :registry-name rname :header header)
