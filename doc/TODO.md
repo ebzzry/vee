@@ -2,6 +2,12 @@ TODO
 ====
 
 
+Optimization
+------------
+
+- [] Use arrays instead of lists when possible
+
+
 Stores
 ------
 
