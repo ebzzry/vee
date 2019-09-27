@@ -196,7 +196,10 @@
       (if (not registry)
           (let ((r (make-registry)))
             (add-registry r))
-          registry))))
+          registry)))
+  (:method ((query null))
+    (let ((name (make-registry-name)))
+      (spawn-registry name))))
 
 (defun shallow-copy-registry (registry)
   "Create a shallow copy of REGISTRY."
