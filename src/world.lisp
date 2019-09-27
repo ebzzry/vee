@@ -1,6 +1,6 @@
 ;;;; world.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defmacro spawn-counter (registry accessor)
   "Generate a new counter in REGISTRY with ACCESSOR."

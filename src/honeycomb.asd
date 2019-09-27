@@ -1,14 +1,14 @@
-;;;; ujo.asd
+;;;; honeycomb.asd
 
 #-asdf3.1 (error "ASDF 3.1 or bust!")
 
-(defpackage #:ujo-system
+(defpackage #:honeycomb-system
   (:use #:cl #:asdf))
 
-(in-package #:ujo-system)
+(in-package #:honeycomb-system)
 
-(defsystem :ujo
-  :name "ujo"
+(defsystem :honeycomb
+  :name "honeycomb"
   :version "0.0.3"
   :license "MIT"
   :description "An experimental hybrid knowledge system"

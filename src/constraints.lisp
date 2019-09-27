@@ -1,6 +1,6 @@
 ;;;; constraints.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defun point (origin volume)
   "Return starting point based on the type of origin."

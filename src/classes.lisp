@@ -1,6 +1,6 @@
 ;;;; classes.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defclass world ()
   ((rcounter :initarg :rcounter

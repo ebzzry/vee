@@ -1,6 +1,6 @@
 ;;;; common.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defun slurp-file (path)
   "Read entire file as string."

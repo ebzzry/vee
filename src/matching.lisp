@@ -1,6 +1,6 @@
 ;;;; matching.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defun bind-matches (store pool constraints &rest args)
   "Bind matching frames of POOL in STORE."

@@ -1,6 +1,6 @@
 ;;;; writers.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defun write-file (volume file &key expand)
   "Print the contents of VOLUME to FILE. If EXPAND is true, blobs and volumes will expand to their original forms."

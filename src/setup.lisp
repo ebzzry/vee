@@ -1,6 +1,6 @@
 ;;;; setup.lisp
 
-(in-package #:ujo/core)
+(in-package #:honeycomb/core)
 
 (defmacro defselectors (prefix count)
   "Define list selectors prefixed with PREFIX that will act as sequence accessors."

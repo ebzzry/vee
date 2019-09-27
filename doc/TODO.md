@@ -2,12 +2,6 @@ TODO
 ====
 
 
-Optimization
-------------
-
-- [] Use arrays instead of lists when possible
-
-
 Stores
 ------
 
@@ -17,6 +11,13 @@ Stores
 - [ ] Implement `+` and `-` operations on stores
 - [ ] Implement destructuring and reassembly of stores
 - [ ] Implement volume groups
+
+
+Optimization
+------------
+
+- [ ] Use arrays instead of lists in certain places
+- [ ] Sparingly declare types of parameters
 
 
 Reactivity
