@@ -1,15 +1,15 @@
-;;;; honeycomb.asd
+;;;; vee.asd
 
 #-asdf3.1 (error "ASDF 3.1 or bust!")
 
-(defpackage #:honeycomb-system
+(defpackage #:vee-system
   (:use #:cl #:asdf))
 
-(in-package #:honeycomb-system)
+(in-package #:vee-system)
 
-(defsystem :honeycomb
-  :name "honeycomb"
-  :version "0.0.3"
+(defsystem :vee
+  :name "vee"
+  :version "1.0.0"
   :license "MIT"
   :description "An experimental hybrid knowledge system"
   :author "Rommel MARTINEZ <ebzzry@ebzzry.io>"
@@ -17,12 +17,11 @@
                #:cl-ppcre
                #:cl-csv
                #:cl-nlp
-               #:mof
+               #:marie
                #:closer-mop
                #:cl-cpus
                #:lparallel
-               #:cl-xlsx
-               #+sbcl #:sb-sprof)
+               #:cl-xlsx)
   :serial t
   :components ((:file "packages")
                (:file "globals")

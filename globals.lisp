@@ -1,6 +1,6 @@
 ;;;; globals.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defvar *default-delimiter* #\,
   "The default delimiter used to separate cells.")

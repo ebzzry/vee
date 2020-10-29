@@ -1,6 +1,6 @@
 ;;;; import.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun import-feed (feed &key volume-name registry-name extract-header header (return 'REGISTRY))
   "Import items from FEED to REGISTRY with VOLUME-NAME and REGISTRY-NAME as names for the volume and the registry, respectively. If EXTRACT-HEADER is used, the header found in FEED will be used as volume header. If HEADER is used, "
@@ -22,7 +22,7 @@
                                   extract-header
                                   header)
   "Import a CSV file into the world."
-  (let* ((file (m:expand-pathname path))
+  (let* ((file (expand-pathname path))
          (feed (read-csv-file file :delimiter delimiter))
          (registry (find-registry registry-name))
          (name (if (find-volume volume-name registry)
@@ -37,7 +37,7 @@
                                    extract-header
                                    header)
   "Import an XLSX file into the world."
-  (let* ((file (m:expand-pathname path))
+  (let* ((file (expand-pathname path))
          (feeds (read-xlsx-file file))
          (registry (find-registry registry-name)))
     (loop :for feed :in feeds

@@ -1,6 +1,6 @@
 ;;;; classes.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defclass world ()
   ((rcounter :initarg :rcounter

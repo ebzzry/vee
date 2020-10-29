@@ -1,6 +1,6 @@
 ;;;; constraints.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun point (origin volume)
   "Return starting point based on the type of origin."
@@ -9,7 +9,8 @@
     (pool origin)))
 
 (defun walk-up (volume &key (origin #'volume-end) (fn #'identity))
-  "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
+  "Return frames from VOLUME starting from frame ORIGIN applying FN to each
+frame."
   (when (linkedp volume)
     (loop :for pool = (point origin volume) :then (prev pool)
           :while pool
@@ -37,9 +38,10 @@
 
 (defun walk-down (volume &key (origin #'volume-start)
                               (destination #'volume-end)
-                              (skip #'m:false)
+                              (skip #'false)
                               (fn #'identity))
-  "Return frames from VOLUME starting from frame ORIGIN applying FN to each frame."
+  "Return frames from VOLUME starting from frame ORIGIN applying FN to each
+frame."
   (when (linkedp volume)
     (loop :for pool = (point origin volume) :then (next pool)
           :while (pool-limit-p volume pool destination :test #'<=)
@@ -57,7 +59,9 @@
   nil)
 
 (defun dispatch-cells (pool constraints &key (type :head) (test *cell-test*))
-  "Return cells from POOL that satisfy CONSTRAINTS. The result is designed to be not orthogonal to the length of CONSTRAINTS because header-specifiers can exist multiple times in a header."
+  "Return cells from POOL that satisfy CONSTRAINTS. The result is designed to be
+not orthogonal to the length of CONSTRAINTS because header-specifiers can exist
+multiple times in a header."
   (let ((constraints (ensure-list constraints))
         (cells (cells pool))
         (func (intern (string type))))
@@ -72,7 +76,8 @@
                           :collect cell))))))
 
 (defgeneric apply-constraints (object constraints &key &allow-other-keys)
-  (:documentation "Return cells from POOL that satisfy CONSTRAINTS, where CONSTRAINTS is a list of header-specifiers or integer indexes.")
+  (:documentation "Return cells from POOL that satisfy CONSTRAINTS, where
+  CONSTRAINTS is a list of header-specifiers or integer indexes.")
   (:method ((o pool) constraints &key (type :head) (test *cell-test*))
     (let ((constraints (ensure-list constraints)))
       (loop :for constraint :in constraints
@@ -95,11 +100,13 @@
           pools))))
 
 (defun resolve-constraints (pool constraints)
-  "Return the value of constraints application. This is primarily used to extract the values of cells, whether it is a BLOB or VOLUME object."
+  "Return the value of constraints application. This is primarily used to
+extract the values of cells, whether it is a BLOB or VOLUME object."
   (mapcar #'value (apply-constraints pool constraints)))
 
 (defgeneric everyp (object pool constraints &key &allow-other-keys)
-  (:documentation "Return true if OBJECT matches the applied version of POOL. TEST should invoke the correct function to check for equality.")
+  (:documentation "Return true if OBJECT matches the applied version of
+  POOL. TEST should invoke the correct function to check for equality.")
   (:method ((o list) (p pool) constraints &key (test *cell-test*))
     (every test
            (apply-constraints o constraints)
@@ -123,17 +130,22 @@
         -1)))
 
 (defgeneric find-similar-pools (store pool constraints &key &allow-other-keys)
-  (:documentation "Return pools from VOLUME that satisfy CONSTRAINTS as applied to POOL, where CONSTRAINTS is a list of header-specifiers to match against. The function specified by TEST will determine equality.
+  (:documentation "Return pools from VOLUME that satisfy CONSTRAINTS as applied
+  to POOL, where CONSTRAINTS is a list of header-specifiers to match
+  against. The function specified by TEST will determine equality.
 
     (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\"))
 
-returns pools from VOLUME wherein the 'country' cell is the same as that of POOL.
+returns pools from VOLUME wherein the 'country' cell is the same as that of
+POOL.
 
     (FIND-SIMILAR-POOLS VOLUME POOL '(\"country\" \"gender\"))
 
-returns pools from VOLUME wherein the 'country' and 'gender' cells are the same as those of POOL.
+returns pools from VOLUME wherein the 'country' and 'gender' cells are the same
+as those of POOL.
 
-This generic function is mainly used for matching against data that is already inside a registry.
+This generic function is mainly used for matching against data that is already
+inside a registry.
 ")
   (:method ((v volume) (p pool) constraints &key (origin #'volume-start)
                                                  (test *cell-test*)
@@ -159,17 +171,22 @@ This generic function is mainly used for matching against data that is already i
                                        :pool-exclusive pool-exclusive)))))
 
 (defgeneric find-matching-pools (store specifiers &key &allow-other-keys)
-  (:documentation "Return pools from STORE that SPECIFIERS, where SPECIFIERS are lists of header-specifier and header-value lists, or a single item of such type. The function specified by TEST will determine equality.
+  (:documentation "Return pools from STORE that SPECIFIERS, where SPECIFIERS are
+  lists of header-specifier and header-value lists, or a single item of such
+  type. The function specified by TEST will determine equality.
 
     (FIND-MATCHING-POOLS STORE '((\"email\" \"sstanleynh@wp.com\") (\"country\" \"Philippines\")) :TYPE :OR)
 
-returns pools that have set either the email to sstanleynh@wp.com or the country to Philippines.
+returns pools that have set either the email to sstanleynh@wp.com or the country
+to Philippines.
 
     (FIND-MATCHING-POOLS STORE '((\"email\" \"pwagner1x@gravatar.com\") (\"country\" \"Italy\")) :TYPE :AND)
 
-returns pools that have set both the email to pwagner1x@gravatar.com and the country to Italy.
+returns pools that have set both the email to pwagner1x@gravatar.com and the
+country to Italy.
 
-This generic function is mainly used for matching againstn data that is provided by the user, which may or may not exist inside a registry.
+This generic function is mainly used for matching against data that is provided
+by the user, which may or may not exist inside a registry.
 ")
   (:method ((v volume) specifiers &key (type :or) (test *cell-test*))
     (let ((pools (walk-down v :skip #'unitp))

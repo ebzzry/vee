@@ -1,6 +1,6 @@
 ;;;; examples.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (import-csv-file "~/e/dat/csv/userdata/userdata1.csv" :extract-header t)
 (import-csv-file "~/e/dat/csv/userdata/userdata2.csv" :extract-header t)

@@ -2,12 +2,13 @@
 
 (in-package #:cl-user)
 
-(uiop:define-package #:honeycomb/core
-    (:use #:cl)
-  (:nicknames #:honeycomb)
+(uiop:define-package #:vee/core
+  (:use #:cl
+        #:marie)
+  (:nicknames #:vee)
   (:export #:import-csv-file
            #:filter-csv-file))
 
-(uiop:define-package #:honeycomb/tests
-    (:use #:cl
-          #:honeycomb/core))
+(uiop:define-package #:vee/tests
+  (:use #:cl
+        #:vee/core))

@@ -1,11 +1,11 @@
 ;;;; void.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun void-name (template)
   "Return the void name of TEMPLATE."
   (let* ((name (name template))
-         (vname (m:cat "%" name)))
+         (vname (cat "%" name)))
     vname))
 
 (defun void-create (template)

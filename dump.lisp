@@ -1,6 +1,6 @@
 ;;; dump.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun dump-registry (registry &key simple)
   "Dump the contents of the tables from REGISTRY."

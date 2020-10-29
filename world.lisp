@@ -1,6 +1,6 @@
 ;;;; world.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defmacro spawn-counter (registry accessor)
   "Generate a new counter in REGISTRY with ACCESSOR."
@@ -21,8 +21,8 @@
 
 (defmacro reset-counter (registry accessor)
   "Reset counter in REGISTRY with ACCESSOR."
-  (m:with-gensyms (global)
-    `(let ((,global ,(intern (m:cat "*INITIAL-" (string accessor) "*"))))
+  (with-gensyms (global)
+    `(let ((,global ,(intern (cat "*INITIAL-" (string accessor) "*"))))
        (progn
          (setf (,accessor ,registry) ,global)
          (values)))))
@@ -40,13 +40,12 @@
   (setf (rcounter *world*) *initial-rcounter*)
   (values))
 
-(defun reset-world ()
+(def (reset-world reset) ()
   "Reset the whole world."
   (setf (rcounter *world*) *initial-rcounter*)
   (setf (rtable *world*) (make-hash-table))
   (initialize-lparallel)
   (values))
-(m:defalias reset reset-world)
 
 (defun reset-registry (registry)
   "Reset the contents of REGISTRY."
@@ -131,7 +130,7 @@
 (defun link-cells (cells)
   "Link CELLS to each other."
   (let ((start (first cells))
-        (end (m:last* cells))
+        (end (end cells))
         (cells (nil-wrap cells)))
     (loop :for cell-left :in cells
           :for cell-mid :in (rest cells)
@@ -153,7 +152,7 @@
                       (equalize-lists (header volume) cells)
                     (loop :for h :in header
                           :for c :in cells
-                          :do (when (or (cellp c) (not (m:empty-string-p c)))
+                          :do (when (or (cellp c) (not (empty-string-p c)))
                                 (setf (head c) h)))))
                 (add-object cell volume)))
     (link-cells cells)
@@ -205,7 +204,7 @@
   "Create a shallow copy of REGISTRY."
   (with-slots (name ecounter etable ucounter utable vcounter vtable)
       registry
-    (let* ((cname (m:cat name (genstring "/")))
+    (let* ((cname (cat name (genstring "/")))
            (copy (make-instance 'registry
                                  :rid (spawn-rcounter) :name cname
                                  :ecounter ecounter :etable etable
@@ -218,7 +217,7 @@
   (with-slots (rid name prev next)
       volume
     (let* ((registry (find-registry rid))
-           (cname (m:cat name (genstring "/")))
+           (cname (cat name (genstring "/")))
            (copy (make-instance 'volume
                                 :rid rid :name cname
                                 :prev prev :next next
@@ -275,7 +274,7 @@
   "Link the frames in VOLUME to one another."
   (let* ((frames (find-frames volume))
          (cstart (id (first frames)))
-         (cend (id (m:last* frames))))
+         (cend (id (end frames))))
     (when frames
       (loop :for frame :in frames
             :for id = (id frame)
@@ -303,7 +302,6 @@
     nil)
   (:method ((r registry))
     r))
-(m:defalias search-registry find-registry)
 
 (defun find-registries ()
   "Return all registries from the world."
@@ -329,7 +327,7 @@
 
 (defgeneric find-volumes (registry &key &allow-other-keys)
   (:documentation "Return all volumes from REGISTRY, except SKIP")
-  (:method ((r registry) &key (skip #'m:false))
+  (:method ((r registry) &key (skip #'false))
     (loop :for volume :being :the :hash-values :in (vtable r)
           :unless (funcall skip volume)
           :collect volume))
@@ -436,10 +434,9 @@
                                (sort-frames frames)
                                frames)))))
 
-(defun max-volume (registry)
+(def (max-volume wall) (registry)
   "Return the biggest volume in REGISTRY. Size is determined by the number of frames."
   (first (sort (find-volumes registry) #'> :key #'(lambda (v) (hash-table-size (table v))))))
-(m:defalias wall max-volume)
 
 (defun forge-frame (&optional prev next left right buriedp)
   "Return a frame instance."

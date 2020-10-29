@@ -1,12 +1,12 @@
 ;;;; setup.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defmacro defselectors (prefix count)
   "Define list selectors prefixed with PREFIX that will act as sequence accessors."
   `(progn
      ,@(loop :for n :from 0 :to count
-             :for name = (read-from-string (m:cat prefix (write-to-string n)))
+             :for name = (read-from-string (cat prefix (write-to-string n)))
              :collect `(defun ,name (list) (elt list ,n)))))
 (defselectors "elt" 100)
 

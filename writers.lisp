@@ -1,10 +1,10 @@
 ;;;; writers.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun write-file (volume file &key expand)
   "Print the contents of VOLUME to FILE. If EXPAND is true, blobs and volumes will expand to their original forms."
-  (with-open-file (out (m:expand-pathname file)
+  (with-open-file (out (expand-pathname file)
                        :direction :output
                        :if-exists :supersede
                        :if-does-not-exist :create)

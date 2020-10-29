@@ -1,6 +1,6 @@
 ;;;; common.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun slurp-file (path)
   "Read entire file as string."
@@ -23,7 +23,7 @@
 
 (defun read-csv-file (file &key (delimiter *default-delimiter*))
   "Read CSV data from FILE."
-  (fix-feed (cl-csv:read-csv (m:expand-pathname file) :separator delimiter)))
+  (fix-feed (cl-csv:read-csv (expand-pathname file) :separator delimiter)))
 
 (defun read-csv-stream (stream &key (delimiter *default-delimiter*))
   "Read CSV data from STREAM."
@@ -36,7 +36,7 @@
 
 (defun read-xlsx-file (file)
   "Read XLSX data from FILE, returning a list of data from the sheets."
-  (cl-xlsx:read-xlsx (m:expand-pathname file)))
+  (cl-xlsx:read-xlsx (expand-pathname file)))
 
 (defun delimit (list)
   "Returns items in LIST as tab-separated values."
@@ -44,7 +44,7 @@
 
 (defun join (items)
   "Return a string from items in LIST."
-  (reduce #'m:cat items))
+  (reduce #'cat items))
 
 (defun join-n (items n &key (selector #'elt0))
   "Join strings from items with N count."
@@ -97,7 +97,7 @@
 
 (defun peek (feed limit &key (selector #'elt0))
   "Return a string formed by looking ahead LIMIT number of pools in FEED."
-  (m:join-strings (mapcar selector (take (read-tsv-string feed) limit))))
+  (join (mapcar selector (take (read-tsv-string feed) limit))))
 
 (defun peek-file (file limit)
   "Like PEEK but from a disk file."
@@ -126,13 +126,13 @@
 (defun clean-feed (feed)
   "Remove extraneous pools in FEED."
   (remove-if #'(lambda (item)
-                 (some #'m:empty-string-p item))
+                 (some #'empty-string-p item))
              feed))
 
 (defun read-feed-file (file &key (delimiter *default-delimiter*))
   "Read feed from file and perform clean-ups as necessary."
-  (fix-feed (read-csv-file (m:expand-pathname file) :delimiter delimiter)))
-;; (m:defalias read-file read-feed-file)
+  (fix-feed (read-csv-file (expand-pathname file) :delimiter delimiter)))
+;; (defalias read-file read-feed-file)
 
 (defun separators (string)
   "Return the separator used in STRING."
@@ -175,7 +175,7 @@
 
 (defun build-name (template fallback)
   "Return a generate name from TEMPLATE; otherwise use FALLBACK."
-  (if (null (m:empty-string-p fallback))
+  (if (null (empty-string-p fallback))
       fallback
       (let ((string (string-upcase template)))
         (genstring string))))
@@ -238,7 +238,7 @@
 
 (defun basedir (path)
   "Return the parent directory of PATH."
-  (m:last* (pathname-directory path)))
+  (end (pathname-directory path)))
 
 (defun string-end-p (string char)
   "Return true if STRING ends with CHAR."

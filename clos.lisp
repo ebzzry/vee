@@ -1,6 +1,6 @@
 ;;;; clos.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defmethod initialize-instance :after ((p pool) &key registry)
   "Initialize pool P in REGISTRY."

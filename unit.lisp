@@ -1,6 +1,6 @@
 ;;;; unit.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."
@@ -41,7 +41,7 @@
 (defun link-unit (frame volume registry &key (position :after))
   "Link a unit POSITION FRAME in VOLUME within REGISTRY."
   (when (keywordp position)
-    (let ((fn (intern (m:cat "LINK-UNIT-" (string position)))))
+    (let ((fn (intern (cat "LINK-UNIT-" (string position)))))
       (funcall fn frame volume registry))))
 
 (defun link-units (frame volume registry count &key (position :after))

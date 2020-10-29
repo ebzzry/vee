@@ -1,6 +1,6 @@
 ;;;; initialize.lisp
 
-(in-package #:honeycomb/core)
+(in-package #:vee/core)
 
 (initialize-lparallel)
 (initialize-dictionary)
