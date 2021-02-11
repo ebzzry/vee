@@ -1,6 +1,6 @@
 ;;;; void.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun void-name (template)
   "Return the void name of TEMPLATE."

@@ -1,6 +1,6 @@
 ;;;; import.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun import-feed (feed &key volume-name registry-name extract-header header (return 'REGISTRY))
   "Import items from FEED to REGISTRY with VOLUME-NAME and REGISTRY-NAME as names for the volume and the registry, respectively. If EXTRACT-HEADER is used, the header found in FEED will be used as volume header. If HEADER is used, "

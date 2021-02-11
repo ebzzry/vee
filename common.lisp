@@ -1,6 +1,6 @@
 ;;;; common.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun slurp-file (path)
   "Read entire file as string."

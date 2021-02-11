@@ -1,6 +1,6 @@
 ;;;; nlp.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun levenshtein (a b)
   "Return the Levenshtein distance between A and B."

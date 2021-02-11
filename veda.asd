@@ -1,14 +1,14 @@
-;;;; vee.asd
+;;;; veda.asd
 
-#-asdf3.1 (error "ASDF 3.1 or bust!")
+#-ASDF3.1 (error "ASDF 3.1 or bust!")
 
-(defpackage #:vee-system
+(defpackage #:veda-system
   (:use #:cl #:asdf))
 
-(in-package #:vee-system)
+(in-package #:veda-system)
 
-(defsystem :vee
-  :name "vee"
+(defsystem :veda
+  :name "veda"
   :version "1.0.0"
   :license "MIT"
   :description "An experimental hybrid knowledge system"

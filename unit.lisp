@@ -1,6 +1,6 @@
 ;;;; unit.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun make-unit (vid registry)
   "Create an instance of the unit class."

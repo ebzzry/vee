@@ -1,6 +1,6 @@
 ;;;; setup.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defmacro defselectors (prefix count)
   "Define list selectors prefixed with PREFIX that will act as sequence accessors."

@@ -1,6 +1,6 @@
 ;;;; classes.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defclass world ()
   ((rcounter :initarg :rcounter

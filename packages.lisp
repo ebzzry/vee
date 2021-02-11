@@ -2,13 +2,13 @@
 
 (in-package #:cl-user)
 
-(uiop:define-package #:vee/core
+(uiop:define-package #:veda/core
   (:use #:cl
         #:marie)
-  (:nicknames #:vee)
+  (:nicknames #:veda)
   (:export #:import-csv-file
            #:filter-csv-file))
 
-(uiop:define-package #:vee/tests
+(uiop:define-package #:veda/tests
   (:use #:cl
-        #:vee/core))
+        #:veda/core))

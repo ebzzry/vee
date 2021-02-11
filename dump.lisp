@@ -1,6 +1,6 @@
 ;;; dump.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun dump-registry (registry &key simple)
   "Dump the contents of the tables from REGISTRY."

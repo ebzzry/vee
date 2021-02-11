@@ -1,6 +1,6 @@
 ;;;; matching.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun bind-matches (store pool constraints &rest args)
   "Bind matching frames of POOL in STORE."

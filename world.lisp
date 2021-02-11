@@ -1,6 +1,6 @@
 ;;;; world.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defmacro spawn-counter (registry accessor)
   "Generate a new counter in REGISTRY with ACCESSOR."

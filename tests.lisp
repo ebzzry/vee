@@ -1,6 +1,6 @@
 ;;;; tests.lisp
 
-(in-package #:vee/tests)
+(in-package #:veda/tests)
 
 (defun run-tests ()
   "Run the tests"

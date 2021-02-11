@@ -1,6 +1,6 @@
 ;;;; writers.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun write-file (volume file &key expand)
   "Print the contents of VOLUME to FILE. If EXPAND is true, blobs and volumes will expand to their original forms."

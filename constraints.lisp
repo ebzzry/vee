@@ -1,6 +1,6 @@
 ;;;; constraints.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defun point (origin volume)
   "Return starting point based on the type of origin."

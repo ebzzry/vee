@@ -1,6 +1,6 @@
 ;;;; initialize.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (initialize-lparallel)
 (initialize-dictionary)

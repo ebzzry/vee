@@ -1,6 +1,6 @@
 ;;;; clos.lisp
 
-(in-package #:vee/core)
+(in-package #:veda/core)
 
 (defmethod initialize-instance :after ((p pool) &key registry)
   "Initialize pool P in REGISTRY."
